@@ -13,6 +13,6 @@ from models import Company
 class CompanyViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage Company in the Database"""
     
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (AllowAny, )
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
