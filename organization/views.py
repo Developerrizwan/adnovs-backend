@@ -8,8 +8,10 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from adnov.users.models import generate_token
 from django.contrib.auth.hashers import make_password,check_password
+import jwt
 from organization.models import Company
 from organization.serializers import *
+from organization.pagination import CustomPagination
 # Create your views here.
 
 class UserSignUpViewSet(generics.GenericAPIView):
@@ -27,9 +29,9 @@ class UserSignUpViewSet(generics.GenericAPIView):
 
         # Check if both the user email and company email already exist
         if Company.objects.filter(email=company_email).exists():
-            return Response({"Response":"Company already exists"})
+            return Response({"Response":"Company already exists"}, status=status.HTTP_400_BAD_REQUEST)
         if user_model.objects.filter(email=email).exists():
-            return  Response({"Response": "User with this email already exist."})
+            return  Response({"Response": "User with this email already exist."}, status=status.HTTP_400_BAD_REQUEST)
 
         company = Company.objects.create(
             name=serializer.validated_data['company_name'],
@@ -95,3 +97,169 @@ class CompanyViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Crea
     permission_classes = (AllowAny, )
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
+
+
+def generate_otp():
+    import random
+    import math
+    digits = [i for i in range(0, 10)]
+    random_str = ''
+    for i in range(6):
+        index = math.floor(random.random() * 10)
+        random_str += str(digits[index])
+    return random_str
+
+class ForgetpasswordViewSet(generics.GenericAPIView):
+    serializer_class = ForgetPasswordSerializer
+    permission_classes = [AllowAny,]
+
+    def post(self,request):
+        serializer = self.serializer_class(data = request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        otp = generate_otp()
+        if get_user_model().objects.filter(email = email).exists():
+            
+
+            user = get_user_model().objects.get(email = email)
+            user.otp = '1234'
+            user.save()
+            return Response({"Response":"OTP sent to your email"})        
+        else: 
+            return Response({"Error":"email does not exists"},  status=status.HTTP_400_BAD_REQUEST)
+
+class ForgetpasswordVerifyViewSet(generics.GenericAPIView):
+    serializer_class = ForgetPasswordVerifySerializer
+    permission_classes = [AllowAny,]
+
+    def post(self,request):
+        serializer = self.serializer_class(data = request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        otp = serializer.validated_data['otp']
+        new_password = serializer.validated_data['new_password']
+
+        if get_user_model().objects.filter(email = email).exists():
+            user = get_user_model().objects.get(email = email)
+            if user.otp == str(otp):
+                user.password = make_password(new_password)
+                user.save()
+                return Response({"Response":"password updated successfully"})  
+            else:
+                return Response({"Response":"Otp did not match"},  status=status.HTTP_400_BAD_REQUEST)  
+        else: 
+            return Response({"Error":"email does not exists"},  status=status.HTTP_400_BAD_REQUEST)
+        
+
+class GoogleTokenViewSet(generics.GenericAPIView):
+    serializer_class = GoogleTokenSerializer
+    permission_classes = [AllowAny, ]
+
+    def post(self,request):
+        serializer = self.get_serializer(data = request.data)
+        serializer.is_valid(raise_exception=True)
+    
+        jwt_token = serializer.validated_data['gtoken']
+        decoded_token = jwt.decode(jwt_token,options={"verify_signature": False},algorithms=['HS256'])
+        email = decoded_token['email']
+        
+        if get_user_model().objects.filter(email = decoded_token['email']).exists() and decoded_token['email_verified'] == True:
+            user = get_user_model().objects.get(email = email)
+            groups = [group.name for group in user.groups.all()]
+            token = Token.objects.get(user = user)
+            return Response({"Response":"User Verified",
+                            "token": token.key,
+                            "id":user.id,
+                            "mobile":user.mobile,
+                            "email":user.email,
+                            "groups":groups})
+        elif not get_user_model().objects.filter(email = decoded_token['email']).exists() and decoded_token['email_verified'] == True:
+            payload = {'email':email,
+                   'password':decoded_token['sub'],
+                   'username':email,
+                   'last_name':email,
+                   'first_name':decoded_token['name']}
+        user = get_user_model().objects.create_user(**payload)
+        user_group = Group.objects.get(name='user')
+        user.groups.add(user_group)
+        user.save()
+        token = generate_token(user)
+        groups = [group.name for group in user.groups.all()]
+        return Response({"Response":"User created",
+                            "token": token,
+                            "id":user.id,
+                            "mobile":user.mobile,
+                            "email":user.email,
+                            "groups":groups
+                            }) 
+
+
+class CompanyViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage Company in the Database"""
+    
+    permission_classes = (IsAuthenticated, )
+    queryset = Company.objects.all()
+    serializer_class = CompanySerializer
+
+
+class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage Job in the Database"""
+    
+    permission_classes = (IsAuthenticated, )
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
+
+
+class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage Vouchers in the Database"""
+    
+    permission_classes = (IsAuthenticated, )
+    queryset = Vouchers.objects.all()
+    serializer_class = VouchersSerializer
+
+class InvoicesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage Invoices in the Database"""
+    
+    permission_classes = (IsAuthenticated, )
+    queryset = Invoices.objects.all()
+    serializer_class = InvoicesSerializer
+
+class GetusersViewSet(viewsets.GenericViewSet,mixins.ListModelMixin):
+    """Get all Users"""
+    
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated, )
+    queryset = get_user_model().objects.all() 
+    serializer_class = UserSerializer 
+    
+class GetcompanyViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
+    """ Get all Companys"""
+    
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated, )
+    queryset = Company.objects.all() 
+    serializer_class = CompanySerializer 
+    
+class GetjobViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
+    """Get all Jobs"""
+    
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated, )
+    queryset = Job.objects.all() 
+    serializer_class = JobSerializer 
+    
+class GetvoucherViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
+    """Get all Vouchers"""
+    
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated, )
+    queryset = Vouchers.objects.all() 
+    serializer_class = VouchersSerializer 
+    
+class GetinvoiceViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
+    """Get all Invoices"""
+    
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated, )
+    queryset = Invoices.objects.all() 
+    serializer_class = InvoicesSerializer

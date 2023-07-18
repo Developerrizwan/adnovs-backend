@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from organization.models import Company
+from django.contrib.auth import get_user_model
+from organization.models import *
 
 class UserSignUpSerializer(serializers.Serializer):
 
@@ -15,14 +16,49 @@ class UserSignUpSerializer(serializers.Serializer):
     country = serializers.CharField(required=True)
 
 
-
 class UserSignInSerializer(serializers.Serializer):
 
     email = serializers.CharField()
     password = serializers.CharField()
 
 
+class ForgetPasswordSerializer(serializers.Serializer):
+    email = serializers.CharField()
+
+
+class ForgetPasswordVerifySerializer(serializers.Serializer):
+    email = serializers.CharField()
+    new_password = serializers.CharField()
+    otp = serializers.IntegerField()
+
+
+class GoogleTokenSerializer(serializers.Serializer):
+    gtoken = serializers.CharField()
+
+
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
+        fields = '__all__'
+
+class JobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Job
+        fields = '__all__'
+
+
+class VouchersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vouchers
+        fields = '__all__'
+
+
+class InvoicesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoices
+        fields = '__all__' 
+        
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model() 
         fields = '__all__'
