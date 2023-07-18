@@ -5,10 +5,10 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from django.contrib.auth.models import Group
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from adnov.users.models import generate_token
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.hashers import make_password,check_password
-from models import Company
+from organization.models import Company
+from organization.serializers import CompanySerializer
 # Create your views here.
 class CompanyViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage Company in the Database"""
