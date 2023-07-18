@@ -81,6 +81,8 @@ class UserSignInViewset(generics.GenericAPIView):
                 return Response({"Response":"user logged in successfully",
                             "token": token.key,
                             "id":user.id,
+                            "first_name":user.first_name,
+                            "last_name":user.last_name,
                             "mobile":user.mobile,
                             "email":user.email,
                             "groups":groups,

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from organization.models import *
 
 class UserSignUpSerializer(serializers.Serializer):
@@ -58,7 +59,17 @@ class InvoicesSerializer(serializers.ModelSerializer):
         model = Invoices
         fields = '__all__' 
         
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = ('name',)
+
 class UserSerializer(serializers.ModelSerializer):
+    groups = serializers.SerializerMethodField()
+    
     class Meta:
         model = get_user_model() 
         fields = '__all__'
+
+    def get_groups(self, obj):
+        return obj.groups.values_list('name', flat=True)
