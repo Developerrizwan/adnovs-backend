@@ -46,6 +46,7 @@ urlpatterns = [
     path('',include(get_users_router.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
+    path('user-create/', UserCreateViewSet.as_view(), name='user-create'),
     path('gtoken/', GoogleTokenViewSet.as_view(), name='google token'),
     path('forget-password/', ForgetpasswordViewSet.as_view(), name='forget-password'),
     path('forget-password/verify', ForgetpasswordVerifyViewSet.as_view(), name='forget-password')

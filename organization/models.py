@@ -68,9 +68,9 @@ class Job(models.Model):
     remarks = models.TextField(blank=True, null=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False)
     is_deleted = models.BooleanField(default=True)
-    deleted_by = models.ForeignKey(get_user_model(),on_delete=models.CASCADE, null=False, blank=False, related_name='deleted_jobs')
+    deleted_by = models.ForeignKey(get_user_model(),on_delete=models.CASCADE, null=True, blank=False, related_name='deleted_jobs')
     deleted_at = models.DateTimeField(default=timezone.now)
-    created_by =  models.ForeignKey(get_user_model(), on_delete=models.CASCADE, null=False, blank=False, related_name='created_jobs')
+    created_by =  models.ForeignKey(get_user_model(), on_delete=models.CASCADE, null=True, blank=False, related_name='created_jobs')
     created_at = models.DateTimeField(default=timezone.now)
 
 
@@ -80,11 +80,15 @@ class Vouchers(models.Model):
     Journal = 'Journal'
     Payment= 'Payment'
     Receipt= 'Receipt'
+    Credit = 'Credit'
+    Debit ='Debit'
     
     VOUCHER_TYPE_CHOICES = (
         (Journal, 'Journal'),
         (Payment, 'Payment'),
         (Receipt, 'Receipt'),
+        (Credit, 'Credit'),
+        (Debit,'Debit')
     )
 
     voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES)
