@@ -77,6 +77,7 @@ class UserSignInViewset(generics.GenericAPIView):
         if User.objects.filter(email = email).exists():
             user = User.objects.get(email = email)
             token = Token.objects.get(user = user)
+            company = Company.objects.get(users__email=user)
             if user.check_password(password):
                 groups = [group.name for group in user.groups.all()]
                 return Response({"Response":"user logged in successfully",
@@ -87,6 +88,7 @@ class UserSignInViewset(generics.GenericAPIView):
                             "mobile":user.mobile,
                             "email":user.email,
                             "groups":groups,
+                            "company_id": company.id
                             })
             else:
                 return Response({"Error":"Incorrect Password"},status=status.HTTP_400_BAD_REQUEST)        
