@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404
 from organization.models import Company
 from organization.serializers import *
 from organization.pagination import CustomPagination
+from organization.filters import * 
 # Create your views here.
 
 class UserSignUpViewSet(generics.GenericAPIView):
@@ -301,7 +302,8 @@ class GetjobViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Job.objects.all() 
-    serializer_class = JobSerializer 
+    serializer_class = JobSerializer
+    filter_backends = [TypeFilter]
     
 class GetvoucherViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     """Get all Vouchers"""
@@ -310,6 +312,7 @@ class GetvoucherViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     permission_classes = (IsAuthenticated, )
     queryset = Vouchers.objects.all() 
     serializer_class = VouchersSerializer 
+    filter_backends = [VoucherFliter]
     
 class GetinvoiceViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     """Get all Invoices"""
@@ -318,3 +321,4 @@ class GetinvoiceViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     permission_classes = (IsAuthenticated, )
     queryset = Invoices.objects.all() 
     serializer_class = InvoicesSerializer
+    filter_backends = [InvoicesFliter]

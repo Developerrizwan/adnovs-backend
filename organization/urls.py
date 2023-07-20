@@ -26,7 +26,7 @@ voucher_router = routers.SimpleRouter()
 voucher_router.register('master/voucher', VouchersViewSet, basename='voucher')
 
 get_invoice_router = routers.SimpleRouter() 
-get_invoice_router.register('get-invoices',GetjobViewset,basename='getinvoice')   
+get_invoice_router.register('get-invoices',GetinvoiceViewset,basename='getinvoice')   
 
 invoice_router = routers.SimpleRouter()
 invoice_router.register('master/invoice', InvoicesViewSet, basename='invoice')
