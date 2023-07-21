@@ -34,6 +34,9 @@ invoice_router.register('master/invoice', InvoicesViewSet, basename='invoice')
 user_profile_router = routers.SimpleRouter() 
 user_profile_router.register('user/profile', GetUserProfileViewSet, basename='userprofile')
 
+user_delete_router = routers.SimpleRouter()
+user_delete_router.register('user/delete',UserDeleteViewSet, basename='user-delete')
+
 get_users_router = routers.SimpleRouter() 
 get_users_router.register('get-users',GetusersViewSet,basename='getusers')
 
@@ -42,6 +45,7 @@ get_user_count_router.register('user-related-counts', UserRelatedCountsViewSet, 
 
 urlpatterns = [
     path('',include(get_user_count_router.urls)),
+    path('',include(user_delete_router.urls)),
     path('',include(user_profile_router.urls)),
     path('',include(get_company_router.urls)),
     path('', include(company_router.urls)),
