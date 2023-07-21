@@ -31,10 +31,18 @@ get_invoice_router.register('get-invoices',GetinvoiceViewset,basename='getinvoic
 invoice_router = routers.SimpleRouter()
 invoice_router.register('master/invoice', InvoicesViewSet, basename='invoice')
 
+user_profile_router = routers.SimpleRouter() 
+user_profile_router.register('user/profile', GetUserProfileViewSet, basename='userprofile')
+
 get_users_router = routers.SimpleRouter() 
 get_users_router.register('get-users',GetusersViewSet,basename='getusers')
 
+get_user_count_router = routers.SimpleRouter() 
+get_user_count_router.register('user-related-counts', UserRelatedCountsViewSet, basename='user-related-counts')
+
 urlpatterns = [
+    path('',include(get_user_count_router.urls)),
+    path('',include(user_profile_router.urls)),
     path('',include(get_company_router.urls)),
     path('', include(company_router.urls)),
     path('',include(get_job_router.urls)),
@@ -46,7 +54,7 @@ urlpatterns = [
     path('',include(get_users_router.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
-    # path('user-create/', UserCreateViewSet.as_view(), name='user-create'),
+    path('user-create/', UserCreateViewSet.as_view(), name='user-create'),
     path('gtoken/', GoogleTokenViewSet.as_view(), name='google token'),
     path('forget-password/', ForgetpasswordViewSet.as_view(), name='forget-password'),
     path('forget-password/verify', ForgetpasswordVerifyViewSet.as_view(), name='forget-password')

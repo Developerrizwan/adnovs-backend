@@ -97,43 +97,45 @@ class UserSignInViewset(generics.GenericAPIView):
             return Response({"Error":"Email does not exists"},status=status.HTTP_400_BAD_REQUEST)
 
 
-# class UserCreateViewSet(generics.GenericAPIView):
-#     serializer_class = UserSignUpSerializer
-#     permission_classes = [AllowAny, ]
+class UserCreateViewSet(generics.GenericAPIView):
+    serializer_class = UserSignUpSerializer
+    permission_classes = [AllowAny, ]
 
-#     def post(self, request):
-#         # queryset = self.queryset
-#         try:
-#             company_id = request.query_params.get('company_id')
-#             print(company_id)
-#             serializer = self.serializer_class(data=request.data)
-#             serializer.is_valid(raise_exception=True)
-#             password = serializer.validated_data.get('password')
-#             email = serializer.validated_data.get('email')
-#             user_model = get_user_model()
+    def post(self, request):
+        try:
+            company_id = request.query_params.get('company_id')
+            print(company_id)
+            serializer = self.serializer_class(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            password = serializer.validated_data.get('password')
+            email = serializer.validated_data.get('email')
+            user_model = get_user_model()
 
-#             if user_model.objects.filter(email=email).exists():
-#                 print(email)
-#                 return  Response({"Error": "User with this email already exist."}, status=status.HTTP_400_BAD_REQUEST)
-#             user = user_model.objects.create_user(
-#                 username=serializer.validated_data['email'],
-#                 email=serializer.validated_data['email'],
-#                 password=password,
-#                 mobile=serializer.validated_data['mobile'],
-#                 first_name=serializer.validated_data['first_name'],
-#                 last_name=serializer.validated_data['last_name'],
-#             )
-#             user.save()
+            if user_model.objects.filter(email=email).exists():
+                print(email)
+                return  Response({"Error": "User with this email already exist."}, status=status.HTTP_400_BAD_REQUEST)
+            user = user_model.objects.create_user(
+                username=serializer.validated_data['email'],
+                email=serializer.validated_data['email'],
+                password=password,
+                mobile=serializer.validated_data['mobile'],
+                first_name=serializer.validated_data['first_name'],
+                last_name=serializer.validated_data['last_name'],
+            )
+            user_role = Group.objects.get(name="user")
+            user.groups.add(user_role)
+            user.save()
+            generate_token(user)
             
-#             if company_id:
-#                 company = get_object_or_404(Company, id=company_id)
-#                 company.users.add(user)  
-#                 company.save()
+            if company_id:
+                company = get_object_or_404(Company, id=company_id)
+                company.users.add(user)  
+                company.save()
             
-#             return Response({'Response': 'User created Successfully'}, status=status.HTTP_201_CREATED)
+            return Response({'Response': 'User created Successfully'}, status=status.HTTP_201_CREATED)
         
-#         except Exception as e:
-#             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CompanyViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
@@ -323,3 +325,37 @@ class GetinvoiceViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     queryset = Invoices.objects.all() 
     serializer_class = InvoicesSerializer
     filter_backends = [InvoicesFliter]
+
+class GetUserProfileViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin):
+    """Get user details for the requested user"""
+
+    permission_classes = (IsAuthenticated,)
+    queryset = get_user_model().objects.all()
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        print(self.request.user.id)
+        queryset = self.queryset.get(id=self.request.user.id)
+        return queryset
+    
+class UserRelatedCountsViewSet(viewsets.GenericViewSet):
+    """Get the count of invoices, jobs, and vouchers related to the requesting user"""
+
+    permission_classes = (IsAuthenticated,)
+
+    def list(self, request, *args, **kwargs):
+        user = self.request.user
+        print(user.email)
+        # Get the count of related objects for the user
+        invoice_count = Invoices.objects.filter(company__users=user).count()
+        job_count = Job.objects.filter(company__users__email=user.email).count()
+        voucher_count = Vouchers.objects.filter(job__company__users__email=user.email).count()
+
+        # Serialize the counts and return the response
+        counts_serializer = UserRelatedCountsSerializer({
+            'invoice_count': invoice_count,
+            'job_count': job_count,
+            'voucher_count': voucher_count
+        })
+
+        return Response(counts_serializer.data, status=status.HTTP_200_OK)

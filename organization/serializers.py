@@ -73,3 +73,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_groups(self, obj):
         return obj.groups.values_list('name', flat=True)
+    
+class UserRelatedCountsSerializer(serializers.Serializer):
+    invoice_count = serializers.IntegerField()
+    job_count = serializers.IntegerField()
+    voucher_count = serializers.IntegerField()
