@@ -58,7 +58,7 @@ class UserSignUpViewSet(generics.GenericAPIView):
             company.save()
 
         # Set user role and generate token
-        user_role = Group.objects.get(name="user")
+        user_role = Group.objects.get(name="admin")
         user.groups.add(user_role)
         user.save()
         generate_token(user)
