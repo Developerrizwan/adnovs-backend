@@ -137,12 +137,12 @@ class UserCreateViewSet(generics.GenericAPIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class UserDeleteViewSet(viewsets.GenericViewSet, mixins.DestroyModelMixin):
+class UserDeleteViewSet(viewsets.GenericViewSet, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """User Delete"""
     
     permission_classes = (IsAuthenticated, )
     queryset = get_user_model().objects.all()
-    # serializer_class = CompanySerializer
+    serializer_class = UserSerializer
 
 class CompanyViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage Company in the Database"""
