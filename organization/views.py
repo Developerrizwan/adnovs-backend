@@ -280,12 +280,13 @@ class GetusersViewSet(viewsets.GenericViewSet,mixins.ListModelMixin):
     def get_queryset(self):
         # Get the requesting user
         requesting_user = self.request.user
-        queryset = self.queryset.filter(company__users__email=requesting_user.email)
-        # Get the company of the requesting user
-        requesting_user_company = requesting_user.company_set.first()
-        print(requesting_user_company)
-        # Get all users associated with the same company as the requesting user
-        users = requesting_user_company.users.all()
+        if requesting_user.company_set.exists():
+            # Get the company of the requesting user
+            requesting_user_company = requesting_user.company_set.first()
+            # Get all users associated with the same company as the requesting user
+            users = requesting_user_company.users.all()
+        else:
+            users = get_user_model().objects.all()
         return users
     
 class GetcompanyViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
