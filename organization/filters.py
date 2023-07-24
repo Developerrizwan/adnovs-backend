@@ -5,9 +5,8 @@ class TypeFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if queryset.model:
             type = request.query_params.get('type', None)
-            # print(type)
             if queryset.filter(job_type=type).exists():
-                queryset = queryset.filter(job_type=type)
+                queryset = queryset.filter(company__users=request.user)
             else:
                 queryset=queryset.all()
             return queryset
@@ -17,7 +16,7 @@ class VoucherFliter(filters.BaseFilterBackend):
         if queryset.model:
             type = request.query_params.get('type', None)
             if queryset.filter(voucher_type=type).exists():
-                queryset = queryset.filter(voucher_type=type)
+                queryset = queryset.filter(job__company__users__email=request.user)
             else:
                 queryset=queryset.all() 
             return queryset   
@@ -27,7 +26,7 @@ class InvoicesFliter(filters.BaseFilterBackend):
         if queryset.model:
             type = request.query_params.get('type', None)
             if queryset.filter(invoice_type=type).exists():
-                queryset = queryset.filter(invoice_type=type) 
+                queryset = queryset.filter(company__users=request.user)
             else:
                 queryset=queryset.all()
             return queryset   
