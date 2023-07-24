@@ -98,21 +98,20 @@ class UserSignInViewset(generics.GenericAPIView):
 
 
 class UserCreateViewSet(generics.GenericAPIView):
-    serializer_class = UserSignUpSerializer
+    serializer_class = UserCreateSerializer
     permission_classes = [AllowAny, ]
 
     def post(self, request):
         try:
-            company_id = request.query_params.get('company_id')
-            print(company_id)
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid(raise_exception=True)
+            company_id = serializer.validated_data.get('company_id')
             password = serializer.validated_data.get('password')
             email = serializer.validated_data.get('email')
+            role = serializer.validated_data.get('role')
             user_model = get_user_model()
 
             if user_model.objects.filter(email=email).exists():
-                print(email)
                 return  Response({"Error": "User with this email already exist."}, status=status.HTTP_400_BAD_REQUEST)
             user = user_model.objects.create_user(
                 username=serializer.validated_data['email'],
@@ -122,7 +121,7 @@ class UserCreateViewSet(generics.GenericAPIView):
                 first_name=serializer.validated_data['first_name'],
                 last_name=serializer.validated_data['last_name'],
             )
-            user_role = Group.objects.get(name="user")
+            user_role = Group.objects.get(name=role)
             user.groups.add(user_role)
             user.save()
             generate_token(user)
@@ -177,7 +176,7 @@ class ForgetpasswordViewSet(generics.GenericAPIView):
             user = get_user_model().objects.get(email = email)
             user.otp = '1234'
             user.save()
-            return Response({"Response":"OTP sent to your email"}, status=status.HTTP_200_OK)        
+            return Response({"Response":"OTP sent to your email"})        
         else: 
             return Response({"Error":"email does not exists"},  status=status.HTTP_400_BAD_REQUEST)
 
@@ -197,7 +196,7 @@ class ForgetpasswordVerifyViewSet(generics.GenericAPIView):
             if user.otp == str(otp):
                 user.password = make_password(new_password)
                 user.save()
-                return Response({"Response":"password updated successfully"}, status=status.HTTP_200_OK)  
+                return Response({"Response":"password updated successfully"})  
             else:
                 return Response({"Response":"Otp did not match"},  status=status.HTTP_400_BAD_REQUEST)  
         else: 
@@ -225,7 +224,7 @@ class GoogleTokenViewSet(generics.GenericAPIView):
                             "id":user.id,
                             "mobile":user.mobile,
                             "email":user.email,
-                            "groups":groups}, status=status.HTTP_200_OK)
+                            "groups":groups})
         elif not get_user_model().objects.filter(email = decoded_token['email']).exists() and decoded_token['email_verified'] == True:
             payload = {'email':email,
                    'password':decoded_token['sub'],
@@ -244,7 +243,7 @@ class GoogleTokenViewSet(generics.GenericAPIView):
                             "mobile":user.mobile,
                             "email":user.email,
                             "groups":groups
-                            }, status=status.HTTP_201_CREATED) 
+                            }) 
 
 
 class CompanyViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
@@ -340,6 +339,7 @@ class GetUserProfileViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin):
     serializer_class = UserSerializer
 
     def get_object(self):
+        print(self.request.user.id)
         queryset = self.queryset.get(id=self.request.user.id)
         return queryset
     
