@@ -14,6 +14,7 @@ from organization.models import Company
 from organization.serializers import *
 from organization.pagination import CustomPagination
 from organization.filters import * 
+from datetime import datetime
 # Create your views here.
 
 class UserSignUpViewSet(generics.GenericAPIView):
@@ -260,6 +261,13 @@ class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     permission_classes = (IsAuthenticated, )
     queryset = Job.objects.all()
     serializer_class = JobSerializer
+
+    def perform_create(self, serializer):
+        # Generate the enquiry number based on the current year and the auto-generated id
+        year = datetime.now().year
+        job_id = serializer.save().id
+        enquiry_number = f"ENQ{str(year)[-2:]}{job_id:02}"
+        serializer.save(enquiry_number=enquiry_number) 
 
 
 class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):

@@ -62,6 +62,7 @@ class Job(models.Model):
     bayan_number = models.CharField(max_length=255, blank=True, null=True)
     pod = models.CharField(max_length=255, blank=True, null=True)
     poa = models.CharField(max_length=255, blank=True, null=True)
+    branch = models.CharField(max_length=255, blank=True, null=True)
     consignee_name = models.CharField(max_length=255, blank=True, null=True)
     shipper_name = models.CharField(max_length=255, blank=True, null=True)
     client_name = models.CharField(max_length=255, blank=True, null=True)
@@ -72,7 +73,8 @@ class Job(models.Model):
     deleted_at = models.DateTimeField(default=timezone.now)
     created_by =  models.ForeignKey(get_user_model(), on_delete=models.CASCADE, null=True, blank=False, related_name='created_jobs')
     created_at = models.DateTimeField(default=timezone.now)
-
+    job_number = models.CharField(max_length=250,blank=True,null=True)
+    enquiry_number = models.CharField(max_length=250,blank=True,null=True)
 
 
 class Vouchers(models.Model):
