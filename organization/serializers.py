@@ -78,6 +78,11 @@ class UserRelatedCountsSerializer(serializers.Serializer):
     invoice_count = serializers.IntegerField()
     job_count = serializers.IntegerField()
     voucher_count = serializers.IntegerField()
+    jobs_active = serializers.IntegerField()
+    jobs_inactive = serializers.IntegerField()
+    enquiry_count = serializers.IntegerField()
+    enquiry_active = serializers.IntegerField()
+    enquiry_inactive = serializers.IntegerField()
 
 class UserCreateSerializer(serializers.Serializer):
 
