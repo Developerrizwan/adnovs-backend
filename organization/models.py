@@ -55,48 +55,13 @@ class Job(models.Model):
         (Cancelled, 'Cancelled')
     )
 
-    D2D ='D2D'
-    EXW = 'EXW'
-    FOB = 'FOB'
-    CIF = 'CIF'
-    CNF = 'CNF'
-    CANDF = 'C&F'
-    DDP = 'DDP'
-    DAP = 'DAP'
-    CPT = 'CPT'
-    TRANS = 'TRANS'
-    Delivered = 'Delivered'
-    Invoiced = 'Invoiced'
-    Finished = 'Finished'
-    Cancelled = 'Cancelled'
-    DTRANS = "D-TRANS"
-    OTHERS = "OTHERS"
-
-
-    SOCPE_OF_WORK = (
-        (D2D, 'D2D'),
-        (EXW, 'EXW'),
-        (FOB, 'FOB'),
-        (CIF, 'CIF'),
-        (CNF, 'CNF'),
-        (CANDF, 'C&F'),
-        (DDP, 'DDP'),
-        (DAP, 'DAP'),
-        (CPT, 'CPT'),
-        (TRANS, 'TRANS'),
-        (DTRANS, 'D-TRANS'),
-        (OTHERS, 'OTHERS')
-
-    )
 
     bl_number = models.CharField(max_length=255, blank=True, null=True)
     job_type = models.CharField("Job Type", max_length=255, choices=JOB_TYPE_CHOICES)
     job_status = models.CharField("Job Status", max_length=255, choices=JOB_STATUS_CHOICES)
-    scope_of_work = models.CharField("Scope of Work ", max_length=255, choices=SOCPE_OF_WORK)
     bayan_number = models.CharField(max_length=255, blank=True, null=True)
     pod = models.CharField(max_length=255, blank=True, null=True)
     poa = models.CharField(max_length=255, blank=True, null=True)
-    por = models.TextField(blank=True, null=True)
     consignee_name = models.CharField(max_length=255, blank=True, null=True)
     shipper_name = models.CharField(max_length=255, blank=True, null=True)
     client_name = models.CharField(max_length=255, blank=True, null=True)

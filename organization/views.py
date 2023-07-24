@@ -98,20 +98,21 @@ class UserSignInViewset(generics.GenericAPIView):
 
 
 class UserCreateViewSet(generics.GenericAPIView):
-    serializer_class = UserCreateSerializer
+    serializer_class = UserSignUpSerializer
     permission_classes = [AllowAny, ]
 
     def post(self, request):
         try:
+            company_id = request.query_params.get('company_id')
+            print(company_id)
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid(raise_exception=True)
-            company_id = serializer.validated_data.get('company_id')
             password = serializer.validated_data.get('password')
             email = serializer.validated_data.get('email')
-            role = serializer.validated_data.get('role')
             user_model = get_user_model()
 
             if user_model.objects.filter(email=email).exists():
+                print(email)
                 return  Response({"Error": "User with this email already exist."}, status=status.HTTP_400_BAD_REQUEST)
             user = user_model.objects.create_user(
                 username=serializer.validated_data['email'],
@@ -121,7 +122,7 @@ class UserCreateViewSet(generics.GenericAPIView):
                 first_name=serializer.validated_data['first_name'],
                 last_name=serializer.validated_data['last_name'],
             )
-            user_role = Group.objects.get(name=role)
+            user_role = Group.objects.get(name="user")
             user.groups.add(user_role)
             user.save()
             generate_token(user)
