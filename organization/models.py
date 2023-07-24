@@ -56,12 +56,74 @@ class Job(models.Model):
     )
 
 
+    D2D ='D2D'
+    EXW = 'EXW'
+    FOB = 'FOB'
+    CIF = 'CIF'
+    CNF = 'CNF'
+    CANDF = 'C&F'
+    DDP = 'DDP'
+    DAP = 'DAP'
+    CPT = 'CPT'
+    TRANS = 'TRANS'
+    Delivered = 'Delivered'
+    Invoiced = 'Invoiced'
+    Finished = 'Finished'
+    Cancelled = 'Cancelled'
+    DTRANS = "D-TRANS"
+    OTHERS = "OTHERS"
+
+
+    SOCPE_OF_WORK = (
+        (D2D, 'D2D'),
+        (EXW, 'EXW'),
+        (FOB, 'FOB'),
+        (CIF, 'CIF'),
+        (CNF, 'CNF'),
+        (CANDF, 'C&F'),
+        (DDP, 'DDP'),
+        (DAP, 'DAP'),
+        (CPT, 'CPT'),
+        (TRANS, 'TRANS'),
+        (DTRANS, 'D-TRANS'),
+        (OTHERS, 'OTHERS')
+
+    )
+
+    CONTAINER_CHOICES = (
+            ('20DC', '20’DC'),
+            ('20RF', '20’RF'),
+            ('20ST', '20’ST'),
+            ('20OT', '20’OT'),
+            ('20HC', '20’HC'),
+            ('40DC', '40’DC'),
+            ('40RF', '40’RF'),
+            ('40ST', '40’ST'),
+            ('40OT', '40’OT'),
+            ('40HC', '40’HC'),
+            ('FLAT_RACK', 'FLAT RACK'),
+            ('FTL', 'FTL'),
+            ('LTL', 'LTL'),
+        )
+    
+    FREIGHT_CHOICES = [
+        ('Air_Freight', 'Air Freight'),
+        ('Sea_Freight', 'Sea Freight'),
+        ('Land_Freight', 'Land Freight'),
+        ('Transportation', 'Transportation'),
+        ('Warehousing', 'Warehousing'),
+    ]
+
     bl_number = models.CharField(max_length=255, blank=True, null=True)
     job_type = models.CharField("Job Type", max_length=255, choices=JOB_TYPE_CHOICES)
     job_status = models.CharField("Job Status", max_length=255, choices=JOB_STATUS_CHOICES)
+    scope_of_work = models.CharField("Scope of Work ", max_length=255, choices=SOCPE_OF_WORK, blank=True, null=True)
+    container_type = models.CharField("Container Type", max_length=10,choices=CONTAINER_CHOICES, blank=True, null=True)
+    type = models.CharField(max_length=20,choices=FREIGHT_CHOICES, blank=True, null=True)
     bayan_number = models.CharField(max_length=255, blank=True, null=True)
     pod = models.CharField(max_length=255, blank=True, null=True)
     poa = models.CharField(max_length=255, blank=True, null=True)
+    branch = models.CharField(max_length=255, blank=True, null=True)
     consignee_name = models.CharField(max_length=255, blank=True, null=True)
     shipper_name = models.CharField(max_length=255, blank=True, null=True)
     client_name = models.CharField(max_length=255, blank=True, null=True)
@@ -72,7 +134,8 @@ class Job(models.Model):
     deleted_at = models.DateTimeField(default=timezone.now)
     created_by =  models.ForeignKey(get_user_model(), on_delete=models.CASCADE, null=True, blank=False, related_name='created_jobs')
     created_at = models.DateTimeField(default=timezone.now)
-
+    job_number = models.CharField(max_length=250,blank=True,null=True)
+    enquiry_number = models.CharField(max_length=250,blank=True,null=True)
 
 
 class Vouchers(models.Model):
