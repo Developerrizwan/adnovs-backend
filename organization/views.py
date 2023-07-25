@@ -373,6 +373,7 @@ class UserRelatedCountsViewSet(viewsets.GenericViewSet):
         # Get the count of related objects for the user
         invoice_count = Invoices.objects.filter(company__users=user).count()
         jobs = Job.objects.filter(company__users__email=user.email)
+        jobs =jobs.filter(job_type='Job')
         jobs_active = jobs.filter(job_status='Finished')
         jobs_inactive = jobs.filter(job_status='Cancelled')
         enquiry = jobs.filter(job_type='Enquiry')
@@ -400,3 +401,17 @@ class CoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     permission_classes = (IsAuthenticated, )
     queryset = Coa.objects.all()
     serializer_class = CoaSerializer 
+    
+class CoaCategoryViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage Coa in the Database"""
+    
+    permission_classes = (IsAuthenticated, )
+    queryset = CoaCategory.objects.all()
+    serializer_class = CoaCategorySerializer  
+    
+class CoaGroupViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage Coa in the Database"""
+    
+    permission_classes = (IsAuthenticated, )
+    queryset = CoaGroup.objects.all()
+    serializer_class = CoaGroupSerializer 

@@ -46,6 +46,12 @@ get_user_count_router.register('user-related-counts', UserRelatedCountsViewSet, 
 coa_router = routers.SimpleRouter() 
 coa_router.register('master/coa', CoaViewSet, basename='coa') 
 
+coa_categoryrouter = routers.SimpleRouter() 
+coa_categoryrouter.register('master/coacategory', CoaCategoryViewSet, basename='coa-category')  
+
+coa_grouprouter = routers.SimpleRouter() 
+coa_grouprouter.register('master/coagroup', CoaGroupViewSet, basename='coa-group') 
+
 urlpatterns = [
     path('',include(get_user_count_router.urls)),
     path('',include(user_delete_router.urls)),
@@ -60,6 +66,8 @@ urlpatterns = [
     path('', include(invoice_router.urls)),
     path('',include(get_users_router.urls)),
     path('',include(coa_router.urls)),
+    path('',include(coa_categoryrouter.urls)),
+    path('',include(coa_grouprouter.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
     path('user-create/', UserCreateViewSet.as_view(), name='user-create'),

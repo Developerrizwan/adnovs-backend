@@ -249,44 +249,55 @@ class Coa(models.Model):
         ('Dr', 'Dr'),
         ('Cr', 'Cr'),
     )
-    
-    # Select = 'Select'
-    
-    # CATEGORY_CHOICES = (
-    #     ('Select', 'Select'),
-    #     # Add other choices for the category field
-    # )
-    # Select = 'Select'
-    # GROUP_CHOICES = (
-    #     ('Select', 'Select'),
-    #     # Add other choices for the group field
-    # )
-    
-    # Select = 'Select'
-    # SUBGROUP_CHOICES = (
-    #     ('Select', 'Select'),
-    #     # Add other choices for the subgroup field
-    # )
-      
-    # Select = 'Select'
-    # TYPE_CHOICES = [
-    #     ('Select', 'Select'),
-    #     # Add other choices for the type field
-    # ] 
+
     code = models.CharField(max_length=200,blank=True, null=True)
-    Name = models.CharField(max_length=200,blank=True, null=True) 
-    Status = models.BooleanField(blank=True, null=True)
-    Subledger_Requried = models.BooleanField(blank=True, null=True)
-    Charage_Required = models.BooleanField(blank=True, null=True)
-    Job_Required = models.BooleanField(blank=True, null=True)
-    Asset_Required = models.BooleanField(blank=True, null=True)
-    coa_type = models.CharField(max_length=200,choices=COA_CHOICES)
-    Is_Direct_Indirect = models.CharField(max_length=200,choices=DIRECT_INDIRECT_CHOICES)
-    DR_Cr = models.CharField(max_length=200,choices=DR_CR_CHOICES)
-    Category = models.CharField(max_length=200,blank=True, null=True)
-    Group = models.CharField(max_length=200,blank=True, null=True)
-    Subgroup = models.CharField(max_length=200,blank=True, null=True)
-    Type= models.CharField(max_length=200,blank=True, null=True)
-    Short_Name = models.CharField(max_length=200,blank=True, null=True)
-    Long_Name = models.CharField(max_length=200,blank=True, null=True) 
-    Language_Name = models.CharField(max_length=200,blank=True, null=True)
+    name = models.CharField(max_length=200,blank=True, null=True) 
+    status = models.BooleanField(blank=True, null=True)
+    subledger_requried = models.BooleanField(blank=True, null=True)
+    charage_required = models.BooleanField(blank=True, null=True)
+    job_required = models.BooleanField(blank=True, null=True)
+    asset_required = models.BooleanField(blank=True, null=True)
+    coa_type = models.CharField(max_length=200,blank=True, null=True)
+    is_direct_indirect = models.CharField(max_length=200,choices=DIRECT_INDIRECT_CHOICES)
+    dr_cr = models.CharField(max_length=200,choices=DR_CR_CHOICES)
+    category = models.CharField(max_length=200,blank=True, null=True)
+    group = models.CharField(max_length=200,blank=True, null=True)
+    subgroup = models.CharField(max_length=200,blank=True, null=True)
+    type= models.CharField(max_length=200,blank=True, null=True)
+    short_name = models.CharField(max_length=200,blank=True, null=True)
+    long_name = models.CharField(max_length=200,blank=True, null=True) 
+    language_name = models.CharField(max_length=200,blank=True, null=True)
+    currency=models.CharField(max_length=500,blank=True,null=True)
+    additional_reference_code=models.CharField(max_length=200,blank=True,null=True)
+    remarks=models.TextField(blank=True,null=True)
+
+class CoaCategory(models.Model):
+    Dr = 'Dr'
+    Cr = 'Cr'
+    DR_CR_CHOICES = (
+        ('Dr', 'Dr'),
+        ('Cr', 'Cr'),
+    ) 
+    
+    code = models.CharField(max_length=200,blank=True, null=True)
+    name= models.CharField(max_length=200,blank=True, null=True) 
+    status = models.BooleanField(blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True) 
+    dr_cr = models.CharField(max_length=200,blank=True, null=True,choices=DR_CR_CHOICES)  
+    
+    
+class CoaGroup(models.Model):
+    Dr = 'Dr'
+    Cr = 'Cr'
+    DR_CR_CHOICES = (
+        ('Dr', 'Dr'),
+        ('Cr', 'Cr'),
+    )
+    code = models.CharField(max_length=200,blank=True, null=True)
+    name= models.CharField(max_length=200,blank=True, null=True) 
+    type = models.CharField(max_length=200,blank=True, null=True) 
+    dr_cr = models.CharField(max_length=200,blank=True, null=True,choices=DR_CR_CHOICES)
+    status = models.BooleanField(blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True)
+    
+    

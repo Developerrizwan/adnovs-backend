@@ -99,3 +99,12 @@ class CoaSerializer(serializers.ModelSerializer):
         model = Coa
         fields = '__all__'
         
+class CoaCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CoaCategory 
+        fields = '__all__' 
+        
+class CoaGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CoaGroup
+        fields = '__all__'
