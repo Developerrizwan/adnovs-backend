@@ -111,13 +111,26 @@ class Job(models.Model):
     Transportation = 'Transportation'
     Warehousing = 'Warehousing'
     
-    FREIGHT_CHOICES = [
+    FREIGHT_CHOICES = (
         (Air_Freight, 'Air Freight'),
         (Sea_Freight, 'Sea Freight'),
         (Land_Freight, 'Land Freight'),
         (Transportation, 'Transportation'),
         (Warehousing, 'Warehousing'),
-    ]
+    )
+
+    ORGANIZATION_CHOICES = (
+        ('Consignee', 'Consignee'),
+        ('Client', 'Client'),
+        ('Notify', 'Notify'),
+        ('Shipper', 'Shipper'),
+        ('Broker', 'Broker'),
+        ('Transporter', 'Transporter'),
+        ('Counterpart', 'Counterpart'),
+        ('Coloader', 'Coloader'),
+        ('Supplier', 'Supplier'),
+        ('Other', 'Other'),
+    )
 
     bl_number = models.CharField(max_length=255, blank=True, null=True)
     job_type = models.CharField("Job Type", max_length=255, choices=JOB_TYPE_CHOICES)
@@ -125,6 +138,7 @@ class Job(models.Model):
     scope_of_work = models.CharField("Scope of Work ", max_length=255, choices=SOCPE_OF_WORK, blank=True, null=True)
     container_type = models.CharField("Container Type", max_length=10,choices=CONTAINER_CHOICES, blank=True, null=True)
     type = models.CharField("Freight Choice",max_length=20,choices=FREIGHT_CHOICES, blank=True, null=True)
+    organization_type = models.CharField("Organization Type", max_length=20, choices=ORGANIZATION_CHOICES, null=True, blank=True)
     bayan_number = models.CharField(max_length=255, blank=True, null=True)
     pod = models.CharField(max_length=255, blank=True, null=True)
     poa = models.CharField(max_length=255, blank=True, null=True)
