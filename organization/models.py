@@ -254,7 +254,7 @@ class Coa(models.Model):
     name = models.CharField(max_length=200,blank=True, null=True) 
     status = models.BooleanField(blank=True, null=True)
     subledger_requried = models.BooleanField(blank=True, null=True)
-    charage_required = models.BooleanField(blank=True, null=True)
+    charge_required = models.BooleanField(blank=True, null=True)
     job_required = models.BooleanField(blank=True, null=True)
     asset_required = models.BooleanField(blank=True, null=True)
     coa_type = models.CharField(max_length=200,blank=True, null=True)
