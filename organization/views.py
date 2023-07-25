@@ -387,3 +387,10 @@ class UserRelatedCountsViewSet(viewsets.GenericViewSet):
         })
 
         return Response(counts_serializer.data, status=status.HTTP_200_OK)
+
+class CoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage Coa in the Database"""
+    
+    permission_classes = (IsAuthenticated, )
+    queryset = Coa.objects.all()
+    serializer_class = CoaSerializer 

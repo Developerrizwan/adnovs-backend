@@ -142,7 +142,8 @@ class Job(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     job_number = models.CharField(max_length=250,blank=True,null=True)
     enquiry_number = models.CharField(max_length=250,blank=True,null=True)
-
+    eta = models.DateTimeField(blank=True,null=True)
+    etd = models.DateTimeField(blank=True,null=True)
 
 class Vouchers(models.Model):
 
@@ -208,3 +209,70 @@ class Invoices(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False)
     job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
 
+class Coa(models.Model):
+    
+    BS = 'Balance Sheet'
+    PL = 'Profit and Loss'
+    
+    COA_CHOICES = (    
+        ('BS', 'Balance Sheet'),         
+        ('PL', 'Profit and Loss'),    
+    )
+    
+    Direct = 'Direct'
+    Indirect = 'Indirect'
+    
+    
+    DIRECT_INDIRECT_CHOICES = (
+        ('Direct', 'Direct'),
+        ('Indirect', 'Indirect'),
+    ) 
+    
+    Dr = 'Dr'
+    Cr = 'Cr'
+    
+    DR_CR_CHOICES = (
+        ('Dr', 'Dr'),
+        ('Cr', 'Cr'),
+    )
+    
+    # Select = 'Select'
+    
+    # CATEGORY_CHOICES = (
+    #     ('Select', 'Select'),
+    #     # Add other choices for the category field
+    # )
+    # Select = 'Select'
+    # GROUP_CHOICES = (
+    #     ('Select', 'Select'),
+    #     # Add other choices for the group field
+    # )
+    
+    # Select = 'Select'
+    # SUBGROUP_CHOICES = (
+    #     ('Select', 'Select'),
+    #     # Add other choices for the subgroup field
+    # )
+      
+    # Select = 'Select'
+    # TYPE_CHOICES = [
+    #     ('Select', 'Select'),
+    #     # Add other choices for the type field
+    # ] 
+    code = models.CharField(max_length=200,blank=True, null=True)
+    Name = models.CharField(max_length=200,blank=True, null=True) 
+    Status = models.BooleanField(blank=True, null=True)
+    Subledger_Requried = models.BooleanField(blank=True, null=True)
+    Charage_Required = models.BooleanField(blank=True, null=True)
+    Job_Required = models.BooleanField(blank=True, null=True)
+    Asset_Required = models.BooleanField(blank=True, null=True)
+    coa_type = models.CharField(max_length=200,choices=COA_CHOICES)
+    Is_Direct_Indirect = models.CharField(max_length=200,choices=DIRECT_INDIRECT_CHOICES)
+    DR_Cr = models.CharField(max_length=200,choices=DR_CR_CHOICES)
+    Category = models.CharField(max_length=200,blank=True, null=True)
+    Group = models.CharField(max_length=200,blank=True, null=True)
+    Subgroup = models.CharField(max_length=200,blank=True, null=True)
+    Type= models.CharField(max_length=200,blank=True, null=True)
+    Short_Name = models.CharField(max_length=200,blank=True, null=True)
+    Long_Name = models.CharField(max_length=200,blank=True, null=True) 
+    Language_Name = models.CharField(max_length=200,blank=True, null=True)

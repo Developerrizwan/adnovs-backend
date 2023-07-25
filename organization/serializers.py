@@ -94,3 +94,8 @@ class UserCreateSerializer(serializers.Serializer):
     role = serializers.CharField(required=True)
     company_id = serializers.CharField(required=True)
    
+class CoaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coa
+        fields = '__all__'
+        
