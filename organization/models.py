@@ -258,7 +258,7 @@ class Coa(models.Model):
     job_required = models.BooleanField(blank=True, null=True)
     asset_required = models.BooleanField(blank=True, null=True)
     coa_type = models.CharField(max_length=200,blank=True, null=True)
-    is_direct_indirect = models.CharField(max_length=200,choices=DIRECT_INDIRECT_CHOICES)
+    is_direct_indirect = models.CharField(max_length=200, blank=True, null=True)
     dr_cr = models.CharField(max_length=200,choices=DR_CR_CHOICES)
     category = models.CharField(max_length=200,blank=True, null=True)
     group = models.CharField(max_length=200,blank=True, null=True)
