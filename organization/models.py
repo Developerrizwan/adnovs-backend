@@ -128,6 +128,7 @@ class Job(models.Model):
     bayan_number = models.CharField(max_length=255, blank=True, null=True)
     pod = models.CharField(max_length=255, blank=True, null=True)
     poa = models.CharField(max_length=255, blank=True, null=True)
+    por = models.TextField(blank=True, null=True)
     branch = models.CharField(max_length=255, blank=True, null=True)
     consignee_name = models.CharField(max_length=255, blank=True, null=True)
     shipper_name = models.CharField(max_length=255, blank=True, null=True)
