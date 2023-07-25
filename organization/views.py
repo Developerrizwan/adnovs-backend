@@ -373,7 +373,7 @@ class UserRelatedCountsViewSet(viewsets.GenericViewSet):
         # Get the count of related objects for the user
         invoice_count = Invoices.objects.filter(company__users=user).count()
         jobs = Job.objects.filter(company__users__email=user.email)
-        jobs =jobs.filter(job_type='Job')
+        jobss =jobs.filter(job_type='Job')
         jobs_active = jobs.filter(job_status='Finished')
         jobs_inactive = jobs.filter(job_status='Cancelled')
         enquiry = jobs.filter(job_type='Enquiry')
@@ -384,7 +384,7 @@ class UserRelatedCountsViewSet(viewsets.GenericViewSet):
         # Serialize the counts and return the response
         counts_serializer = UserRelatedCountsSerializer({
             'invoice_count': invoice_count,
-            'job_count': jobs.count,
+            'job_count': jobss.count,
             'voucher_count': voucher_count,
             'jobs_active': jobs_active.count,
             'jobs_inactive': jobs_inactive.count,
