@@ -269,11 +269,17 @@ class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
         year = datetime.now().year
         job_id = serializer.save().id
         type = serializer.validated_data['type']
-        branch = serializer.validated_data['branch']
+        branch = serializer.validated_data['branch'] 
+        job_type = serializer.validated_data['job_type']
         job_status_first_chars = "".join(word[0] for word in type.split())
         # job_number = f"{branch[:3]}{job_status_first_chars}{str(year)[-2:]}{job_id:02}"
-        job_number = job_number = f"{branch[:3].upper()}{job_status_first_chars}{str(year)[-2:]}{job_id:02}"
-        enquiry_number = f"ENQ{str(year)[-2:]}{job_id:02}"
+        
+        if job_type == 'Job':
+            job_number = job_number = f"{branch[:3].upper()}{job_status_first_chars}{str(year)[-2:]}{job_id:02}"
+            enquiry_number = None
+        else:
+            enquiry_number = f"ENQ{str(year)[-2:]}{job_id:02}"
+            job_number = None
         serializer.save(enquiry_number=enquiry_number, job_number=job_number) 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
