@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-
+from django.contrib.postgres.fields import ArrayField
 # Create your models here.
 
 class Company(models.Model):
@@ -138,7 +138,7 @@ class Job(models.Model):
     scope_of_work = models.CharField("Scope of Work ", max_length=255, choices=SOCPE_OF_WORK, blank=True, null=True)
     container_type = models.CharField("Container Type", max_length=10,choices=CONTAINER_CHOICES, blank=True, null=True)
     type = models.CharField("Freight Choice",max_length=20,choices=FREIGHT_CHOICES, blank=True, null=True)
-    organization_type = models.CharField("Organization Type", max_length=20, choices=ORGANIZATION_CHOICES, null=True, blank=True)
+    organization_type = ArrayField(models.CharField(max_length=255), default=list, blank=True, null=True)
     bayan_number = models.CharField(max_length=255, blank=True, null=True)
     pod = models.CharField(max_length=255, blank=True, null=True)
     poa = models.CharField(max_length=255, blank=True, null=True)
