@@ -150,14 +150,14 @@ class Vouchers(models.Model):
     Journal = 'Journal'
     Payment= 'Payment'
     Receipt= 'Receipt'
-    Credit = 'Credit'
-    Debit ='Debit'
+    Credit = 'CREDIT NOTE'
+    Debit ='DEBIT NOTE'
     
     VOUCHER_TYPE_CHOICES = (
         (Journal, 'Journal'),
         (Payment, 'Payment'),
         (Receipt, 'Receipt'),
-        (Credit, 'Credit'),
+        (Credit, 'CREDIT NOTE'),
         (Debit,'Debit')
     )
 
