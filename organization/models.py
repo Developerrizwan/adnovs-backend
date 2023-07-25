@@ -105,13 +105,18 @@ class Job(models.Model):
             ('FTL', 'FTL'),
             ('LTL', 'LTL'),
         )
+    Air_Freight='Air Freight'
+    Sea_Freight = 'Sea Freight'
+    Land_Freight = 'Land Freight'
+    Transportation = 'Transportation'
+    Warehousing = 'Warehousing'
     
     FREIGHT_CHOICES = [
-        ('Air_Freight', 'Air Freight'),
-        ('Sea_Freight', 'Sea Freight'),
-        ('Land_Freight', 'Land Freight'),
-        ('Transportation', 'Transportation'),
-        ('Warehousing', 'Warehousing'),
+        (Air_Freight, 'Air Freight'),
+        (Sea_Freight, 'Sea Freight'),
+        (Land_Freight, 'Land Freight'),
+        (Transportation, 'Transportation'),
+        (Warehousing, 'Warehousing'),
     ]
 
     bl_number = models.CharField(max_length=255, blank=True, null=True)
@@ -119,7 +124,7 @@ class Job(models.Model):
     job_status = models.CharField("Job Status", max_length=255, choices=JOB_STATUS_CHOICES)
     scope_of_work = models.CharField("Scope of Work ", max_length=255, choices=SOCPE_OF_WORK, blank=True, null=True)
     container_type = models.CharField("Container Type", max_length=10,choices=CONTAINER_CHOICES, blank=True, null=True)
-    type = models.CharField(max_length=20,choices=FREIGHT_CHOICES, blank=True, null=True)
+    type = models.CharField("Freight Choice",max_length=20,choices=FREIGHT_CHOICES, blank=True, null=True)
     bayan_number = models.CharField(max_length=255, blank=True, null=True)
     pod = models.CharField(max_length=255, blank=True, null=True)
     poa = models.CharField(max_length=255, blank=True, null=True)
