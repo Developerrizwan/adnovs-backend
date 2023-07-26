@@ -333,9 +333,9 @@ class Charge(models.Model):
 
     code=models.CharField(max_length=200,blank=False,null=False)
     name=models.CharField(max_length=200,blank=False,null=False)
-    status=models.CharField(max_length=255,blank=False,null=False) 
+    status=models.BooleanField(default=False) 
     iata_code=models.CharField(max_length=255,blank=True,null=True)
-    type=models.CharField(max_length=255,blank=False,null=False)
+    type=models.CharField(max_length=255,blank=True,null=True)
     language_name=models.CharField(max_length=255,blank=True,null=True)
     description=models.TextField(max_length=255,blank=True,null=True)
     remarks=models.TextField(max_length=255,blank=True,null=True)
