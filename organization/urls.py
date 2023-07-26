@@ -66,6 +66,9 @@ get_charge_router.register('get-charge',GetchargeViewset,basename='charge')
 cost_entry_router= routers.SimpleRouter()
 cost_entry_router.register('master/cost_entry', CostEntryViewset, basename='cost_entry') 
 
+get_cost_entry_router= routers.SimpleRouter()
+get_cost_entry_router.register('get-costentry',GetCostEntryViewset,basename='cost_entry')
+
 organization_router = routers.SimpleRouter() 
 organization_router.register('master/organization', OrganizationViewSet, basename='oraganization')
 
@@ -91,6 +94,7 @@ urlpatterns = [
     path('',include(charge_router.urls)),
     path('',include(get_charge_router.urls)),
     path('',include(cost_entry_router.urls)),
+    path('',include(get_cost_entry_router.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
     path('user-create/', UserCreateViewSet.as_view(), name='user-create'),

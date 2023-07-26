@@ -456,3 +456,9 @@ class CostEntryViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cr
     permission_classes = (IsAuthenticated, )
     queryset = CostEntry.objects.all()
     serializer_class = CostEntrySerializer  
+
+class GetCostEntryViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
+    """Get all CostEntry"""   
+    permission_classes = (IsAuthenticated, )
+    queryset = CostEntry.objects.all() 
+    serializer_class = CostEntrySerializer  
