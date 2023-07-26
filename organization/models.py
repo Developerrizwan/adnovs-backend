@@ -300,4 +300,8 @@ class CoaGroup(models.Model):
     status = models.BooleanField(blank=True, null=True)
     remarks = models.TextField(blank=True, null=True)
     
-    
+class Pod(models.Model):
+    name = models.CharField(max_length=255,blank=False)
+
+class Poa(models.Model):
+    name = models.CharField(max_length=255,blank=False)

@@ -415,3 +415,18 @@ class CoaGroupViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
     permission_classes = (IsAuthenticated, )
     queryset = CoaGroup.objects.all().order_by('id')
     serializer_class = CoaGroupSerializer 
+    
+class PodViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage Pod in the Database"""
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated, )
+    queryset = Pod.objects.all()
+    serializer_class = PodSerializer 
+    
+class PoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage Poa in the Database"""
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated, )
+    queryset = Poa.objects.all()
+    serializer_class = PoaSerializer  
+    

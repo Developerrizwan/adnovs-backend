@@ -108,3 +108,13 @@ class CoaGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoaGroup
         fields = '__all__'
+        
+class PodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pod
+        fields = '__all__'
+
+class PoaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Poa
+        fields = '__all__'
