@@ -336,8 +336,9 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "adnov API",
     "DESCRIPTION": "Documentation of API endpoints of adnov",
     "VERSION": "1.0.0",
-    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 # Your stuff...
 # ------------------------------------------------------------------------------
 CORS_ORIGIN_ALLOW_ALL = True
+CSRF_TRUSTED_ORIGINS=['http://16.24.44.74/']
