@@ -403,15 +403,15 @@ class CoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     serializer_class = CoaSerializer 
     
 class CoaCategoryViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
-    """Manage Coa in the Database"""
+    """Manage CoaCategory in the Database"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
-    queryset = CoaCategory.objects.all()
+    queryset = CoaCategory.objects.all().order_by('id')
     serializer_class = CoaCategorySerializer  
     
 class CoaGroupViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
-    """Manage Coa in the Database"""
+    """Manage CoaGroup in the Database"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
-    queryset = CoaGroup.objects.all()
+    queryset = CoaGroup.objects.all().order_by('id')
     serializer_class = CoaGroupSerializer 
