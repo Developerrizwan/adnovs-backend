@@ -52,6 +52,14 @@ coa_categoryrouter.register('master/coacategory', CoaCategoryViewSet, basename='
 coa_grouprouter = routers.SimpleRouter() 
 coa_grouprouter.register('master/coagroup', CoaGroupViewSet, basename='coa-group') 
 
+charge_router= routers.SimpleRouter() 
+charge_router.register('master/charge', ChargeViewSet, basename='charge') 
+
+get_charge_router= routers.SimpleRouter()
+get_charge_router.register('get-charge',GetchargeViewset,basename='charge') 
+
+cost_entry_router= routers.SimpleRouter()
+cost_entry_router.register('master/cost_entry', CostEntryViewset, basename='cost_entry') 
 urlpatterns = [
     path('',include(get_user_count_router.urls)),
     path('',include(user_delete_router.urls)),
@@ -68,6 +76,9 @@ urlpatterns = [
     path('',include(coa_router.urls)),
     path('',include(coa_categoryrouter.urls)),
     path('',include(coa_grouprouter.urls)),
+    path('',include(charge_router.urls)),
+    path('',include(get_charge_router.urls)),
+    path('',include(cost_entry_router.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
     path('user-create/', UserCreateViewSet.as_view(), name='user-create'),
