@@ -430,7 +430,12 @@ class PoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     queryset = Poa.objects.all()
     serializer_class = PoaSerializer  
     
-
+class OrganizationViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage Poa in the Database"""
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated, )
+    queryset = Organization.objects.all()
+    serializer_class = OrganizationSerializer 
 
 class ChargeViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage charge in the Database"""
