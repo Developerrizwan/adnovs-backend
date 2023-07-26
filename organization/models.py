@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.contrib.postgres.fields import ArrayField
+# from config.storage_backends import PrivateMediaStorage
 # Create your models here.
 
 class Company(models.Model):
@@ -270,6 +271,7 @@ class Coa(models.Model):
     currency=models.CharField(max_length=500,blank=True,null=True)
     additional_reference_code=models.CharField(max_length=200,blank=True,null=True)
     remarks=models.TextField(blank=True,null=True)
+    
 
 class CoaCategory(models.Model):
     Dr = 'Dr'
@@ -304,7 +306,28 @@ class Pod(models.Model):
     name = models.CharField(max_length=255,blank=False)
 
 class Poa(models.Model):
-    name = models.CharField(max_length=255,blank=False)
+    name = models.CharField(max_length=255,blank=False) 
+
+class Organization(models.Model):
+    Consignee = 'Consignee'
+    Client = 'Client' 
+    
+    Type_Choice = (
+        (Consignee,'Consignee'),
+        (Client,'Client'),
+    )
+    name = models.CharField(max_length=200,blank=True,null=True)
+    type = models.CharField(max_length=200,choices=Type_Choice)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False) 
+    coa = models.ForeignKey(Coa, on_delete=models.CASCADE, blank=False, null=False) 
+    language_name = models.CharField(max_length=200,blank=True,null=True)
+    address = models.TextField(blank=True,null=True)   
+    vat_trn_number = models.CharField(max_length=200,blank=True,null=True)
+    # browse_logo = models.FileField(storage=PrivateMediaStorage(), blank=True, null=True)
+    website = models.CharField(max_length=200,blank=True,null=True)
+    remarks = models.TextField(blank=True,null=True)
+
+
 
 class Charge(models.Model):
 
