@@ -430,3 +430,24 @@ class PoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     queryset = Poa.objects.all()
     serializer_class = PoaSerializer  
     
+
+
+class ChargeViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage charge in the Database"""
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated, )
+    queryset = Charge.objects.all()
+    serializer_class = ChargeSerializer
+
+class GetchargeViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
+    """Get all charges"""   
+    permission_classes = (IsAuthenticated, )
+    queryset = Charge.objects.all() 
+    serializer_class = ChargeSerializer
+
+class CostEntryViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+    """Manage costentry in the Database"""
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated, )
+    queryset = CostEntry.objects.all()
+    serializer_class = CostEntrySerializer  

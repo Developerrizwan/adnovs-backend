@@ -118,3 +118,13 @@ class PoaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Poa
         fields = '__all__'
+
+class ChargeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Charge
+        fields = '__all__'
+
+class CostEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model=CostEntry
+        fields='__all__'
