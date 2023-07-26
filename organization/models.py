@@ -305,3 +305,34 @@ class Pod(models.Model):
 
 class Poa(models.Model):
     name = models.CharField(max_length=255,blank=False)
+
+class Charge(models.Model):
+
+    code=models.CharField(max_length=200,blank=False,null=False)
+    name=models.CharField(max_length=200,blank=False,null=False)
+    status=models.CharField(max_length=255,blank=False,null=False) 
+    iata_code=models.CharField(max_length=255,blank=True,null=True)
+    type=models.CharField(max_length=255,blank=False,null=False)
+    language_name=models.CharField(max_length=255,blank=True,null=True)
+    description=models.TextField(max_length=255,blank=True,null=True)
+    remarks=models.TextField(max_length=255,blank=True,null=True)
+
+class CostEntry(models.Model):
+    Dr = 'Dr'
+    Cr = 'Cr'
+    DR_CR_CHOICES = (
+        (Dr, 'Dr'),
+        (Cr, 'Cr'),
+    ) 
+    charge=models.ForeignKey(Charge, on_delete=models.CASCADE, blank=False, null=False)
+    currency=models.CharField(max_length=200,blank=True,null=True)
+    sale_cost=models.CharField(max_length=200,blank=True,null=True)
+    description=models.CharField(max_length=200,blank=True,null=True)
+    ex_rate=models.CharField(max_length=200,blank=True,null=True)
+    dr_cr=models.CharField(max_length=200,blank=True,null=True,choices=DR_CR_CHOICES)
+    job_no= models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=True)
+    fcy_amount=models.CharField(max_length=200,blank=True,null=True)
+    prorate_method=models.CharField(max_length=200,blank=True,null=True)
+    shipment_no=models.CharField(max_length=200,blank=True,null=True)
+    amount=models.CharField(max_length=200,blank=True,null=True)
+    tax_group_code=models.CharField(max_length=200,blank=True,null=True)
