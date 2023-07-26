@@ -340,6 +340,7 @@ class Charge(models.Model):
     description=models.TextField(max_length=255,blank=True,null=True)
     remarks=models.TextField(max_length=255,blank=True,null=True)
     coa = models.ForeignKey(Coa, on_delete=models.CASCADE, blank=False, null=True)
+    tax = models.IntegerField(blank=True, null=True)
 
 class CostEntry(models.Model):
     Dr = 'Dr'
