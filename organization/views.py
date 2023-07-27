@@ -437,6 +437,12 @@ class OrganizationViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer 
 
+class GetOrganzationViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
+    """Get all Organizations"""   
+    permission_classes = (IsAuthenticated, )
+    queryset = Organization.objects.all() 
+    serializer_class = OrganizationSerializer
+
 class ChargeViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage charge in the Database"""
     pagination_class = CustomPagination

@@ -57,6 +57,7 @@ pod_router.register('master/pod', PodViewSet, basename='pod')
 
 poa_router = routers.SimpleRouter() 
 poa_router.register('master/poa', PoaViewSet, basename='poa')
+
 charge_router= routers.SimpleRouter() 
 charge_router.register('master/charge', ChargeViewSet, basename='charge') 
 
@@ -71,6 +72,9 @@ get_cost_entry_router.register('get-costentry',GetCostEntryViewset,basename='cos
 
 organization_router = routers.SimpleRouter() 
 organization_router.register('master/organization', OrganizationViewSet, basename='oraganization')
+
+get_organization_router = routers.SimpleRouter() 
+get_organization_router.register('get-organization',GetOrganzationViewset, basename='oraganization')
 
 urlpatterns = [
     path('',include(get_user_count_router.urls)),
@@ -95,6 +99,7 @@ urlpatterns = [
     path('',include(get_charge_router.urls)),
     path('',include(cost_entry_router.urls)),
     path('',include(get_cost_entry_router.urls)),
+    path('',include(get_organization_router.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
     path('user-create/', UserCreateViewSet.as_view(), name='user-create'),
