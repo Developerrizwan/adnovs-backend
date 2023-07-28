@@ -284,6 +284,7 @@ class Invoices(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False)
     job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
     created_at = models.DateTimeField(default=timezone.now)
+    last_time_generated = models.DateTimeField(default=timezone.now)
     
 
 # class Coa(models.Model):
