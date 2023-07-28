@@ -10,10 +10,29 @@ class TypeFilter(filters.BaseFilterBackend):
             if queryset.filter(company__users=request.user):
                 queryset=queryset.filter(company__users=request.user)
                 if search:
-                    queryset = queryset.filter(Q(job_type__contains=search)|Q(job_status__contains=search)|Q(scope_of_work__contains=search)|
-                            Q(type__contains=search)|Q(pod__contains=search)|Q(poa__contains=search)|Q(por__contains=search)|
-                            Q(branch__contains=search)|Q(consignee_name__contains=search)|Q(shipper_name__contains=search)|Q(client_name__contains=search)|
-                            Q(job_number__contains=search)|Q(enquiry_number__contains=search))
+                    search_lower = search.lower()
+                    search_upper = search.upper()
+                    search_capitalize = search.capitalize()
+                    queryset = queryset.filter(
+                        Q(job_type__contains=search_lower) | Q(job_type__contains=search_upper) | Q(job_type__contains=search_capitalize) |
+                        Q(job_status__contains=search_lower) | Q(job_status__contains=search_upper) | Q(job_status__contains=search_capitalize) |
+                        Q(scope_of_work__contains=search_lower) | Q(scope_of_work__contains=search_upper) | Q(scope_of_work__contains=search_capitalize) |
+                        Q(type__contains=search_lower) | Q(type__contains=search_upper) | Q(type__contains=search_capitalize) |
+                        Q(pod__contains=search_lower) | Q(pod__contains=search_upper) | Q(pod__contains=search_capitalize) |
+                        Q(poa__contains=search_lower) | Q(poa__contains=search_upper) | Q(poa__contains=search_capitalize) |
+                        Q(por__contains=search_lower) | Q(por__contains=search_upper) | Q(por__contains=search_capitalize) |
+                        Q(branch__contains=search_lower) | Q(branch__contains=search_upper) | Q(branch__contains=search_capitalize) |
+                        Q(consignee_name__contains=search_lower) | Q(consignee_name__contains=search_upper) | Q(consignee_name__contains=search_capitalize) |
+                        Q(shipper_name__contains=search_lower) | Q(shipper_name__contains=search_upper) | Q(shipper_name__contains=search_capitalize) |
+                        Q(client_name__contains=search_lower) | Q(client_name__contains=search_upper) | Q(client_name__contains=search_capitalize) |
+                        Q(job_number__contains=search_lower) | Q(job_number__contains=search_upper) | Q(job_number__contains=search_capitalize) |
+                        Q(enquiry_number__contains=search_lower) | Q(enquiry_number__contains=search_upper) | Q(enquiry_number__contains=search_capitalize)
+                    )
+
+                    # queryset = queryset.filter(Q(job_type__contains=search)|Q(job_status__contains=search)|Q(scope_of_work__contains=search)|
+                    #         Q(type__contains=search)|Q(pod__contains=search)|Q(poa__contains=search)|Q(por__contains=search)|
+                    #         Q(branch__contains=search)|Q(consignee_name__contains=search)|Q(shipper_name__contains=search)|Q(client_name__contains=search)|
+                    #         Q(job_number__contains=search)|Q(enquiry_number__contains=search))
                     # return queryset
                 queryset = queryset.filter(job_type=type)
             else:
@@ -60,8 +79,9 @@ class OrganizationFilter(filters.BaseFilterBackend):
             type = request.query_params.get('type', None)
             search = request.query_params.get('search', None)
             if queryset.filter(company__users=request.user):
-                queryset = queryset.filter(company__users=request.user)
-                company = Company.objects.get()
+                queryset = queryset.filter(company__users=request.user.email)
+                # company = Company.objects.get(user=request.user)
+                # queryset = queryset.filter(company=company)
                 if search:
                     queryset = queryset.filter(Q(name__contains=search)|Q(type__contains=search)|Q(language_name__contains=search)|
                             Q(address__contains=search)|Q(vat_trn_number__contains=search)|Q(website__contains=search))
@@ -107,13 +127,19 @@ class CostEntryFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if queryset.model:
             search = request.query_params.get('search', None)
+            shipment_no = request.query_params.get('shipment_no', None)
+            job_id = request.query_params.get('job_id', None)
+            cost_id = request.query_params.get('cost_id', None)
             print(search)
-            if queryset.filter(job__company__users=request.user):
-                queryset = queryset.filter(job__company__users=request.user)
+            if queryset.filter(job_no__company__users=request.user):
+                queryset = queryset.filter(job_no__company__users=request.user)
                 if search:
                     queryset = queryset.filter(Q(currency__contains=search)|Q( sale_cost__contains=search)|Q(description___contains=search)|
                             Q(ex_rate__contains=search)|Q(dr_cr__contains=search)|Q(fcy_amount__contains=search)|
-                            Q(prorate_method=search)|Q(shipment_no__contains=search))|Q(amount=search)|Q(tax_group_code__contains=search)
+                            Q(prorate_method=search)|Q(shipment_no__contains=search)|Q(amount=search)|Q(tax_group_code__contains=search))
+                queryset = queryset.filter(shipment_no=shipment_no)
+                queryset = queryset.filter(job_no=job_id)
+                queryset = queryset.filter(charge=cost_id)
             else:
                 queryset=[]
             return queryset
