@@ -179,6 +179,15 @@ class Vouchers(models.Model):
     voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES)
     date = models.DateTimeField(default=timezone.now, blank=False, null=True)
     branch = models.CharField(max_length=255, blank=True, null=True)
+    book = models.CharField(max_length=255, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    party_state_code = models.CharField(max_length=500, blank=True, null=True)
+    period = models.TextField(blank=True, null=True)
+    category = models.CharField(max_length=500, blank=True, null=True)
+    currency = models.CharField(max_length=500, blank=True, null=True)
+    ex_rate = models.CharField(max_length=250, blank=True, null=True)
+    pay_to = models.CharField(max_length=500, blank=True, null=True)
+    instrument_type = models.CharField(max_length=500, blank=True, null=True)
     gl_date = models.DateTimeField(default=timezone.now, blank=False, null=True)
     start_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
     end_date = models.DateTimeField(default=timezone.now, blank=True,null=True)
@@ -270,6 +279,7 @@ class Coa(models.Model):
     language_name = models.CharField(max_length=200,blank=True, null=True)
     currency=models.CharField(max_length=500,blank=True,null=True)
     additional_reference_code=models.CharField(max_length=200,blank=True,null=True)
+    voucher = models.ForeignKey(Vouchers, on_delete=models.CASCADE, blank=False, null=True)
     remarks=models.TextField(blank=True,null=True)
     
 
