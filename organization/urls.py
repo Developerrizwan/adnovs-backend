@@ -46,6 +46,9 @@ get_user_count_router.register('user-related-counts', UserRelatedCountsViewSet, 
 coa_router = routers.SimpleRouter() 
 coa_router.register('master/coa', CoaViewSet, basename='coa') 
 
+get_coa_router=routers.SimpleRouter()
+get_coa_router.register('get-coa',GetCoaViewSet,basename='getcoa')
+
 coa_categoryrouter = routers.SimpleRouter() 
 coa_categoryrouter.register('master/coacategory', CoaCategoryViewSet, basename='coa-category')  
 
@@ -57,6 +60,7 @@ pod_router.register('master/pod', PodViewSet, basename='pod')
 
 poa_router = routers.SimpleRouter() 
 poa_router.register('master/poa', PoaViewSet, basename='poa')
+
 charge_router= routers.SimpleRouter() 
 charge_router.register('master/charge', ChargeViewSet, basename='charge') 
 
@@ -89,6 +93,7 @@ urlpatterns = [
     path('', include(invoice_router.urls)),
     path('',include(get_users_router.urls)),
     path('',include(coa_router.urls)),
+    path('',include(get_coa_router.urls)),
     path('',include(coa_categoryrouter.urls)),
     path('',include(pod_router.urls)),
     path('',include(poa_router.urls)),

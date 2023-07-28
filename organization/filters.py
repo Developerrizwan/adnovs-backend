@@ -54,4 +54,18 @@ class InvoicesFliter(filters.BaseFilterBackend):
             return queryset   
         
         
-        
+class OrganizationFilter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        if queryset.model:
+            type = request.query_params.get('type', None)
+            search = request.query_params.get('search', None)
+            if queryset.filter(company__users=request.user):
+                queryset = queryset.filter(company__users=request.user)
+                if search:
+                    queryset = queryset.filter(Q(name__contains=search)|Q(type__contains=search)|Q(language_name__contains=search)|
+                            Q(address__contains=search)|Q(vat_trn_number__contains=search)|Q(website__contains=search))
+                    # return queryset
+                queryset = queryset.filter(type=type)
+            else:
+                queryset=[]
+            return queryset        
