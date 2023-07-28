@@ -406,7 +406,7 @@ class GetCoaViewSet(viewsets.GenericViewSet,mixins.ListModelMixin):
     """Get all coa"""
     permission_classes = (IsAuthenticated,)
     queryset =Coa.objects.all()
-    serializer_class = CoaSerializer
+    serializer_class = CoaGetSerializer
     filter_backends = [CoaFilter]
     
 class CoaCategoryViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):

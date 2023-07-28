@@ -118,6 +118,12 @@ class CoaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coa
         fields = '__all__'
+
+class CoaGetSerializer(serializers.ModelSerializer):
+    voucher=VouchersSerializer()
+    class Meta:
+        model = Coa
+        fields = '__all__'
         
 class CoaCategorySerializer(serializers.ModelSerializer):
     class Meta:
