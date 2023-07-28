@@ -120,7 +120,7 @@ class CoaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CoaGetSerializer(serializers.ModelSerializer):
-    voucher=VouchersSerializer()
+    company=CompanySerializer()
     class Meta:
         model = Coa
         fields = '__all__'
