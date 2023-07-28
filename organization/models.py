@@ -280,7 +280,7 @@ class Coa(models.Model):
     language_name = models.CharField(max_length=200,blank=True, null=True)
     currency=models.CharField(max_length=500,blank=True,null=True)
     additional_reference_code=models.CharField(max_length=200,blank=True,null=True)
-    voucher = models.ForeignKey(Vouchers, on_delete=models.CASCADE, blank=False, null=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=True)
     remarks=models.TextField(blank=True,null=True)
     
 

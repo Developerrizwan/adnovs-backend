@@ -61,6 +61,7 @@ class OrganizationFilter(filters.BaseFilterBackend):
             search = request.query_params.get('search', None)
             if queryset.filter(company__users=request.user):
                 queryset = queryset.filter(company__users=request.user)
+                company = Company.objects.get()
                 if search:
                     queryset = queryset.filter(Q(name__contains=search)|Q(type__contains=search)|Q(language_name__contains=search)|
                             Q(address__contains=search)|Q(vat_trn_number__contains=search)|Q(website__contains=search))
@@ -75,8 +76,8 @@ class CoaFilter(filters.BaseFilterBackend):
         if queryset.model:
             search = request.query_params.get('search', None)
             print(search)
-            if queryset.filter(voucher__job__company__users=request.user):
-                queryset = queryset.filter(voucher__job__company__users=request.user)
+            if queryset.filter(company__users=request.user):
+                queryset = queryset.filter(company__users=request.user)
                 if search:
                     queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(type___contains=search)|
                             Q(coa_type__contains=search)|Q(is_direct_indirect__contains=search)|Q(dr_cr__contains=search)|
