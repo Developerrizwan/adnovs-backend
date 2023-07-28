@@ -407,6 +407,7 @@ class GetCoaViewSet(viewsets.GenericViewSet,mixins.ListModelMixin):
     permission_classes = (IsAuthenticated,)
     queryset =Coa.objects.all()
     serializer_class = CoaSerializer
+    filter_backends = [CoaFilter]
     
 class CoaCategoryViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage CoaCategory in the Database"""
@@ -462,6 +463,8 @@ class GetchargeViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     permission_classes = (IsAuthenticated, )
     queryset = Charge.objects.all() 
     serializer_class = ChargeGetSerializer
+    filter_backends = [ChargeFilter]
+
 
 class CostEntryViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage costentry in the Database"""
@@ -475,3 +478,4 @@ class GetCostEntryViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     permission_classes = (IsAuthenticated, )
     queryset = CostEntry.objects.all() 
     serializer_class = CostEntryGetSerializer 
+    filter_backends = [CostEntryFilter]

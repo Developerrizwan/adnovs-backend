@@ -69,3 +69,50 @@ class OrganizationFilter(filters.BaseFilterBackend):
             else:
                 queryset=[]
             return queryset        
+        
+class CoaFilter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        if queryset.model:
+            search = request.query_params.get('search', None)
+            print(search)
+            if queryset.filter(voucher__job__company__users=request.user):
+                queryset = queryset.filter(voucher__job__company__users=request.user)
+                if search:
+                    queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(type___contains=search)|
+                            Q(coa_type__contains=search)|Q(is_direct_indirect__contains=search)|Q(dr_cr__contains=search)|
+                            Q(subgroup__contains=search)|Q(category__contains=search)|Q(group__contains=search)|Q(language_name__contains=search)|
+                            Q(long_name__contains=search)|Q(additional_reference_code__contains=search))
+            else:
+                queryset=[]
+            return queryset  
+        
+class ChargeFilter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        if queryset.model:
+            search = request.query_params.get('search', None)
+            print(search)
+            if queryset.filter(coa__job__company__users=request.user):
+                queryset = queryset.filter(voucher__job__company__users=request.user)
+                if search:
+                    queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(iata_code___contains=search)|
+                            Q(type__contains=search)|Q(description__contains=search)|Q(remarks__contains=search)|
+                            Q(tax__contains=search)|Q(language_name__contains=search))
+        
+            else:
+                queryset=[]
+            return queryset  
+        
+class CostEntryFilter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        if queryset.model:
+            search = request.query_params.get('search', None)
+            print(search)
+            if queryset.filter(job__company__users=request.user):
+                queryset = queryset.filter(job__company__users=request.user)
+                if search:
+                    queryset = queryset.filter(Q(currency__contains=search)|Q( sale_cost__contains=search)|Q(description___contains=search)|
+                            Q(ex_rate__contains=search)|Q(dr_cr__contains=search)|Q(fcy_amount__contains=search)|
+                            Q(prorate_method=search)|Q(shipment_no__contains=search))|Q(amount=search)|Q(tax_group_code__contains=search)
+            else:
+                queryset=[]
+            return queryset
