@@ -433,7 +433,7 @@ class CostEntry(models.Model):
     ex_rate=models.CharField(max_length=200,blank=True,null=True)
     dr_cr=models.CharField(max_length=200,blank=True,null=True,choices=DR_CR_CHOICES)
     job_no= models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=True)
-    invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE, blank=False, null=True)
+    invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE, blank=True, null=True)
     fcy_amount=models.CharField(max_length=200,blank=True,null=True)
     prorate_method=models.CharField(max_length=200,blank=True,null=True)
     shipment_no=models.CharField(max_length=200,blank=True,null=True)
