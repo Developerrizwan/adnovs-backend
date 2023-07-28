@@ -252,6 +252,8 @@ class Vouchers(models.Model):
     cr_account = models.CharField(max_length=255, blank=True, null=True)
     remarks = models.TextField(blank=True, null=True)
     job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
+    ref_no = models.CharField(max_length=255, blank=True, null=True)
+    ref_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
 
 
 class Invoices(models.Model):

@@ -60,13 +60,6 @@ class VouchersSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class VoucherGetSerializer(serializers.ModelSerializer):
-    job = JobSerializer()
-    class Meta:
-        model = Vouchers
-        fields = '__all__'
-
-
 class InvoicesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoices
@@ -179,4 +172,12 @@ class ChargeGetSerializer(serializers.ModelSerializer):
     coa = CoaSerializer()
     class Meta:
         model = Charge
+        fields = '__all__'
+
+
+class VoucherGetSerializer(serializers.ModelSerializer):
+    party_account = CoaSerializer()
+    job = JobSerializer()
+    class Meta:
+        model = Vouchers
         fields = '__all__'
