@@ -112,15 +112,15 @@ class ChargeFilter(filters.BaseFilterBackend):
         if queryset.model:
             search = request.query_params.get('search', None)
             print(search)
-            if queryset.filter(coa__job__company__users=request.user):
-                queryset = queryset.filter(voucher__job__company__users__email=request.user.email)
+            if queryset.filter(coa__company__users__email=request.user.email).exists():
+                queryset = queryset.filter(coa__company__users__email=request.user.email)
                 if search:
                     queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(iata_code___contains=search)|
                             Q(type__contains=search)|Q(description__contains=search)|Q(remarks__contains=search)|
                             Q(tax__contains=search)|Q(language_name__contains=search))
         
             else:
-                queryset=[]
+                queryset = CostEntry.objects.none()
             return queryset  
         
 class CostEntryFilter(filters.BaseFilterBackend):
@@ -133,6 +133,7 @@ class CostEntryFilter(filters.BaseFilterBackend):
             start_date = request.query_params.get('start_date',None)
             end_date = request.query_params.get('end_date',None)
             is_included = request.query_params.get('is_included',None)
+            sale_cost=request.query_params.get('sale_cost',None)
             print(search)
             if queryset.filter(job_no__company__users=request.user):
                 queryset = queryset.filter(job_no__company__users__email=request.user.email)
@@ -149,8 +150,14 @@ class CostEntryFilter(filters.BaseFilterBackend):
                 
                 if start_date and end_date:
                     queryset = queryset.filter(created_at__range=[start_date, end_date])
-                if is_included:
+                if is_included == 'false':
+                    queryset = queryset.filter(is_included=False)
+                
+                if is_included == 'true':
                     queryset = queryset.filter(is_included=True)
+
+                if sale_cost:
+                    queryset = queryset.filter(sale_cost=sale_cost)
             else:
                 queryset = CostEntry.objects.none()
             return queryset
