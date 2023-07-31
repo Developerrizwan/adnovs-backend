@@ -135,7 +135,7 @@ class CostEntryFilter(filters.BaseFilterBackend):
             is_included = request.query_params.get('is_included',None)
             print(search)
             if queryset.filter(job_no__company__users=request.user):
-                queryset = queryset.filter(job_no__company__users=request.user)
+                queryset = queryset.filter(job_no__company__users__email=request.user.email)
                 if search:
                     queryset = queryset.filter(Q(currency__contains=search)|Q( sale_cost__contains=search)|Q(description___contains=search)|
                             Q(ex_rate__contains=search)|Q(dr_cr__contains=search)|Q(fcy_amount__contains=search)|
