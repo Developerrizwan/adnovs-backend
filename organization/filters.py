@@ -45,7 +45,7 @@ class VoucherFliter(filters.BaseFilterBackend):
             type = request.query_params.get('type', None)
             search = request.query_params.get('search', None)
             if queryset.filter(job__company__users=request.user):
-                queryset = queryset.filter(job__company__users=request.user)
+                queryset = queryset.filter(job__company__users__email=request.user.email)
                 if search:
                     queryset = queryset.filter(Q(voucher_type__contains=search)|Q(branch__contains=search)|Q(amount_sar__contains=search)|
                             Q(party_account__contains=search)|Q(division__contains=search)|Q(naration__contains=search)|Q(outstanding_amount__contains=search))
@@ -61,7 +61,7 @@ class InvoicesFliter(filters.BaseFilterBackend):
             type = request.query_params.get('type', None)
             search = request.query_params.get('search', None)
             if queryset.filter(company__users=request.user):
-                queryset = queryset.filter(company__users=request.user)
+                queryset = queryset.filter(company__users__email=request.user.email)
                 if search:
                     queryset = queryset.filter(Q(bl_number__contains=search)|Q(invoice_type__contains=search)|Q(consignee_name__contains=search)|
                             Q(shipper_name__contains=search)|Q(ex_rate__contains=search)|Q(poa__contains=search)|Q(pod__contains=search)|
@@ -97,7 +97,7 @@ class CoaFilter(filters.BaseFilterBackend):
             search = request.query_params.get('search', None)
             print(search)
             if queryset.filter(company__users=request.user):
-                queryset = queryset.filter(company__users=request.user)
+                queryset = queryset.filter(company__users__email=request.user.email)
                 if search:
                     queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(type___contains=search)|
                             Q(coa_type__contains=search)|Q(is_direct_indirect__contains=search)|Q(dr_cr__contains=search)|
@@ -113,7 +113,7 @@ class ChargeFilter(filters.BaseFilterBackend):
             search = request.query_params.get('search', None)
             print(search)
             if queryset.filter(coa__job__company__users=request.user):
-                queryset = queryset.filter(voucher__job__company__users=request.user)
+                queryset = queryset.filter(voucher__job__company__users__email=request.user.email)
                 if search:
                     queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(iata_code___contains=search)|
                             Q(type__contains=search)|Q(description__contains=search)|Q(remarks__contains=search)|
