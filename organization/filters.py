@@ -128,6 +128,7 @@ class CostEntryFilter(filters.BaseFilterBackend):
             search = request.query_params.get('search', None)
             shipment_no = request.query_params.get('shipment_no', None)
             job_id = request.query_params.get('job_id', None)
+            invoice_id = request.query_params.get('invoice_id', None)
             cost_id = request.query_params.get('cost_id', None)
             start_date = request.query_params.get('start_date',None)
             end_date = request.query_params.get('end_date',None)
@@ -143,9 +144,9 @@ class CostEntryFilter(filters.BaseFilterBackend):
                 if shipment_no:
                     queryset = queryset.filter(shipment_no=shipment_no)
                 if job_id:
-                    queryset = queryset.filter(job_no=job_id)
+                    queryset = queryset.filter(job_no__id=job_id)
                 if cost_id:
-                    queryset = queryset.filter(charge=cost_id)
+                    queryset = queryset.filter(charge__id=cost_id)
                 
                 if start_date and end_date:
                     queryset = queryset.filter(created_at__range=[start_date, end_date])
@@ -157,6 +158,9 @@ class CostEntryFilter(filters.BaseFilterBackend):
 
                 if sale_cost:
                     queryset = queryset.filter(sale_cost=sale_cost)
+                
+                if invoice_id:
+                    queryset = queryset.filter(invoice__id=invoice_id)
             else:
                 queryset = CostEntry.objects.none()
             return queryset
