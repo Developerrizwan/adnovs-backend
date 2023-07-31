@@ -443,3 +443,4 @@ class CostEntry(models.Model):
     amount=models.CharField(max_length=200,blank=True,null=True)
     tax_group_code=models.CharField(max_length=200,blank=True,null=True)
     created_at = models.DateTimeField(default=timezone.now)
+    is_included = models.BooleanField(default=False)

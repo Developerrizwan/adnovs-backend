@@ -130,6 +130,9 @@ class CostEntryFilter(filters.BaseFilterBackend):
             shipment_no = request.query_params.get('shipment_no', None)
             job_id = request.query_params.get('job_id', None)
             cost_id = request.query_params.get('cost_id', None)
+            start_date = request.query_params.get('start_date',None)
+            end_date = request.query_params.get('end_date',None)
+            is_included = request.query_params.get('is_included',None)
             print(search)
             if queryset.filter(job_no__company__users=request.user):
                 queryset = queryset.filter(job_no__company__users=request.user)
@@ -137,9 +140,17 @@ class CostEntryFilter(filters.BaseFilterBackend):
                     queryset = queryset.filter(Q(currency__contains=search)|Q( sale_cost__contains=search)|Q(description___contains=search)|
                             Q(ex_rate__contains=search)|Q(dr_cr__contains=search)|Q(fcy_amount__contains=search)|
                             Q(prorate_method=search)|Q(shipment_no__contains=search)|Q(amount=search)|Q(tax_group_code__contains=search))
-                queryset = queryset.filter(shipment_no=shipment_no)
-                queryset = queryset.filter(job_no=job_id)
-                queryset = queryset.filter(charge=cost_id)
+                if shipment_no:
+                    queryset = queryset.filter(shipment_no=shipment_no)
+                if job_id:
+                    queryset = queryset.filter(job_no=job_id)
+                if cost_id:
+                    queryset = queryset.filter(charge=cost_id)
+                
+                if start_date and end_date:
+                    queryset = queryset.filter(created_at__range=[start_date, end_date])
+                if is_included:
+                    queryset = queryset.filter(is_included=True)
             else:
-                queryset=[]
+                queryset = CostEntry.objects.none()
             return queryset
