@@ -78,8 +78,8 @@ class OrganizationFilter(filters.BaseFilterBackend):
         if queryset.model:
             type = request.query_params.get('type', None)
             search = request.query_params.get('search', None)
-            if queryset.filter(company__users=request.user):
-                queryset = queryset.filter(company__users=request.user.email)
+            if queryset.filter(company__users__email=request.user.email):
+                queryset = queryset.filter(company__users__email=request.user.email)
                 # company = Company.objects.get(user=request.user)
                 # queryset = queryset.filter(company=company)
                 if search:
@@ -96,7 +96,7 @@ class CoaFilter(filters.BaseFilterBackend):
         if queryset.model:
             search = request.query_params.get('search', None)
             print(search)
-            if queryset.filter(company__users=request.user):
+            if queryset.filter(company__users__email=request.user.email):
                 queryset = queryset.filter(company__users__email=request.user.email)
                 if search:
                     queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(type___contains=search)|
@@ -118,7 +118,6 @@ class ChargeFilter(filters.BaseFilterBackend):
                     queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(iata_code___contains=search)|
                             Q(type__contains=search)|Q(description__contains=search)|Q(remarks__contains=search)|
                             Q(tax__contains=search)|Q(language_name__contains=search))
-        
             else:
                 queryset = CostEntry.objects.none()
             return queryset  
@@ -135,7 +134,7 @@ class CostEntryFilter(filters.BaseFilterBackend):
             is_included = request.query_params.get('is_included',None)
             sale_cost=request.query_params.get('sale_cost',None)
             print(search)
-            if queryset.filter(job_no__company__users=request.user):
+            if queryset.filter(job_no__company__users__email=request.user.email):
                 queryset = queryset.filter(job_no__company__users__email=request.user.email)
                 if search:
                     queryset = queryset.filter(Q(currency__contains=search)|Q( sale_cost__contains=search)|Q(description___contains=search)|
