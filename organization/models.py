@@ -451,7 +451,7 @@ class CostEntry(models.Model):
     dr_cr=models.CharField(max_length=200,blank=True,null=True,choices=DR_CR_CHOICES)
     job_no= models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=True)
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE, blank=True, null=True)
-    voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES)
+    voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES, blank=True, null=True)
     fcy_amount=models.CharField(max_length=200,blank=True,null=True)
     prorate_method=models.CharField(max_length=200,blank=True,null=True)
     shipment_no=models.CharField(max_length=200,blank=True,null=True)
