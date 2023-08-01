@@ -289,7 +289,7 @@ class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
     queryset = Vouchers.objects.all()
     serializer_class = VouchersSerializer
 
-class InvoicesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+class InvoicesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.RetrieveModelMixin):
     """Manage Invoices in the Database"""
     
     permission_classes = (IsAuthenticated, )
