@@ -295,6 +295,10 @@ class InvoicesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
     permission_classes = (IsAuthenticated, )
     queryset = Invoices.objects.all()
     serializer_class = InvoicesSerializer
+    def get_serializer_class(self):        
+        if self.action == 'retrieve':            
+            return InvoicesGetSerializer        
+        return InvoicesSerializer
 
 class GetusersViewSet(viewsets.GenericViewSet,mixins.ListModelMixin):
     """Get all Users"""
