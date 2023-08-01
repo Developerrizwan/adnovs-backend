@@ -289,7 +289,7 @@ class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
     queryset = Vouchers.objects.all()
     serializer_class = VouchersSerializer
 
-class InvoicesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+class InvoicesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.RetrieveModelMixin):
     """Manage Invoices in the Database"""
     
     permission_classes = (IsAuthenticated, )
@@ -330,7 +330,7 @@ class GetjobViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Job.objects.all() 
-    serializer_class = JobSerializer
+    serializer_class = JobGetSerializer
     filter_backends = [TypeFilter]
     
 class GetvoucherViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
@@ -339,7 +339,7 @@ class GetvoucherViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Vouchers.objects.all() 
-    serializer_class = VouchersSerializer 
+    serializer_class =VoucherGetSerializer 
     filter_backends = [VoucherFliter]
     
 class GetinvoiceViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
@@ -348,7 +348,7 @@ class GetinvoiceViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Invoices.objects.all() 
-    serializer_class = InvoicesSerializer
+    serializer_class =InvoicesGetSerializer
     filter_backends = [InvoicesFliter]
 
 class GetUserProfileViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin):
@@ -401,6 +401,13 @@ class CoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     permission_classes = (IsAuthenticated, )
     queryset = Coa.objects.all()
     serializer_class = CoaSerializer 
+
+class GetCoaViewSet(viewsets.GenericViewSet,mixins.ListModelMixin):
+    """Get all coa"""
+    permission_classes = (IsAuthenticated,)
+    queryset =Coa.objects.all()
+    serializer_class = CoaGetSerializer
+    filter_backends = [CoaFilter]
     
 class CoaCategoryViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage CoaCategory in the Database"""
@@ -431,11 +438,18 @@ class PoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     serializer_class = PoaSerializer  
     
 class OrganizationViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
-    """Manage Poa in the Database"""
+    """Manage Organization in the Database"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer 
+
+class GetOrganzationViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
+    """Get all Organizations"""   
+    permission_classes = (IsAuthenticated, )
+    queryset = Organization.objects.all() 
+    serializer_class = OrganizationGetSerializer
+    filter_backends = [OrganizationFilter]
 
 class ChargeViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage charge in the Database"""
@@ -448,7 +462,9 @@ class GetchargeViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     """Get all charges"""   
     permission_classes = (IsAuthenticated, )
     queryset = Charge.objects.all() 
-    serializer_class = ChargeSerializer
+    serializer_class = ChargeGetSerializer
+    filter_backends = [ChargeFilter]
+
 
 class CostEntryViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage costentry in the Database"""
@@ -461,4 +477,5 @@ class GetCostEntryViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     """Get all CostEntry"""   
     permission_classes = (IsAuthenticated, )
     queryset = CostEntry.objects.all() 
-    serializer_class = CostEntrySerializer  
+    serializer_class = CostEntryGetSerializer 
+    filter_backends = [CostEntryFilter]

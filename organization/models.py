@@ -160,69 +160,6 @@ class Job(models.Model):
     eta = models.DateTimeField(blank=True,null=True)
     etd = models.DateTimeField(blank=True,null=True)
 
-class Vouchers(models.Model):
-
-    Journal = 'Journal'
-    Payment= 'Payment'
-    Receipt= 'Receipt'
-    Credit = 'CREDIT NOTE'
-    Debit ='DEBIT NOTE'
-    
-    VOUCHER_TYPE_CHOICES = (
-        (Journal, 'Journal'),
-        (Payment, 'Payment'),
-        (Receipt, 'Receipt'),
-        (Credit, 'CREDIT NOTE'),
-        (Debit,'Debit')
-    )
-
-    voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES)
-    date = models.DateTimeField(default=timezone.now, blank=False, null=True)
-    branch = models.CharField(max_length=255, blank=True, null=True)
-    gl_date = models.DateTimeField(default=timezone.now, blank=False, null=True)
-    start_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
-    end_date = models.DateTimeField(default=timezone.now, blank=True,null=True)
-    fc_amount = models.CharField(max_length=255, blank=True, null=True)
-    amount_sar = models.CharField(max_length=255, blank=True, null=True)
-    party_account = models.CharField(max_length=255, blank=True, null=True)
-    division = models.CharField(max_length=255, blank=True, null=True)
-    naration = models.CharField(max_length=255, blank=True, null=True)
-    outstanding_amount = models.CharField(max_length=255, blank=True, null=True)
-    dr_account = models.CharField(max_length=255, blank=True, null=True)
-    cr_account = models.CharField(max_length=255, blank=True, null=True)
-    remarks = models.TextField(blank=True, null=True)
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
-
-
-class Invoices(models.Model):
-
-    Sales= 'Sales'
-    Purchase= 'Purchase'
-    
-    INVOICE_TYPE_CHOICES = (
-        (Sales, 'Sales'),
-        (Purchase, 'Purchase'),
-    )
-
-    bl_number = models.CharField(max_length=255, blank=True, null=True)
-    date = models.DateTimeField(default=timezone.now, blank=False, null=False)
-    invoice_type = models.CharField("Invoice Type", max_length=255, choices=INVOICE_TYPE_CHOICES, blank=False, null=False)
-    consignee_name = models.CharField(max_length=255, blank=True, null=True)
-    currency_sar = models.CharField(max_length=255, blank=True, null=True)
-    bayan_number = models.CharField(max_length=255, blank=True, null=True)
-    shipper_name = models.CharField(max_length=255, blank=True, null=True)
-    ex_rate = models.CharField(max_length=255, blank=True, null=True) 
-    pod = models.CharField(max_length=255, blank=True, null=True)
-    poa = models.CharField(max_length=255, blank=True, null=True)
-    fc_amount = models.CharField(max_length=255, blank=True, null=True)
-    amount_sar = models.CharField(max_length=255, blank=True, null=True)
-    ref_data = models.DateTimeField(blank=True, null=True)
-    due_date = models.DateTimeField(blank=True, null=True)
-    bill_amount = models.CharField(max_length=255, blank=True, null=True)
-    narration = models.CharField(max_length=255, blank=True, null=True)
-    remarks = models.TextField(blank=True, null=True)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False)
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
 
 class Coa(models.Model):
     
@@ -270,7 +207,136 @@ class Coa(models.Model):
     language_name = models.CharField(max_length=200,blank=True, null=True)
     currency=models.CharField(max_length=500,blank=True,null=True)
     additional_reference_code=models.CharField(max_length=200,blank=True,null=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=True)
     remarks=models.TextField(blank=True,null=True)
+
+class Vouchers(models.Model):
+
+    Journal = 'Journal'
+    Payment= 'Payment'
+    Receipt= 'Receipt'
+    Credit = 'CREDIT NOTE'
+    Debit ='DEBIT NOTE'
+    
+    VOUCHER_TYPE_CHOICES = (
+        (Journal, 'Journal'),
+        (Payment, 'Payment'),
+        (Receipt, 'Receipt'),
+        (Credit, 'CREDIT NOTE'),
+        (Debit,'Debit')
+    )
+
+    voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES)
+    date = models.DateTimeField(default=timezone.now, blank=False, null=True)
+    branch = models.CharField(max_length=255, blank=True, null=True)
+    book = models.CharField(max_length=255, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    party_state_code = models.CharField(max_length=500, blank=True, null=True)
+    period = models.TextField(blank=True, null=True)
+    category = models.CharField(max_length=500, blank=True, null=True)
+    currency = models.CharField(max_length=500, blank=True, null=True)
+    ex_rate = models.CharField(max_length=250, blank=True, null=True)
+    pay_to = models.CharField(max_length=500, blank=True, null=True)
+    received_from = models.CharField(max_length=500, blank=True, null=True)
+    instrument_type = models.CharField(max_length=500, blank=True, null=True)
+    gl_date = models.DateTimeField(default=timezone.now, blank=False, null=True)
+    start_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
+    end_date = models.DateTimeField(default=timezone.now, blank=True,null=True)
+    fc_amount = models.CharField(max_length=255, blank=True, null=True)
+    amount_sar = models.CharField(max_length=255, blank=True, null=True)
+    party_account = models.ForeignKey(Coa, on_delete=models.CASCADE, blank=True, null=True)
+    division = models.CharField(max_length=255, blank=True, null=True)
+    naration = models.CharField(max_length=255, blank=True, null=True)
+    outstanding_amount = models.CharField(max_length=255, blank=True, null=True)
+    dr_account = models.CharField(max_length=255, blank=True, null=True)
+    cr_account = models.CharField(max_length=255, blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True)
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
+    ref_no = models.CharField(max_length=255, blank=True, null=True)
+    ref_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
+
+
+class Invoices(models.Model):
+
+    Sales= 'Sales'
+    Purchase= 'Purchase'
+    
+    INVOICE_TYPE_CHOICES = (
+        (Sales, 'Sales'),
+        (Purchase, 'Purchase'),
+    )
+
+    bl_number = models.CharField(max_length=255, blank=True, null=True)
+    date = models.DateTimeField(default=timezone.now, blank=False, null=False)
+    invoice_type = models.CharField("Invoice Type", max_length=255, choices=INVOICE_TYPE_CHOICES, blank=False, null=False)
+    consignee_name = models.CharField(max_length=255, blank=True, null=True)
+    currency_sar = models.CharField(max_length=255, blank=True, null=True)
+    bayan_number = models.CharField(max_length=255, blank=True, null=True)
+    shipper_name = models.CharField(max_length=255, blank=True, null=True)
+    ex_rate = models.CharField(max_length=255, blank=True, null=True) 
+    pod = models.CharField(max_length=255, blank=True, null=True)
+    poa = models.CharField(max_length=255, blank=True, null=True)
+    fc_amount = models.CharField(max_length=255, blank=True, null=True)
+    amount_sar = models.CharField(max_length=255, blank=True, null=True)
+    ref_data = models.DateTimeField(blank=True, null=True)
+    due_date = models.DateTimeField(blank=True, null=True)
+    bill_amount = models.CharField(max_length=255, blank=True, null=True)
+    narration = models.CharField(max_length=255, blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False)
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
+    created_at = models.DateTimeField(default=timezone.now)
+    last_time_generated = models.DateTimeField(default=timezone.now)
+    
+
+# class Coa(models.Model):
+    
+#     BS = 'Balance Sheet'
+#     PL = 'Profit and Loss'
+    
+#     COA_CHOICES = (    
+#         ('BS', 'Balance Sheet'),         
+#         ('PL', 'Profit and Loss'),    
+#     )
+    
+#     Direct = 'Direct'
+#     Indirect = 'Indirect'
+    
+    
+#     DIRECT_INDIRECT_CHOICES = (
+#         ('Direct', 'Direct'),
+#         ('Indirect', 'Indirect'),
+#     ) 
+    
+#     Dr = 'Dr'
+#     Cr = 'Cr'
+    
+#     DR_CR_CHOICES = (
+#         ('Dr', 'Dr'),
+#         ('Cr', 'Cr'),
+#     )
+
+#     code = models.CharField(max_length=200,blank=True, null=True)
+#     name = models.CharField(max_length=200,blank=True, null=True) 
+#     status = models.BooleanField(blank=True, null=True)
+#     subledger_requried = models.BooleanField(blank=True, null=True)
+#     charge_required = models.BooleanField(blank=True, null=True)
+#     job_required = models.BooleanField(blank=True, null=True)
+#     asset_required = models.BooleanField(blank=True, null=True)
+#     coa_type = models.CharField(max_length=200,blank=True, null=True)
+#     is_direct_indirect = models.CharField(max_length=200, blank=True, null=True)
+#     dr_cr = models.CharField(max_length=200,choices=DR_CR_CHOICES)
+#     category = models.CharField(max_length=200,blank=True, null=True)
+#     group = models.CharField(max_length=200,blank=True, null=True)
+#     subgroup = models.CharField(max_length=200,blank=True, null=True)
+#     type= models.CharField(max_length=200,blank=True, null=True)
+#     short_name = models.CharField(max_length=200,blank=True, null=True)
+#     long_name = models.CharField(max_length=200,blank=True, null=True) 
+#     language_name = models.CharField(max_length=200,blank=True, null=True)
+#     currency=models.CharField(max_length=500,blank=True,null=True)
+#     additional_reference_code=models.CharField(max_length=200,blank=True,null=True)
+#     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=True)
+#     remarks=models.TextField(blank=True,null=True)
     
 
 class CoaCategory(models.Model):
@@ -323,6 +389,20 @@ class Organization(models.Model):
     language_name = models.CharField(max_length=200,blank=True,null=True)
     address = models.TextField(blank=True,null=True)   
     vat_trn_number = models.CharField(max_length=200,blank=True,null=True)
+    currency = models.CharField(max_length=500, blank=True, null=True)
+    branch = models.CharField(max_length=500, blank=True, null=True)
+    payment_terms = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=250, blank=True, null=True) 
+    zip_code = models.CharField(max_length=250, blank=True, null=True)
+    mobile = models.CharField(max_length=250, blank=True, null=True)
+    email = models.CharField(max_length=250, blank=True, null=True)
+    country = models.CharField(max_length=250, blank=True, null=True)
+    state_code = models.CharField(max_length=250, blank=True, null=True) 
+    building_name = models.CharField(max_length=250, blank=True, null=True)
+    port_name = models.CharField(max_length=250, blank=True, null=True)
+    post_box_no = models.CharField(max_length=250, blank=True, null=True)
+    gstin_registered = models.CharField(max_length=250, blank=True, null=True)
+    gstin = models.CharField(max_length=250, blank=True, null=True)
     # browse_logo = models.FileField(storage=PrivateMediaStorage(), blank=True, null=True)
     website = models.CharField(max_length=200,blank=True,null=True)
     remarks = models.TextField(blank=True,null=True)
@@ -356,8 +436,11 @@ class CostEntry(models.Model):
     ex_rate=models.CharField(max_length=200,blank=True,null=True)
     dr_cr=models.CharField(max_length=200,blank=True,null=True,choices=DR_CR_CHOICES)
     job_no= models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=True)
+    invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE, blank=True, null=True)
     fcy_amount=models.CharField(max_length=200,blank=True,null=True)
     prorate_method=models.CharField(max_length=200,blank=True,null=True)
     shipment_no=models.CharField(max_length=200,blank=True,null=True)
     amount=models.CharField(max_length=200,blank=True,null=True)
     tax_group_code=models.CharField(max_length=200,blank=True,null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    is_included = models.BooleanField(default=False)

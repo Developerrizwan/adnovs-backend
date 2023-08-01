@@ -47,6 +47,12 @@ class JobSerializer(serializers.ModelSerializer):
         model = Job
         fields = '__all__'
 
+class JobGetSerializer(serializers.ModelSerializer):
+    company = CompanySerializer()
+    class Meta:
+        model = Job
+        fields = '__all__'
+
 
 class VouchersSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,6 +61,13 @@ class VouchersSerializer(serializers.ModelSerializer):
 
 
 class InvoicesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoices
+        fields = '__all__' 
+
+class InvoicesGetSerializer(serializers.ModelSerializer):
+    job = JobSerializer()
+    company=CompanySerializer()
     class Meta:
         model = Invoices
         fields = '__all__' 
@@ -98,6 +111,12 @@ class CoaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coa
         fields = '__all__'
+
+class CoaGetSerializer(serializers.ModelSerializer):
+    company=CompanySerializer()
+    class Meta:
+        model = Coa
+        fields = '__all__'
         
 class CoaCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -129,8 +148,36 @@ class CostEntrySerializer(serializers.ModelSerializer):
         model=CostEntry
         fields='__all__' 
 
+class CostEntryGetSerializer(serializers.ModelSerializer):
+    charge=ChargeSerializer()
+    job_no = JobSerializer()
+    class Meta:
+        model = CostEntry
+        fields = '__all__'
+
         
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
         fields = '__all__' 
+
+class OrganizationGetSerializer(serializers.ModelSerializer):
+    company=CompanySerializer()
+    coa=CoaSerializer()
+    class Meta:
+        model = Organization
+        fields = '__all__'
+        
+class ChargeGetSerializer(serializers.ModelSerializer):
+    coa = CoaSerializer()
+    class Meta:
+        model = Charge
+        fields = '__all__'
+
+
+class VoucherGetSerializer(serializers.ModelSerializer):
+    party_account = CoaSerializer()
+    job = JobSerializer()
+    class Meta:
+        model = Vouchers
+        fields = '__all__'
