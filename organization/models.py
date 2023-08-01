@@ -224,7 +224,7 @@ class Vouchers(models.Model):
         (Payment, 'Payment'),
         (Receipt, 'Receipt'),
         (Credit, 'CREDIT NOTE'),
-        (Debit,'Debit')
+        (Debit,'DEBIT NOTE')
     )
 
     voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES)
@@ -430,6 +430,19 @@ class CostEntry(models.Model):
         (Dr, 'Dr'),
         (Cr, 'Cr'),
     ) 
+    Journal = 'Journal'
+    Payment= 'Payment'
+    Receipt= 'Receipt'
+    Credit = 'CREDIT NOTE'
+    Debit ='DEBIT NOTE'
+    
+    VOUCHER_TYPE_CHOICES = (
+        (Journal, 'Journal'),
+        (Payment, 'Payment'),
+        (Receipt, 'Receipt'),
+        (Credit, 'CREDIT NOTE'),
+        (Debit,'DEBIT NOTE')
+    )
     charge=models.ForeignKey(Charge, on_delete=models.CASCADE, blank=False, null=False)
     currency=models.CharField(max_length=200,blank=True,null=True)
     sale_cost=models.CharField(max_length=200,blank=True,null=True)
@@ -438,7 +451,7 @@ class CostEntry(models.Model):
     dr_cr=models.CharField(max_length=200,blank=True,null=True,choices=DR_CR_CHOICES)
     job_no= models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=True)
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE, blank=True, null=True)
-    voucher = models.ForeignKey(Vouchers, on_delete=models.CASCADE, blank=False, null=True)
+    voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES)
     fcy_amount=models.CharField(max_length=200,blank=True,null=True)
     prorate_method=models.CharField(max_length=200,blank=True,null=True)
     shipment_no=models.CharField(max_length=200,blank=True,null=True)
