@@ -342,7 +342,7 @@ class GetvoucherViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     serializer_class =VoucherGetSerializer 
     filter_backends = [VoucherFliter]
     
-class GetinvoiceViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
+class GetinvoiceViewset(viewsets.GenericViewSet,mixins.ListModelMixin, mixins.RetrieveModelMixin):
     """Get all Invoices"""
     
     pagination_class = CustomPagination
