@@ -65,12 +65,7 @@ class InvoicesSerializer(serializers.ModelSerializer):
         model = Invoices
         fields = '__all__' 
 
-class InvoicesGetSerializer(serializers.ModelSerializer):
-    job = JobSerializer()
-    company=CompanySerializer()
-    class Meta:
-        model = Invoices
-        fields = '__all__' 
+
         
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
@@ -174,6 +169,14 @@ class ChargeGetSerializer(serializers.ModelSerializer):
         model = Charge
         fields = '__all__'
 
+class InvoicesGetSerializer(serializers.ModelSerializer):
+    job = JobSerializer()
+    company=CompanySerializer()
+    consignee_name=OrganizationSerializer()
+    client_name = OrganizationSerializer()
+    class Meta:
+        model = Invoices
+        fields = '__all__' 
 
 class VoucherGetSerializer(serializers.ModelSerializer):
     party_account = CoaSerializer()
