@@ -371,9 +371,13 @@ class CoaGroup(models.Model):
     
 class Pod(models.Model):
     name = models.CharField(max_length=255,blank=False)
+    code = models.CharField(max_length=255,blank=False)
+    country=models.CharField(max_length=255,blank=False)
 
 class Poa(models.Model):
     name = models.CharField(max_length=255,blank=False) 
+    code = models.CharField(max_length=255,blank=False)
+    country=models.CharField(max_length=255,blank=False)
 
 class Organization(models.Model):
     Consignee = 'Consignee'
