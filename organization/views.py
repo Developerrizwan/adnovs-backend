@@ -253,6 +253,7 @@ class CompanyViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Crea
     permission_classes = (IsAuthenticated, )
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
+    filter_backends = [CompanyFliter]
 
 
 class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
