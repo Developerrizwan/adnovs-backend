@@ -12,6 +12,11 @@ class Company(models.Model):
     state = models.CharField(max_length=200)
     address = models.CharField(max_length=500)
     users = models.ManyToManyField(get_user_model(), blank=True)
+    account_name=models.CharField(max_length=200,blank=True,null=True)
+    bank_name=models.CharField(max_length=200,blank=True,null=True)
+    account_number=models.CharField(max_length=200,blank=True,null=True)
+    iban_code=models.CharField(max_length=200,blank=True,null=True)
+    swift_code=models.CharField(max_length=200,blank=True,null=True)
 
 class Job(models.Model):
 
