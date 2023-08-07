@@ -12,6 +12,12 @@ class Company(models.Model):
     state = models.CharField(max_length=200)
     address = models.CharField(max_length=500)
     users = models.ManyToManyField(get_user_model(), blank=True)
+    vat = models.CharField(max_length=200,blank=True,null=True)
+    account_name=models.CharField(max_length=200,blank=True,null=True)
+    bank_name=models.CharField(max_length=200,blank=True,null=True)
+    account_number=models.CharField(max_length=200,blank=True,null=True)
+    iban_code=models.CharField(max_length=200,blank=True,null=True)
+    swift_code=models.CharField(max_length=200,blank=True,null=True)
 
 class Job(models.Model):
 
@@ -257,6 +263,40 @@ class Vouchers(models.Model):
     ref_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
 
 
+class Organization(models.Model):
+    Consignee = 'Consignee'
+    Client = 'Client' 
+    
+    Type_Choice = (
+        (Consignee,'Consignee'),
+        (Client,'Client'),
+    )
+    name = models.CharField(max_length=200,blank=True,null=True)
+    type = models.CharField(max_length=200,choices=Type_Choice)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False) 
+    coa = models.ForeignKey(Coa, on_delete=models.CASCADE, blank=False, null=False) 
+    language_name = models.CharField(max_length=200,blank=True,null=True)
+    address = models.TextField(blank=True,null=True)   
+    vat_trn_number = models.CharField(max_length=200,blank=True,null=True)
+    currency = models.CharField(max_length=500, blank=True, null=True)
+    branch = models.CharField(max_length=500, blank=True, null=True)
+    payment_terms = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=250, blank=True, null=True) 
+    zip_code = models.CharField(max_length=250, blank=True, null=True)
+    mobile = models.CharField(max_length=250, blank=True, null=True)
+    email = models.CharField(max_length=250, blank=True, null=True)
+    country = models.CharField(max_length=250, blank=True, null=True)
+    state_code = models.CharField(max_length=250, blank=True, null=True) 
+    building_name = models.CharField(max_length=250, blank=True, null=True)
+    port_name = models.CharField(max_length=250, blank=True, null=True)
+    post_box_no = models.CharField(max_length=250, blank=True, null=True)
+    gstin_registered = models.CharField(max_length=250, blank=True, null=True)
+    gstin = models.CharField(max_length=250, blank=True, null=True)
+    # browse_logo = models.FileField(storage=PrivateMediaStorage(), blank=True, null=True)
+    website = models.CharField(max_length=200,blank=True,null=True)
+    remarks = models.TextField(blank=True,null=True)
+
+
 class Invoices(models.Model):
 
     Sales= 'Sales'
@@ -270,7 +310,8 @@ class Invoices(models.Model):
     bl_number = models.CharField(max_length=255, blank=True, null=True)
     date = models.DateTimeField(default=timezone.now, blank=False, null=False)
     invoice_type = models.CharField("Invoice Type", max_length=255, choices=INVOICE_TYPE_CHOICES, blank=False, null=False)
-    consignee_name = models.CharField(max_length=255, blank=True, null=True)
+    consignee_name = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=False, null=False, related_name="consigneename_Invoice")
+    client_name = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=False, null=False, related_name="clientinvoice")
     currency_sar = models.CharField(max_length=255, blank=True, null=True)
     bayan_number = models.CharField(max_length=255, blank=True, null=True)
     shipper_name = models.CharField(max_length=255, blank=True, null=True)
@@ -371,44 +412,13 @@ class CoaGroup(models.Model):
     
 class Pod(models.Model):
     name = models.CharField(max_length=255,blank=False)
+    code = models.CharField(max_length=255,blank=False)
+    country=models.CharField(max_length=255,blank=False)
 
 class Poa(models.Model):
     name = models.CharField(max_length=255,blank=False) 
-
-class Organization(models.Model):
-    Consignee = 'Consignee'
-    Client = 'Client' 
-    
-    Type_Choice = (
-        (Consignee,'Consignee'),
-        (Client,'Client'),
-    )
-    name = models.CharField(max_length=200,blank=True,null=True)
-    type = models.CharField(max_length=200,choices=Type_Choice)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False) 
-    coa = models.ForeignKey(Coa, on_delete=models.CASCADE, blank=False, null=False) 
-    language_name = models.CharField(max_length=200,blank=True,null=True)
-    address = models.TextField(blank=True,null=True)   
-    vat_trn_number = models.CharField(max_length=200,blank=True,null=True)
-    currency = models.CharField(max_length=500, blank=True, null=True)
-    branch = models.CharField(max_length=500, blank=True, null=True)
-    payment_terms = models.CharField(max_length=255, blank=True, null=True)
-    city = models.CharField(max_length=250, blank=True, null=True) 
-    zip_code = models.CharField(max_length=250, blank=True, null=True)
-    mobile = models.CharField(max_length=250, blank=True, null=True)
-    email = models.CharField(max_length=250, blank=True, null=True)
-    country = models.CharField(max_length=250, blank=True, null=True)
-    state_code = models.CharField(max_length=250, blank=True, null=True) 
-    building_name = models.CharField(max_length=250, blank=True, null=True)
-    port_name = models.CharField(max_length=250, blank=True, null=True)
-    post_box_no = models.CharField(max_length=250, blank=True, null=True)
-    gstin_registered = models.CharField(max_length=250, blank=True, null=True)
-    gstin = models.CharField(max_length=250, blank=True, null=True)
-    # browse_logo = models.FileField(storage=PrivateMediaStorage(), blank=True, null=True)
-    website = models.CharField(max_length=200,blank=True,null=True)
-    remarks = models.TextField(blank=True,null=True)
-
-
+    code = models.CharField(max_length=255,blank=False)
+    country=models.CharField(max_length=255,blank=False)
 
 class Charge(models.Model):
 

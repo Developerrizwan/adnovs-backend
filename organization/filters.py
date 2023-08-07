@@ -164,3 +164,12 @@ class CostEntryFilter(filters.BaseFilterBackend):
             else:
                 queryset = CostEntry.objects.none()
             return queryset
+        
+
+class CompanyFliter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        if queryset.filter(users=request.user):
+            queryset = queryset.filter(users__email=request.user.email)
+        else:
+            queryset=[]
+        return queryset   
