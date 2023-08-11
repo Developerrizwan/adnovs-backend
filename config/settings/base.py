@@ -342,4 +342,4 @@ SPECTACULAR_SETTINGS = {
 # Your stuff...
 # ------------------------------------------------------------------------------
 CORS_ORIGIN_ALLOW_ALL = True
-CSRF_TRUSTED_ORIGINS=['http://16.24.44.74/']
+CSRF_TRUSTED_ORIGINS=['http://app.adnovs.com/']
