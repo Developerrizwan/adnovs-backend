@@ -239,6 +239,7 @@ MANAGERS = ADMINS
 # https://cookiecutter-django.readthedocs.io/en/latest/settings.html#other-environment-settings
 # Force the `admin` sign in process to go through the `django-allauth` workflow
 DJANGO_ADMIN_FORCE_ALLAUTH = env.bool("DJANGO_ADMIN_FORCE_ALLAUTH", default=False)
+SECURE_BROWSER_XSS_FILTER = True
 
 # LOGGING
 # ------------------------------------------------------------------------------
@@ -341,4 +342,4 @@ SPECTACULAR_SETTINGS = {
 # Your stuff...
 # ------------------------------------------------------------------------------
 CORS_ORIGIN_ALLOW_ALL = True
-CSRF_TRUSTED_ORIGINS=['http://16.24.44.74/']
+CSRF_TRUSTED_ORIGINS=['http://app.adnovs.com/']

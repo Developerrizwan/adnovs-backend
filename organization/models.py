@@ -290,7 +290,7 @@ class Organization(models.Model):
     building_name = models.CharField(max_length=250, blank=True, null=True)
     port_name = models.CharField(max_length=250, blank=True, null=True)
     post_box_no = models.CharField(max_length=250, blank=True, null=True)
-    gstin_registered = models.CharField(max_length=250, blank=True, null=True)
+    gstin_registered = models.BooleanField(default=False)
     gstin = models.CharField(max_length=250, blank=True, null=True)
     # browse_logo = models.FileField(storage=PrivateMediaStorage(), blank=True, null=True)
     website = models.CharField(max_length=200,blank=True,null=True)
