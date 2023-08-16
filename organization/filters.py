@@ -173,3 +173,12 @@ class CompanyFliter(filters.BaseFilterBackend):
         else:
             queryset=[]
         return queryset   
+
+
+class SearchFilter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        if queryset.model:
+            search = request.query_params.get('search', None)  
+            if  search :
+                queryset = queryset.filter(Q(name__contains=search.lower())|Q(name__contains=search.upper())|
+                Q(name__istartswith=search.lower()) |Q(name__istartswith=search.upper()) )
