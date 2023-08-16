@@ -182,3 +182,6 @@ class SearchFilter(filters.BaseFilterBackend):
             if  search :
                 queryset = queryset.filter(Q(name__contains=search.lower())|Q(name__contains=search.upper())|
                 Q(name__istartswith=search.lower()) |Q(name__istartswith=search.upper()) )
+                return queryset
+            else:
+                return queryset
