@@ -132,6 +132,11 @@ class PoaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Poa
         fields = '__all__'
+
+class PolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pol
+        fields = '__all__'
         
 class ChargeSerializer(serializers.ModelSerializer):
     class Meta:

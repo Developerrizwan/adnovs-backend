@@ -61,6 +61,9 @@ pod_router.register('master/pod', PodViewSet, basename='pod')
 poa_router = routers.SimpleRouter() 
 poa_router.register('master/poa', PoaViewSet, basename='poa')
 
+pol_router = routers.SimpleRouter()
+pol_router.register('master/pol',PolViewSet,basename='pol')
+
 charge_router= routers.SimpleRouter() 
 charge_router.register('master/charge', ChargeViewSet, basename='charge') 
 
@@ -97,6 +100,7 @@ urlpatterns = [
     path('',include(coa_categoryrouter.urls)),
     path('',include(pod_router.urls)),
     path('',include(poa_router.urls)),
+    path('',include(pol_router.urls)),
     path('',include(coa_grouprouter.urls)),
     path('',include(organization_router.urls)),
     path('',include(charge_router.urls)),
