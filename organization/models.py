@@ -117,6 +117,8 @@ class Job(models.Model):
     Land_Freight = 'Land Freight'
     Transportation = 'Transportation'
     Warehousing = 'Warehousing'
+    Customs Clearance = 'Customs Clearance'
+    Other = ' Other' 
     
     FREIGHT_CHOICES = (
         (Air_Freight, 'Air Freight'),
@@ -124,6 +126,8 @@ class Job(models.Model):
         (Land_Freight, 'Land Freight'),
         (Transportation, 'Transportation'),
         (Warehousing, 'Warehousing'),
+        (Customs Clearance,'Customs Clearance'),
+        ( Other, ' Other')
     )
 
     ORGANIZATION_CHOICES = (
@@ -266,10 +270,24 @@ class Vouchers(models.Model):
 class Organization(models.Model):
     Consignee = 'Consignee'
     Client = 'Client' 
+    Supplier = 'Supplier'
+    Shipper = 'Shipper'
+    Notify = 'Notify'
+    Counterpart = 'Counterpart'
+    Broker = 'Broker'
+    Agents = 'Agents'
+    Others = 'Others'
     
     Type_Choice = (
         (Consignee,'Consignee'),
         (Client,'Client'),
+        (Supplier,'Supplier'),
+        (Shipper, 'Shipper'),
+        (Notify, 'Notify'),
+        (Counterpart, 'Counterpart'),
+        (Broker, 'Broker'),
+        (Agents, 'Agents'),
+        (Others, 'Others')
     )
     name = models.CharField(max_length=200,blank=True,null=True)
     type = models.CharField(max_length=200,choices=Type_Choice)
@@ -403,9 +421,21 @@ class CoaGroup(models.Model):
         ('Dr', 'Dr'),
         ('Cr', 'Cr'),
     )
+    EQUITY = 'EQUITY'
+    ASSET = 'ASSET'
+    EXPENSE = 'EXPENSE'
+    INCOME = 'INCOME'
+    LIABILITY = 'LIABILITY'
+    TYPE_CHOICES=(
+        (EQUITY,'EQUITY'),
+        (ASSET,'ASSET'),
+        (EXPENSE,'EXPENSE'),
+        (INCOME,'INCOME'),
+        (LIABILITY,'LIABILITY')
+    )
     code = models.CharField(max_length=200,blank=True, null=True)
     name= models.CharField(max_length=200,blank=True, null=True) 
-    type = models.CharField(max_length=200,blank=True, null=True) 
+    type = models.CharField(max_length=200,blank=True, null=True,choices=TYPE_CHOICES) 
     dr_cr = models.CharField(max_length=200,blank=True, null=True,choices=DR_CR_CHOICES)
     status = models.BooleanField(blank=True, null=True)
     remarks = models.TextField(blank=True, null=True)
