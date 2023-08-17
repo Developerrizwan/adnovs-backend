@@ -450,6 +450,11 @@ class Poa(models.Model):
     code = models.CharField(max_length=255,blank=False)
     country=models.CharField(max_length=255,blank=False)
 
+class Pol(models.Model):
+    name = models.CharField(max_length=255,blank=False) 
+    code = models.CharField(max_length=255,blank=False)
+    country=models.CharField(max_length=255,blank=False)
+
 class Charge(models.Model):
 
     code=models.CharField(max_length=200,blank=False,null=False)
