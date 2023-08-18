@@ -428,6 +428,13 @@ class CoaGroupViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
     permission_classes = (IsAuthenticated, )
     queryset = CoaGroup.objects.all().order_by('id')
     serializer_class = CoaGroupSerializer 
+
+class GetCoaGroupViewSet(viewsets.GenericViewSet,mixins.ListModelMixin):
+    """Get all coa group"""
+    permission_classes = (IsAuthenticated,)
+    queryset =CoaGroup.objects.all()
+    serializer_class = CoaGroupSerializer
+    filter_backends = [CoaGroupFilter]
     
 class PodViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage Pod in the Database"""
