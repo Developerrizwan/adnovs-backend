@@ -316,7 +316,7 @@ class Organization(models.Model):
         (Others, 'Others')
     )
     name = models.CharField(max_length=200,blank=True,null=True)
-    type = models.CharField(max_length=200,choices=Type_Choice)
+    type = ArrayField(models.CharField(max_length=255), default=list, blank=False, null=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False) 
     coa = models.ForeignKey(Coa, on_delete=models.CASCADE, blank=False, null=False) 
     language_name = models.CharField(max_length=200,blank=True,null=True)
