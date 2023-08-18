@@ -13,8 +13,6 @@ class TypeFilter(filters.BaseFilterBackend):
                     search_lower = search.lower()
                     search_upper = search.upper()
                     search_capitalize = search.capitalize()
-                    queryset = queryset.filter(Q(name__contains=search.lower())|Q(name__contains=search.upper())|
-                        Q(name__istartswith=search.lower()) |Q(name__istartswith=search.upper()) )
                     queryset = queryset.filter(
                         Q(job_type__contains=search_lower) | Q(job_type__contains=search_upper) | Q(job_type__contains=search_capitalize) |
                         Q(job_status__contains=search_lower) | Q(job_status__contains=search_upper) | Q(job_status__contains=search_capitalize) |
