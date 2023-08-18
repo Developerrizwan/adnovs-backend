@@ -236,8 +236,8 @@ class Coa(models.Model):
     is_direct_indirect = models.CharField(max_length=200, blank=True, null=True)
     dr_cr = models.CharField(max_length=200,choices=DR_CR_CHOICES)
     category = models.CharField(max_length=200,blank=True, null=True)
-    group = models.ForeignKey(CoaGroup, on_delete=models.CASCADE, blank=False, null=True)
-    subgroup = models.ForeignKey(CoaGroup, on_delete=models.CASCADE, blank=False, null=True)
+    group = models.ForeignKey(CoaGroup, on_delete=models.CASCADE, blank=False, null=True, related_name='groups')
+    subgroup = models.ForeignKey(CoaGroup, on_delete=models.CASCADE, blank=False, null=True, related_name='sub_groups')
     type= models.CharField(max_length=200,blank=True, null=True)
     short_name = models.CharField(max_length=200,blank=True, null=True)
     long_name = models.CharField(max_length=200,blank=True, null=True) 
@@ -439,32 +439,6 @@ class CoaCategory(models.Model):
     remarks = models.TextField(blank=True, null=True) 
     dr_cr = models.CharField(max_length=200,blank=True, null=True,choices=DR_CR_CHOICES)  
     
-    
-class CoaGroup(models.Model):
-    Dr = 'Dr'
-    Cr = 'Cr'
-    DR_CR_CHOICES = (
-        ('Dr', 'Dr'),
-        ('Cr', 'Cr'),
-    )
-    EQUITY = 'EQUITY'
-    ASSET = 'ASSET'
-    EXPENSE = 'EXPENSE'
-    INCOME = 'INCOME'
-    LIABILITY = 'LIABILITY'
-    TYPE_CHOICES=(
-        (EQUITY,'EQUITY'),
-        (ASSET,'ASSET'),
-        (EXPENSE,'EXPENSE'),
-        (INCOME,'INCOME'),
-        (LIABILITY,'LIABILITY')
-    )
-    code = models.CharField(max_length=200,blank=True, null=True)
-    name= models.CharField(max_length=200,blank=True, null=True) 
-    type = models.CharField(max_length=200,blank=True, null=True,choices=TYPE_CHOICES) 
-    dr_cr = models.CharField(max_length=200,blank=True, null=True,choices=DR_CR_CHOICES)
-    status = models.BooleanField(blank=True, null=True)
-    remarks = models.TextField(blank=True, null=True)
     
 class Pod(models.Model):
     name = models.CharField(max_length=255,blank=False)
