@@ -13,14 +13,19 @@ class TypeFilter(filters.BaseFilterBackend):
                     search_lower = search.lower()
                     search_upper = search.upper()
                     search_capitalize = search.capitalize()
+                    queryset = queryset.filter(Q(name__contains=search.lower())|Q(name__contains=search.upper())|
+                        Q(name__istartswith=search.lower()) |Q(name__istartswith=search.upper()) )
                     queryset = queryset.filter(
                         Q(job_type__contains=search_lower) | Q(job_type__contains=search_upper) | Q(job_type__contains=search_capitalize) |
                         Q(job_status__contains=search_lower) | Q(job_status__contains=search_upper) | Q(job_status__contains=search_capitalize) |
                         Q(scope_of_work__contains=search_lower) | Q(scope_of_work__contains=search_upper) | Q(scope_of_work__contains=search_capitalize) |
                         Q(type__contains=search_lower) | Q(type__contains=search_upper) | Q(type__contains=search_capitalize) |
                         Q(pod__contains=search_lower) | Q(pod__contains=search_upper) | Q(pod__contains=search_capitalize) |
+                        Q(pod__istartswith=search.lower()) |Q(pod__istartswith=search.upper()) |
                         Q(poa__contains=search_lower) | Q(poa__contains=search_upper) | Q(poa__contains=search_capitalize) |
+                        Q(poa__istartswith=search.lower()) |Q(poa__istartswith=search.upper()) |
                         Q(por__contains=search_lower) | Q(por__contains=search_upper) | Q(por__contains=search_capitalize) |
+                        Q(por__istartswith=search.lower()) |Q(por__istartswith=search.upper()) |
                         Q(branch__contains=search_lower) | Q(branch__contains=search_upper) | Q(branch__contains=search_capitalize) |
                         Q(consignee_name__contains=search_lower) | Q(consignee_name__contains=search_upper) | Q(consignee_name__contains=search_capitalize) |
                         Q(shipper_name__contains=search_lower) | Q(shipper_name__contains=search_upper) | Q(shipper_name__contains=search_capitalize) |
