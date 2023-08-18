@@ -435,13 +435,23 @@ class PodViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     permission_classes = (IsAuthenticated, )
     queryset = Pod.objects.all()
     serializer_class = PodSerializer 
+    filter_backends = [SearchFilter]
     
 class PoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage Poa in the Database"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Poa.objects.all()
-    serializer_class = PoaSerializer  
+    serializer_class = PoaSerializer 
+    filter_backends = [SearchFilter] 
+
+# class PolViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+#     """Manage Pol in the Database"""
+#     pagination_class = CustomPagination
+#     permission_classes = (IsAuthenticated, )
+#     queryset = Pol.objects.all()
+#     serializer_class = PolSerializer 
+#     filter_backends = [SearchFilter] 
     
 class OrganizationViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage Organization in the Database"""

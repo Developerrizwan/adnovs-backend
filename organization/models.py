@@ -117,6 +117,8 @@ class Job(models.Model):
     Land_Freight = 'Land Freight'
     Transportation = 'Transportation'
     Warehousing = 'Warehousing'
+    Customs_Clearance = 'Customs Clearance'
+    Other = ' Other' 
     
     FREIGHT_CHOICES = (
         (Air_Freight, 'Air Freight'),
@@ -124,6 +126,8 @@ class Job(models.Model):
         (Land_Freight, 'Land Freight'),
         (Transportation, 'Transportation'),
         (Warehousing, 'Warehousing'),
+        (Customs_Clearance,'Customs Clearance'),
+        ( Other, ' Other')
     )
 
     ORGANIZATION_CHOICES = (
@@ -167,6 +171,32 @@ class Job(models.Model):
     eta = models.DateTimeField(blank=True,null=True)
     etd = models.DateTimeField(blank=True,null=True)
 
+class CoaGroup(models.Model):
+    Dr = 'Dr'
+    Cr = 'Cr'
+    DR_CR_CHOICES = (
+        ('Dr', 'Dr'),
+        ('Cr', 'Cr'),
+    )
+    EQUITY = 'EQUITY'
+    ASSET = 'ASSET'
+    EXPENSE = 'EXPENSE'
+    INCOME = 'INCOME'
+    LIABILITY = 'LIABILITY'
+    TYPE_CHOICES=(
+        (EQUITY,'EQUITY'),
+        (ASSET,'ASSET'),
+        (EXPENSE,'EXPENSE'),
+        (INCOME,'INCOME'),
+        (LIABILITY,'LIABILITY')
+    )
+    code = models.CharField(max_length=200,blank=True, null=True)
+    name= models.CharField(max_length=200,blank=True, null=True) 
+    type = models.CharField(max_length=200,blank=True, null=True,choices=TYPE_CHOICES) 
+    dr_cr = models.CharField(max_length=200,blank=True, null=True,choices=DR_CR_CHOICES)
+    status = models.BooleanField(blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True)
+
 
 class Coa(models.Model):
     
@@ -206,8 +236,8 @@ class Coa(models.Model):
     is_direct_indirect = models.CharField(max_length=200, blank=True, null=True)
     dr_cr = models.CharField(max_length=200,choices=DR_CR_CHOICES)
     category = models.CharField(max_length=200,blank=True, null=True)
-    group = models.CharField(max_length=200,blank=True, null=True)
-    subgroup = models.CharField(max_length=200,blank=True, null=True)
+    group = models.ForeignKey(CoaGroup, on_delete=models.CASCADE, blank=False, null=True, related_name='groups')
+    subgroup = models.ForeignKey(CoaGroup, on_delete=models.CASCADE, blank=False, null=True, related_name='sub_groups')
     type= models.CharField(max_length=200,blank=True, null=True)
     short_name = models.CharField(max_length=200,blank=True, null=True)
     long_name = models.CharField(max_length=200,blank=True, null=True) 
@@ -266,13 +296,27 @@ class Vouchers(models.Model):
 class Organization(models.Model):
     Consignee = 'Consignee'
     Client = 'Client' 
+    Supplier = 'Supplier'
+    Shipper = 'Shipper'
+    Notify = 'Notify'
+    Counterpart = 'Counterpart'
+    Broker = 'Broker'
+    Agents = 'Agents'
+    Others = 'Others'
     
     Type_Choice = (
         (Consignee,'Consignee'),
         (Client,'Client'),
+        (Supplier,'Supplier'),
+        (Shipper, 'Shipper'),
+        (Notify, 'Notify'),
+        (Counterpart, 'Counterpart'),
+        (Broker, 'Broker'),
+        (Agents, 'Agents'),
+        (Others, 'Others')
     )
     name = models.CharField(max_length=200,blank=True,null=True)
-    type = models.CharField(max_length=200,choices=Type_Choice)
+    type = ArrayField(models.CharField(max_length=255), default=list, blank=False, null=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False) 
     coa = models.ForeignKey(Coa, on_delete=models.CASCADE, blank=False, null=False) 
     language_name = models.CharField(max_length=200,blank=True,null=True)
@@ -396,20 +440,6 @@ class CoaCategory(models.Model):
     dr_cr = models.CharField(max_length=200,blank=True, null=True,choices=DR_CR_CHOICES)  
     
     
-class CoaGroup(models.Model):
-    Dr = 'Dr'
-    Cr = 'Cr'
-    DR_CR_CHOICES = (
-        ('Dr', 'Dr'),
-        ('Cr', 'Cr'),
-    )
-    code = models.CharField(max_length=200,blank=True, null=True)
-    name= models.CharField(max_length=200,blank=True, null=True) 
-    type = models.CharField(max_length=200,blank=True, null=True) 
-    dr_cr = models.CharField(max_length=200,blank=True, null=True,choices=DR_CR_CHOICES)
-    status = models.BooleanField(blank=True, null=True)
-    remarks = models.TextField(blank=True, null=True)
-    
 class Pod(models.Model):
     name = models.CharField(max_length=255,blank=False)
     code = models.CharField(max_length=255,blank=False)
@@ -419,6 +449,11 @@ class Poa(models.Model):
     name = models.CharField(max_length=255,blank=False) 
     code = models.CharField(max_length=255,blank=False)
     country=models.CharField(max_length=255,blank=False)
+
+# class Pol(models.Model):
+#     name = models.CharField(max_length=255,blank=False) 
+#     code = models.CharField(max_length=255,blank=False)
+#     country=models.CharField(max_length=255,blank=False)
 
 class Charge(models.Model):
 
