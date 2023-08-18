@@ -89,7 +89,9 @@ class OrganizationFilter(filters.BaseFilterBackend):
                     queryset = queryset.filter(Q(name__contains=search)|Q(type__contains=search)|Q(language_name__contains=search)|
                             Q(address__contains=search)|Q(vat_trn_number__contains=search)|Q(website__contains=search))
                     # return queryset
-                queryset = queryset.filter(type=type)
+                # queryset = queryset.filter(type=type)
+                if type:
+                    queryset = queryset.filter(type__contains=[type])
             else:
                 queryset=[]
             return queryset        
