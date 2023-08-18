@@ -431,6 +431,7 @@ class CoaGroupViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
 
 class GetCoaGroupViewSet(viewsets.GenericViewSet,mixins.ListModelMixin):
     """Get all coa group"""
+    pagination_class = CustomPagination
     permission_classes = (IsAuthenticated,)
     queryset =CoaGroup.objects.all()
     serializer_class = CoaGroupSerializer

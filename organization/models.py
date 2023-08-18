@@ -194,6 +194,7 @@ class CoaGroup(models.Model):
     name= models.CharField(max_length=200,blank=True, null=True) 
     type = models.CharField(max_length=200,blank=True, null=True,choices=TYPE_CHOICES) 
     dr_cr = models.CharField(max_length=200,blank=True, null=True,choices=DR_CR_CHOICES)
+    language_name = models.CharField(max_length=200, blank=True, null=True)
     status = models.BooleanField(blank=True, null=True)
     remarks = models.TextField(blank=True, null=True)
 
