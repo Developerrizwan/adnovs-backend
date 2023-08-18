@@ -117,7 +117,7 @@ class Job(models.Model):
     Land_Freight = 'Land Freight'
     Transportation = 'Transportation'
     Warehousing = 'Warehousing'
-    Customs Clearance = 'Customs Clearance'
+    Customs_Clearance = 'Customs Clearance'
     Other = ' Other' 
     
     FREIGHT_CHOICES = (
@@ -126,7 +126,7 @@ class Job(models.Model):
         (Land_Freight, 'Land Freight'),
         (Transportation, 'Transportation'),
         (Warehousing, 'Warehousing'),
-        (Customs Clearance,'Customs Clearance'),
+        (Customs_Clearance,'Customs Clearance'),
         ( Other, ' Other')
     )
 
@@ -171,6 +171,32 @@ class Job(models.Model):
     eta = models.DateTimeField(blank=True,null=True)
     etd = models.DateTimeField(blank=True,null=True)
 
+class CoaGroup(models.Model):
+    Dr = 'Dr'
+    Cr = 'Cr'
+    DR_CR_CHOICES = (
+        ('Dr', 'Dr'),
+        ('Cr', 'Cr'),
+    )
+    EQUITY = 'EQUITY'
+    ASSET = 'ASSET'
+    EXPENSE = 'EXPENSE'
+    INCOME = 'INCOME'
+    LIABILITY = 'LIABILITY'
+    TYPE_CHOICES=(
+        (EQUITY,'EQUITY'),
+        (ASSET,'ASSET'),
+        (EXPENSE,'EXPENSE'),
+        (INCOME,'INCOME'),
+        (LIABILITY,'LIABILITY')
+    )
+    code = models.CharField(max_length=200,blank=True, null=True)
+    name= models.CharField(max_length=200,blank=True, null=True) 
+    type = models.CharField(max_length=200,blank=True, null=True,choices=TYPE_CHOICES) 
+    dr_cr = models.CharField(max_length=200,blank=True, null=True,choices=DR_CR_CHOICES)
+    status = models.BooleanField(blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True)
+
 
 class Coa(models.Model):
     
@@ -210,8 +236,8 @@ class Coa(models.Model):
     is_direct_indirect = models.CharField(max_length=200, blank=True, null=True)
     dr_cr = models.CharField(max_length=200,choices=DR_CR_CHOICES)
     category = models.CharField(max_length=200,blank=True, null=True)
-    group = models.CharField(max_length=200,blank=True, null=True)
-    subgroup = models.CharField(max_length=200,blank=True, null=True)
+    group = models.ForeignKey(CoaGroup, on_delete=models.CASCADE, blank=False, null=True)
+    subgroup = models.ForeignKey(CoaGroup, on_delete=models.CASCADE, blank=False, null=True)
     type= models.CharField(max_length=200,blank=True, null=True)
     short_name = models.CharField(max_length=200,blank=True, null=True)
     long_name = models.CharField(max_length=200,blank=True, null=True) 
@@ -450,10 +476,10 @@ class Poa(models.Model):
     code = models.CharField(max_length=255,blank=False)
     country=models.CharField(max_length=255,blank=False)
 
-class Pol(models.Model):
-    name = models.CharField(max_length=255,blank=False) 
-    code = models.CharField(max_length=255,blank=False)
-    country=models.CharField(max_length=255,blank=False)
+# class Pol(models.Model):
+#     name = models.CharField(max_length=255,blank=False) 
+#     code = models.CharField(max_length=255,blank=False)
+#     country=models.CharField(max_length=255,blank=False)
 
 class Charge(models.Model):
 
