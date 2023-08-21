@@ -439,7 +439,7 @@ class GetCoaGroupViewSet(viewsets.GenericViewSet,mixins.ListModelMixin):
     
 class PodViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage Pod in the Database"""
-    pagination_class = CustomPagination
+    # pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Pod.objects.all()
     serializer_class = PodSerializer 
@@ -447,7 +447,7 @@ class PodViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     
 class PoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage Poa in the Database"""
-    pagination_class = CustomPagination
+    # pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Poa.objects.all()
     serializer_class = PoaSerializer 
