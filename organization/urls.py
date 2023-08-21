@@ -55,6 +55,9 @@ coa_categoryrouter.register('master/coacategory', CoaCategoryViewSet, basename='
 coa_grouprouter = routers.SimpleRouter() 
 coa_grouprouter.register('master/coagroup', CoaGroupViewSet, basename='coa-group') 
 
+get_coa_group_router=routers.SimpleRouter()
+get_coa_group_router.register('get-coagroup',GetCoaGroupViewSet,basename='getcoagroup')
+
 pod_router = routers.SimpleRouter() 
 pod_router.register('master/pod', PodViewSet, basename='pod')  
 
@@ -101,6 +104,7 @@ urlpatterns = [
     path('',include(pod_router.urls)),
     path('',include(poa_router.urls)),
     # path('',include(pol_router.urls)),
+    path('',include(get_coa_group_router.urls)),
     path('',include(coa_grouprouter.urls)),
     path('',include(organization_router.urls)),
     path('',include(charge_router.urls)),
