@@ -91,7 +91,8 @@ class OrganizationFilter(filters.BaseFilterBackend):
                     # return queryset
                 # queryset = queryset.filter(type=type)
                 if type:
-                    queryset = queryset.filter(type__contains=[type])
+                    type_list = type.split(',')
+                    queryset = queryset.filter(type__contains=type_list)
             else:
                 queryset=[]
             return queryset        
