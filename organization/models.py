@@ -294,6 +294,7 @@ class Job(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     job_number = models.CharField(max_length=250,blank=True,null=True)
     enquiry_number = models.CharField(max_length=250,blank=True,null=True)
+    parties = models.ManyToManyField(Organization, blank=True, null=True)
     eta = models.DateTimeField(blank=True,null=True)
     etd = models.DateTimeField(blank=True,null=True)
 
