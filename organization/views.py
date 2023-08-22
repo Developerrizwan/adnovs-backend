@@ -402,7 +402,6 @@ class UserRelatedCountsViewSet(viewsets.GenericViewSet):
 
 class CoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage Coa in the Database"""
-    pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Coa.objects.all()
     serializer_class = CoaSerializer 
@@ -410,6 +409,7 @@ class CoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
 
 class GetCoaViewSet(viewsets.GenericViewSet,mixins.ListModelMixin):
     """Get all coa"""
+    
     permission_classes = (IsAuthenticated,)
     queryset =Coa.objects.all()
     serializer_class = CoaGetSerializer
