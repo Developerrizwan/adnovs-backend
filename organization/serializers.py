@@ -47,12 +47,6 @@ class JobSerializer(serializers.ModelSerializer):
         model = Job
         fields = '__all__'
 
-class JobGetSerializer(serializers.ModelSerializer):
-    company = CompanySerializer()
-    class Meta:
-        model = Job
-        fields = '__all__'
-
 
 class VouchersSerializer(serializers.ModelSerializer):
     class Meta:
@@ -168,6 +162,14 @@ class OrganizationGetSerializer(serializers.ModelSerializer):
         model = Organization
         fields = '__all__'
         
+class JobGetSerializer(serializers.ModelSerializer):
+    company = CompanySerializer()
+    consignee_name =OrganizationSerializer()
+    client_name = OrganizationSerializer()
+    class Meta:
+        model = Job
+        fields = '__all__'
+
 class ChargeGetSerializer(serializers.ModelSerializer):
     coa = CoaSerializer()
     class Meta:
