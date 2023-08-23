@@ -14,13 +14,14 @@ class Company(models.Model):
     users = models.ManyToManyField(get_user_model(), blank=True)
     language_address = models.CharField(max_length=500, blank=True, null=True)
     language_name = models.CharField(max_length=500, blank=True, null=True)
-    wat_number = models.CharField(max_length=200, blank=True, null=True)
+    vat_number = models.CharField(max_length=200, blank=True, null=True)
     vat = models.CharField(max_length=200,blank=True,null=True)
     account_name=models.CharField(max_length=200,blank=True,null=True)
     bank_name=models.CharField(max_length=200,blank=True,null=True)
     account_number=models.CharField(max_length=200,blank=True,null=True)
     iban_code=models.CharField(max_length=200,blank=True,null=True)
     swift_code=models.CharField(max_length=200,blank=True,null=True)
+    company_name_lang=models.CharField(max_length=200, blank=True, null=True)
 
 
 class CoaGroup(models.Model):
