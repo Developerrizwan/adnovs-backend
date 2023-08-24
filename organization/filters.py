@@ -133,13 +133,17 @@ class ChargeFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if queryset.model:
             search = request.query_params.get('search', None)
-            print(search)
             if queryset.filter(coa__company__users__email=request.user.email).exists():
                 queryset = queryset.filter(coa__company__users__email=request.user.email)
                 if search:
-                    queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(iata_code__contains=search)|
-                            Q(type__contains=search)|Q(description__contains=search)|Q(remarks__contains=search)|
-                            Q(tax__contains=search)|Q(language_name__contains=search))
+                    queryset = queryset.filter(Q(code__contains=search.lower())|Q(code__contains=search.upper())|Q(code__istartswith=search.lower())|Q(code__istartswith=search.upper())|
+                                               Q(name__contains=search.lower())|Q(name__contains=search.upper())|Q(name__istartswith=search.lower())|Q(name__istartswith=search.upper())|
+                                               Q(iata_code__contains=search.lower())|Q(iata_code__contains=search.upper())|Q(iata_code__istartswith=search.lower())|Q(iata_code__istartswith=search.upper())|
+                                                Q(type__contains=search.lower())|Q(type__contains=search.upper())|Q(type__istartswith=search.lower())|Q(type__istartswith=search.upper())|
+                                               Q(description__contains=search.lower())|Q(description__contains=search.upper())|Q(description__istartswith=search.lower())|Q(description__istartswith=search.upper())|
+                                                Q(remarks__contains=search.lower())|Q(remarks__contains=search.upper())|Q(remarks__istartswith=search.lower())|Q(remarks__istartswith=search.upper())|
+                                                Q(tax__contains=search.lower())|Q(tax__contains=search.upper())|Q(tax__istartswith=search.lower())|Q(tax__istartswith=search.upper())|
+                                                Q(language_name__contains=search.lower())|Q(language_name__contains=search.upper())|Q(language_name__istartswith=search.lower())|Q(language_name__istartswith=search.upper()))
             else:
                 queryset=[]
             return queryset  
