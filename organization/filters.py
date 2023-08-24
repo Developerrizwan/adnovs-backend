@@ -137,11 +137,11 @@ class ChargeFilter(filters.BaseFilterBackend):
             if queryset.filter(coa__company__users__email=request.user.email).exists():
                 queryset = queryset.filter(coa__company__users__email=request.user.email)
                 if search:
-                    queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(iata_code___contains=search)|
+                    queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(iata_code__contains=search)|
                             Q(type__contains=search)|Q(description__contains=search)|Q(remarks__contains=search)|
                             Q(tax__contains=search)|Q(language_name__contains=search))
             else:
-                queryset = CostEntry.objects.none()
+                queryset=[]
             return queryset  
         
 class CostEntryFilter(filters.BaseFilterBackend):
