@@ -481,7 +481,8 @@ class ChargeViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Creat
     permission_classes = (IsAuthenticated, )
     queryset = Charge.objects.all()
     serializer_class = ChargeSerializer
-
+    filter_backends = [ChargeFilter]
+    
 class GetchargeViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     """Get all charges"""   
     permission_classes = (IsAuthenticated, )

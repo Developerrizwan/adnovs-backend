@@ -92,7 +92,12 @@ class OrganizationFilter(filters.BaseFilterBackend):
                 # queryset = queryset.filter(type=type)
                 if type:
                     type_list = type.split(',')
-                    queryset = queryset.filter(type__contains=type_list)
+                    queryset_list = queryset.none()
+                    for type_value in type_list:
+                        quer = queryset.filter(type__contains=[type_value])
+                        queryset_list = queryset_list.union(quer)
+                    queryset = queryset_list    
+                return queryset
             else:
                 queryset=[]
             return queryset        
