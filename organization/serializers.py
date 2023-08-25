@@ -181,6 +181,7 @@ class InvoicesGetSerializer(serializers.ModelSerializer):
     company=CompanySerializer()
     consignee_name=OrganizationSerializer()
     client_name = OrganizationSerializer()
+    party_account = OrganizationSerializer()
     class Meta:
         model = Invoices
         fields = '__all__' 
