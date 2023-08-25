@@ -378,6 +378,7 @@ class Invoices(models.Model):
     bill_amount = models.CharField(max_length=255, blank=True, null=True)
     narration = models.CharField(max_length=255, blank=True, null=True)
     remarks = models.TextField(blank=True, null=True)
+    party_account =models.ForeignKey(Organization,on_delete=models.CASCADE,blank=True,null=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False)
     job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
     language_address = models.CharField(max_length=500, blank=True, null=True)
