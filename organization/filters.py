@@ -51,9 +51,9 @@ class VoucherFliter(filters.BaseFilterBackend):
                 queryset = queryset.filter(job__company__users__email=request.user.email)
                 if search:
                     queryset = queryset.filter(Q(voucher_type__contains=search)|Q(branch__contains=search)|Q(amount_sar__contains=search)|
-                            Q(party_account__contains=search)|Q(division__contains=search)|Q(naration__contains=search)|Q(outstanding_amount__contains=search))
-                    # return queryset
-                queryset = queryset.filter(voucher_type=type)
+                            Q(division__contains=search)|Q(naration__contains=search)|Q(outstanding_amount__contains=search))
+                if type:
+                    queryset = queryset.filter(voucher_type=type)
             else:
                 queryset=[]
             return queryset   
@@ -66,11 +66,11 @@ class InvoicesFliter(filters.BaseFilterBackend):
             if queryset.filter(company__users=request.user):
                 queryset = queryset.filter(company__users__email=request.user.email)
                 if search:
-                    queryset = queryset.filter(Q(bl_number__contains=search)|Q(invoice_type__contains=search)|Q(consignee_name__contains=search)|
+                    queryset = queryset.filter(Q(bl_number__contains=search)|Q(invoice_type__contains=search)|
                             Q(shipper_name__contains=search)|Q(ex_rate__contains=search)|Q(poa__contains=search)|Q(pod__contains=search)|
                             Q(amount_sar__contains=search)|Q(fc_amount__contains=search)|Q(narration__contains=search))
-                    # return queryset
-                queryset = queryset.filter(invoice_type=type)
+                if type:
+                    queryset = queryset.filter(invoice_type=type)
             else:
                 queryset=[]
             return queryset   
