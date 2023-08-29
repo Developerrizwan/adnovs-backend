@@ -166,6 +166,9 @@ class JobGetSerializer(serializers.ModelSerializer):
     company = CompanySerializer()
     consignee_name =OrganizationSerializer()
     client_name = OrganizationSerializer()
+    notify = OrganizationSerializer()
+    broker = OrganizationSerializer()
+    transporter = OrganizationSerializer()
     class Meta:
         model = Job
         fields = '__all__'
@@ -185,6 +188,7 @@ class InvoicesGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoices
         fields = '__all__' 
+
 
 class VoucherGetSerializer(serializers.ModelSerializer):
     party_account = CoaSerializer()

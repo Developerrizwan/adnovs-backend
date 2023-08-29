@@ -308,9 +308,9 @@ class Job(models.Model):
     client_ref = models.TextField(blank=True,null=True)
     commodity = models.TextField(blank=True,null=True)
     quantity_text =models.TextField(max_length=250,blank=True,null=True)
-    notify = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=True, null=True, related_name='notify_jobs')
-    broker = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=True, null=True, related_name='broker_jobs')
-    transporter = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=True, null=True, related_name='transporter_jobs')
+    notify = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=False, null=True, related_name='notify_jobs')
+    broker = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=False, null=True, related_name='broker_jobs')
+    transporter = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=False, null=True, related_name='transporter_jobs')
 
 class Vouchers(models.Model):
 
