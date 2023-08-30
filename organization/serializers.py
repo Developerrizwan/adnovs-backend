@@ -180,7 +180,7 @@ class ChargeGetSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InvoicesGetSerializer(serializers.ModelSerializer):
-    job = JobSerializer()
+    job = JobGetSerializer()
     company=CompanySerializer()
     consignee_name=OrganizationSerializer()
     client_name = OrganizationSerializer()
