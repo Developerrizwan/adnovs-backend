@@ -356,8 +356,11 @@ class Vouchers(models.Model):
     job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
     ref_no = models.CharField(max_length=255, blank=True, null=True)
     ref_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
-
-
+    voucher_from = models.CharField(max_length=255, blank=True, null=True)
+    voucher_from_type = models.CharField(max_length=255, blank=True, null=True)
+    voucher_to = models.CharField(max_length=255, blank=True, null=True)
+    voucher_to_type = models.CharField(max_length=255, blank=True, null=True) 
+    
 class Invoices(models.Model):
 
     Sales= 'Sales'
