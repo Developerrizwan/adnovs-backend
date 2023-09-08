@@ -258,7 +258,7 @@ class CompanyViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Crea
     filter_backends = [CompanyFliter]
 
 
-class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin,mixins.RetrieveModelMixin):
     """Manage Job in the Database"""
     
     permission_classes = (IsAuthenticated, )
@@ -285,6 +285,12 @@ class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
             job_number = None
         serializer.save(enquiry_number=enquiry_number, job_number=job_number) 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def get_serializer_class(self):        
+        if self.action == 'retrieve':            
+            return JobGetSerializer        
+        return JobGetSerializer
+    
 class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.RetrieveModelMixin):
     """Manage Vouchers in the Database"""
     
@@ -507,13 +513,16 @@ class PoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
 #     serializer_class = PolSerializer 
 #     filter_backends = [SearchFilter] 
     
-class OrganizationViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+class OrganizationViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin,mixins.RetrieveModelMixin):
     """Manage Organization in the Database"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer 
-
+    def get_serializer_class(self):        
+            if self.action == 'retrieve':            
+                return OrganizationGetSerializer        
+            return OrganizationSerializer
 class GetOrganzationViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     """Get all Organizations"""   
     permission_classes = (IsAuthenticated, )
