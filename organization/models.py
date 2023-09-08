@@ -319,15 +319,15 @@ class Vouchers(models.Model):
     Journal = 'Journal'
     Payment= 'Payment'
     Receipt= 'Receipt'
-    Credit = 'CREDIT NOTE'
-    Debit ='DEBIT NOTE'
+    Credit = 'Credit Note'
+    Debit ='Debit Note'
     
     VOUCHER_TYPE_CHOICES = (
         (Journal, 'Journal'),
         (Payment, 'Payment'),
         (Receipt, 'Receipt'),
-        (Credit, 'CREDIT NOTE'),
-        (Debit,'DEBIT NOTE')
+        (Credit, 'Credit Note'),
+        (Debit,'Debit Note')
     )
 
     voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES)
@@ -355,7 +355,7 @@ class Vouchers(models.Model):
     dr_account = models.CharField(max_length=255, blank=True, null=True)
     cr_account = models.CharField(max_length=255, blank=True, null=True)
     remarks = models.TextField(blank=True, null=True)
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=True, null=True)
     ref_no = models.CharField(max_length=255, blank=True, null=True)
     ref_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
     voucher_from = models.CharField(max_length=255, blank=True, null=True)
