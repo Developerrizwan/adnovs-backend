@@ -47,8 +47,8 @@ class VoucherFliter(filters.BaseFilterBackend):
         if queryset.model:
             type = request.query_params.get('type', None)
             search = request.query_params.get('search', None)
-            if queryset.filter(job__company__users=request.user):
-                queryset = queryset.filter(job__company__users__email=request.user.email)
+            if queryset.filter(company__users=request.user):
+                queryset = queryset.filter(company__users__email=request.user.email)
                 if search:
                     queryset = queryset.filter(Q(voucher_type__contains=search)|Q(branch__contains=search)|Q(amount_sar__contains=search)|
                             Q(division__contains=search)|Q(naration__contains=search)|Q(outstanding_amount__contains=search))
