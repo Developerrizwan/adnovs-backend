@@ -22,6 +22,8 @@ class Company(models.Model):
     iban_code=models.CharField(max_length=200,blank=True,null=True)
     swift_code=models.CharField(max_length=200,blank=True,null=True)
     company_name_lang=models.CharField(max_length=200, blank=True, null=True)
+    sinv_count = models.BigIntegerField(default=0)
+    pinv_count = models.BigIntegerField(default=0)
 
 
 class CoaGroup(models.Model):
@@ -371,6 +373,7 @@ class Invoices(models.Model):
         (Purchase, 'Purchase'),
     )
 
+    invoice_number = models.CharField(max_length=255, default='NA')
     bl_number = models.CharField(max_length=255, blank=True, null=True)
     date = models.DateTimeField(default=timezone.now, blank=False, null=False)
     invoice_type = models.CharField("Invoice Type", max_length=255, choices=INVOICE_TYPE_CHOICES, blank=False, null=False)
@@ -517,7 +520,7 @@ class CostEntry(models.Model):
     ex_rate=models.CharField(max_length=200,blank=True,null=True)
     dr_cr=models.CharField(max_length=200,blank=True,null=True,choices=DR_CR_CHOICES)
     job_no= models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=True)
-    invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE, blank=True, null=True)
+    invoice = models.ForeignKey(Invoices, on_delete=models.SET_NULL, blank=True, null=True)
     voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES, blank=True, null=True)
     fcy_amount=models.CharField(max_length=200,blank=True,null=True)
     prorate_method=models.CharField(max_length=200,blank=True,null=True)

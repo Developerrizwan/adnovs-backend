@@ -1,9 +1,11 @@
+from typing import Any
 from django.shortcuts import render
 from django.contrib.auth import get_user_model
 from rest_framework import status, mixins, generics, viewsets
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from django.contrib.auth.models import Group
 from rest_framework.exceptions import ValidationError
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from adnov.users.models import generate_token
@@ -283,12 +285,17 @@ class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
             job_number = None
         serializer.save(enquiry_number=enquiry_number, job_number=job_number) 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.RetrieveModelMixin):
     """Manage Vouchers in the Database"""
     
     permission_classes = (IsAuthenticated, )
     queryset = Vouchers.objects.all()
     serializer_class = VouchersSerializer
+
+    def get_serializer_class(self):        
+        if self.action == 'retrieve':            
+            return VoucherGetSerializer        
+        return VouchersSerializer
 
 class InvoicesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.RetrieveModelMixin):
     """Manage Invoices in the Database"""
@@ -300,6 +307,45 @@ class InvoicesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
         if self.action == 'retrieve':            
             return InvoicesGetSerializer        
         return InvoicesSerializer
+    
+    def create(self,request):
+        serializer = self.get_serializer(data = request.data)
+        serializer.is_valid(raise_exception=True)
+
+        invoice_type = serializer.validated_data['invoice_type']
+        company_id = serializer.validated_data['company']
+
+
+        if invoice_type == 'Sales':
+            company = Company.objects.get(id=company_id.id)
+            scount = company.sinv_count
+            invoice_number = "SINV"+ str(scount+1)
+            company.sinv_count= scount+1
+            company.save()
+
+        if invoice_type == 'Purchase':
+            company = Company.objects.get(id=company_id.id)
+            pcount =  company.pinv_count
+            invoice_number = "PINV"+ str(pcount+1)
+            company.pinv_count= scount+1
+            company.save()
+
+        serializer.save(invoice_number=invoice_number) 
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object() 
+            # cost_entry = get_object_or_404(CostEntry, invoice=instance)
+            cost_entrys = CostEntry.objects.filter(invoice=instance)
+            for cost_entry in cost_entrys:
+                cost_entry.is_included = False
+                cost_entry.save()
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response(f"An error occurred: {str(e)}", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class GetusersViewSet(viewsets.GenericViewSet,mixins.ListModelMixin):
     """Get all Users"""
