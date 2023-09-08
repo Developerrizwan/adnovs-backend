@@ -333,7 +333,7 @@ class InvoicesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
             company = Company.objects.get(id=company_id.id)
             pcount =  company.pinv_count
             invoice_number = "PINV"+ str(pcount+1)
-            company.pinv_count= scount+1
+            company.pinv_count= pcount+1
             company.save()
 
         serializer.save(invoice_number=invoice_number) 
