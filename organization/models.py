@@ -319,15 +319,15 @@ class Vouchers(models.Model):
     Journal = 'Journal'
     Payment= 'Payment'
     Receipt= 'Receipt'
-    Credit = 'Credit Note'
-    Debit ='Debit Note'
+    CreditNote = 'CreditNote'
+    DebitNote ='DebitNote'
     
     VOUCHER_TYPE_CHOICES = (
         (Journal, 'Journal'),
         (Payment, 'Payment'),
         (Receipt, 'Receipt'),
-        (Credit, 'Credit Note'),
-        (Debit,'Debit Note')
+        (CreditNote, 'CreditNote'),
+        (DebitNote,'DebitNote')
     )
 
     voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES)
