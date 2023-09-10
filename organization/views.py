@@ -264,6 +264,7 @@ class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     permission_classes = (IsAuthenticated, )
     queryset = Job.objects.all()
     serializer_class = JobSerializer 
+    filter_backends = [TypeFilter]
 
     def create(self,request):
         serializer = self.get_serializer(data = request.data)
@@ -289,7 +290,7 @@ class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     def get_serializer_class(self):        
         if self.action == 'retrieve':            
             return JobGetSerializer        
-        return JobGetSerializer
+        return JobSerializer
     
 class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.RetrieveModelMixin):
     """Manage Vouchers in the Database"""
