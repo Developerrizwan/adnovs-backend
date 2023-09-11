@@ -557,3 +557,6 @@ class AccountDetails(models.Model):
     inter_branch = models.CharField(max_length=200,blank=True,null=True)
     sac_code = models.CharField(max_length=200,blank=True,null=True)
     remarks= models.TextField(max_length=200,blank=True,null=True)
+    department = models.CharField(max_length=200,blank=True,null=True)
+    shipment_no = models.CharField(max_length=200,blank=True,null=True)
+    job_no = models.ForeignKey(Job, on_delete=models.CASCADE, blank=True, null=True)  
