@@ -566,5 +566,9 @@ class AccountDetailsViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixi
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated,)
     queryset = AccountDetails.objects.all()
-    serializer_class = AccountDetailsGetSerializer  
+    serializer_class = AccountDetailsSerializer  
     filter_backends = [AccountFilter]
+    def get_serializer_class(self):        
+        if self.action == 'list':            
+            return AccountDetailsGetSerializer        
+        return AccountDetailsSerializer
