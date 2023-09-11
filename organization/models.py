@@ -530,3 +530,30 @@ class CostEntry(models.Model):
     tax_group_code=models.CharField(max_length=200,blank=True,null=True)
     created_at = models.DateTimeField(default=timezone.now)
     is_included = models.BooleanField(default=False)
+    
+class AccountDetails(models.Model):
+    Dr = 'Dr'
+    Cr = 'Cr'
+    DR_CR_CHOICES = (
+        (Dr, 'Dr'),
+        (Cr, 'Cr'),
+    ) 
+    line_no = models.CharField(max_length=200,blank=True,null=True)
+    ac_name = models.ForeignKey(Coa, on_delete=models.CASCADE, blank=False, null=True)
+    vouchers = models.ForeignKey(Vouchers, on_delete=models.CASCADE, blank=False, null=True)
+    dr_cr = models.CharField(max_length=200,blank=True,null=True,choices=DR_CR_CHOICES)
+    narration = models.CharField(max_length=200,blank=True,null=True)
+    qty = models.CharField(max_length=200,blank=True,null=True)
+    currency = models.CharField(max_length=200,blank=True,null=True)
+    ex_rate = models.CharField(max_length=200,blank=True,null=True)
+    amount_qty = models.CharField(max_length=200,blank=True,null=True)
+    fcy_amount= models.CharField(max_length=200,blank=True,null=True)
+    amount_sar = models.CharField(max_length=200,blank=True,null=True)
+    tax_group_code = models.CharField(max_length=200,blank=True,null=True)
+    taxable_amount= models.CharField(max_length=200,blank=True,null=True)
+    tax_amount = models.CharField(max_length=200,blank=True,null=True)
+    division= models.CharField(max_length=200,blank=True,null=True)
+    asset = models.CharField(max_length=200,blank=True,null=True)
+    inter_branch = models.CharField(max_length=200,blank=True,null=True)
+    sac_code = models.CharField(max_length=200,blank=True,null=True)
+    remarks= models.TextField(max_length=200,blank=True,null=True)

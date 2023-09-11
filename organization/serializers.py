@@ -196,3 +196,8 @@ class VoucherGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vouchers
         fields = '__all__'
+        
+class AccountDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccountDetails
+        fields = '__all__' 

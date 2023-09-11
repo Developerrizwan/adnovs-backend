@@ -213,4 +213,16 @@ class SearchFilter(filters.BaseFilterBackend):
                 Q(name__istartswith=search.lower()) |Q(name__istartswith=search.upper()) )
                 return queryset
             else:
+                return queryset 
+
+class AccountFilter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        if queryset.model:
+            voucher = request.query_params.get('voucher',None)
+            print(voucher)
+            if voucher:
+                print(True,voucher)
+                queryset = queryset.filter(vouchers__id=voucher)
+                return queryset
+            else:
                 return queryset
