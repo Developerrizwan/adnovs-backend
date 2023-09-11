@@ -561,10 +561,10 @@ class GetCostEntryViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
     serializer_class = CostEntryGetSerializer 
     filter_backends = [CostEntryFilter]
 
-class AccountDetailsViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+class AccountDetailsViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin,mixins.RetrieveModelMixin):
     """Manage costentry in the Database"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated,)
     queryset = AccountDetails.objects.all()
-    serializer_class = AccountDetailsSerializer  
+    serializer_class = AccountDetailsGetSerializer  
     filter_backends = [AccountFilter]
