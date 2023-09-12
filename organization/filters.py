@@ -221,16 +221,23 @@ class SearchFilter(filters.BaseFilterBackend):
 
 class AccountFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        if queryset.model:
-            voucher = request.query_params.get('voucher',None)
-            print(voucher)
-            if voucher:
-                print(True,voucher)
-                queryset = queryset.filter(vouchers__id=voucher)
-                return queryset
-            else:
-                return queryset
+        search = request.query_params.get('search',None)
+        if search:
+            search_lower = search.lower()
+            search_upper = search.upper()
+            search_capitalize = search.capitalize()
+            queryset = queryset.filter(Q(line_no__contains=search) | Q(dr_cr__contains=search_capitalize) | Q(shipment_no__contains=search) 
+                                       |Q(narration__contains=search_lower) | Q(qty__contains=search_lower) | Q(currency__contains=search_lower)| Q(ex_rate__contains=search_lower) 
+                                       |Q(amount_qty__contains=search_lower)|Q( fcy_amount__contains=search_lower) | Q(amount_sar__contains=search_lower)
+                                       |Q(tax_group_code__contains=search_lower) | Q(taxable_amount__contains=search_lower) | Q( tax_amount__contains=search_lower)
+                                       |Q( division__contains=search_lower)|Q(asset__contains=search_lower)|Q( inter_branch__contains=search_lower)
+                                       |Q(sac_code__contains=search_lower)|Q(remarks__contains=search_lower)|Q(department__contains=search_lower)) 
+        voucher = request.query_params.get('voucher')
+        if voucher:
+            queryset = queryset.filter(vouchers__id=voucher)
+        return queryset
             
+
 
 class ProfitLossFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
