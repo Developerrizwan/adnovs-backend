@@ -226,12 +226,27 @@ class AccountFilter(filters.BaseFilterBackend):
             search_lower = search.lower()
             search_upper = search.upper()
             search_capitalize = search.capitalize()
-            queryset = queryset.filter(Q(line_no__contains=search) | Q(dr_cr__contains=search_capitalize) | Q(shipment_no__contains=search) 
-                                       |Q(narration__contains=search_lower) | Q(qty__contains=search_lower) | Q(currency__contains=search_lower)| Q(ex_rate__contains=search_lower) 
-                                       |Q(amount_qty__contains=search_lower)|Q( fcy_amount__contains=search_lower) | Q(amount_sar__contains=search_lower)
-                                       |Q(tax_group_code__contains=search_lower) | Q(taxable_amount__contains=search_lower) | Q( tax_amount__contains=search_lower)
-                                       |Q( division__contains=search_lower)|Q(asset__contains=search_lower)|Q( inter_branch__contains=search_lower)
-                                       |Q(sac_code__contains=search_lower)|Q(remarks__contains=search_lower)|Q(department__contains=search_lower)) 
+            queryset = queryset.filter(
+                                    Q(line_no__contains=search) | Q(dr_cr__contains=search_capitalize) | Q(dr_cr__contains=search_lower) | Q(dr_cr__contains=search_upper) |
+                                    Q(shipment_no__contains=search) | Q(narration__contains=search_lower) | Q(narration__contains=search_capitalize) | Q(narration__contains=search_upper) |
+                                    Q(qty__contains=search_lower) | Q(qty__contains=search_upper) | Q(qty__contains=search_capitalize) |
+                                    Q(currency__contains=search_lower) | Q(currency__contains=search_upper) | Q(currency__contains=search_capitalize) |
+                                    Q(ex_rate__contains=search_lower) | Q(ex_rate__contains=search_upper) | Q(ex_rate__contains=search_capitalize) |
+                                    Q(amount_qty__contains=search_lower) | Q(amount_qty__contains=search_upper) | Q(amount_qty__contains=search_capitalize) |
+                                    Q(fcy_amount__contains=search_lower) | Q(fcy_amount__contains=search_upper) | Q(fcy_amount__contains=search_capitalize) |
+                                    Q(amount_sar__contains=search_lower) | Q(amount_sar__contains=search_upper) | Q(amount_sar__contains=search_capitalize) |
+                                    Q(tax_group_code__contains=search_lower) | Q(tax_group_code__contains=search_upper) | Q(tax_group_code__contains=search_capitalize) |
+                                    Q(taxable_amount__contains=search_lower) | Q(taxable_amount__contains=search_upper) | Q(taxable_amount__contains=search_capitalize) |
+                                    Q(tax_amount__contains=search_lower) | Q(tax_amount__contains=search_upper) | Q(tax_amount__contains=search_capitalize) |
+                                    Q(division__contains=search_lower) | Q(division__contains=search_upper) | Q(division__contains=search_capitalize) |
+                                    Q(asset__contains=search_lower) | Q(asset__contains=search_upper) | Q(asset__contains=search_capitalize) |
+                                    Q(inter_branch__contains=search_lower) | Q(inter_branch__contains=search_upper) | Q(inter_branch__contains=search_capitalize) |
+                                    Q(sac_code__contains=search_lower) | Q(sac_code__contains=search_upper) | Q(sac_code__contains=search_capitalize) |
+                                    Q(remarks__contains=search_lower) | Q(remarks__contains=search_upper) | Q(remarks__contains=search_capitalize) |
+                                    Q(department__contains=search_lower) | Q(department__contains=search_upper) | Q(department__contains=search_capitalize) |
+                                    Q(vouchers__voucher_type__contains=search_lower) | Q(vouchers__voucher_type__contains=search_upper) | Q(vouchers__voucher_type__contains=search_capitalize) |
+                                    Q(ac_name__code__contains=search_lower) | Q(ac_name__code__contains=search_capitalize) | Q(ac_name__code__contains=search_upper))
+                                
         voucher = request.query_params.get('voucher')
         if voucher:
             queryset = queryset.filter(vouchers__id=voucher)
