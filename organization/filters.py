@@ -37,7 +37,8 @@ class TypeFilter(filters.BaseFilterBackend):
                     #         Q(branch__contains=search)|Q(consignee_name__contains=search)|Q(shipper_name__contains=search)|Q(client_name__contains=search)|
                     #         Q(job_number__contains=search)|Q(enquiry_number__contains=search))
                     # return queryset
-                queryset = queryset.filter(job_type=type)
+                if type: 
+                    queryset = queryset.filter(job_type=type)
             else:
                 queryset=[]
             return queryset
