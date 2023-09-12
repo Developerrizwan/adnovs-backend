@@ -568,3 +568,10 @@ class AccountDetailsViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixi
     queryset = AccountDetails.objects.all()
     serializer_class = AccountDetailsSerializer  
     filter_backends = [AccountFilter]
+
+class ProfitLossViewset(viewsets.GenericViewSet,mixins.ListModelMixin):
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated,)
+    queryset = Coa.objects.all()
+    serializer_class = CoaSerializer
+    filter_backends = [ProfitLossFilter]

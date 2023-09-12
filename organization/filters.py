@@ -66,7 +66,10 @@ class InvoicesFliter(filters.BaseFilterBackend):
             if queryset.filter(company__users=request.user):
                 queryset = queryset.filter(company__users__email=request.user.email)
                 if search:
-                    queryset = queryset.filter(Q(bl_number__contains=search)|Q(invoice_type__contains=search)|
+                    search_lower = search.lower()
+                    search_upper = search.upper()
+                    search_capitalize = search.capitalize()
+                    queryset = queryset.filter(Q(invoice_number__contains=search_lower)|Q(invoice_number__contains=search_upper)|Q(invoice_number__contains=search_capitalize)|Q(bl_number__contains=search)|Q(invoice_type__contains=search)|
                             Q(shipper_name__contains=search)|Q(ex_rate__contains=search)|Q(poa__contains=search)|Q(pod__contains=search)|
                             Q(amount_sar__contains=search)|Q(fc_amount__contains=search)|Q(narration__contains=search))
                 if type:
@@ -226,3 +229,9 @@ class AccountFilter(filters.BaseFilterBackend):
                 return queryset
             else:
                 return queryset
+            
+
+class ProfitLossFilter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+            # 
+            pass

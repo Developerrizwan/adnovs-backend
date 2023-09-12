@@ -88,6 +88,9 @@ get_organization_router.register('get-organization',GetOrganzationViewset, basen
 accountdetails_router = routers.SimpleRouter() 
 accountdetails_router.register('master/accountdetails', AccountDetailsViewset, basename='accountdetails')
 
+profit_loss_router = routers.SimpleRouter() 
+profit_loss_router.register('profit/loss', ProfitLossViewset, basename='profit-loss')
+
 urlpatterns = [
     path('',include(get_user_count_router.urls)),
     path('',include(user_delete_router.urls)),
@@ -116,6 +119,7 @@ urlpatterns = [
     path('',include(get_cost_entry_router.urls)),
     path('',include(get_organization_router.urls)),
     path('',include(accountdetails_router.urls)),
+    path('',include(profit_loss_router.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
     path('user-create/', UserCreateViewSet.as_view(), name='user-create'),
