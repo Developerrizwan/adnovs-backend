@@ -233,5 +233,15 @@ class AccountFilter(filters.BaseFilterBackend):
 
 class ProfitLossFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-            # 
-            pass
+        if queryset.model:
+            search = request.query_params.get('search', None)
+            if queryset.filter(company__users__email=request.user.email):
+                queryset = queryset.filter(company__users__email=request.user.email)
+                print(len(queryset))
+                queryset = queryset.filter(coa_type='Profit/Loss')
+                cost_entry_list= []
+                for coa in queryset:
+                    cost_entry = CostEntry.objects.filter(charge__coa=coa)
+                    cost_entry_list.append(cost_entry)
+                return cost_entry_list
+
