@@ -622,7 +622,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         if page is not None:
             cost_entry_list = []
             for coa in page:
-                cost_entry = CostEntry.objects.filter(Q(charge__coa=coa)|Q(job_no=job)|Q(created_at__range=(start_date, end_date)))
+                cost_entry = CostEntry.objects.filter(charge__coa=coa)
                 if start_date and end_date:
                     cost_entry = cost_entry.filter(created_at__range=(start_date, end_date))
 
