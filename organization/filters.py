@@ -25,9 +25,9 @@ class TypeFilter(filters.BaseFilterBackend):
                         Q(por__contains=search_lower) | Q(por__contains=search_upper) | Q(por__contains=search_capitalize) |
                         Q(por__istartswith=search.lower()) |Q(por__istartswith=search.upper()) |
                         Q(branch__contains=search_lower) | Q(branch__contains=search_upper) | Q(branch__contains=search_capitalize) |
-                        Q(consignee_name__contains=search_lower) | Q(consignee_name__contains=search_upper) | Q(consignee_name__contains=search_capitalize) |
+                        Q(consignee_name__name__contains=search_lower) | Q(consignee_name__name__contains=search_upper) | Q(consignee_name__name__contains=search_capitalize) |
                         Q(shipper_name__contains=search_lower) | Q(shipper_name__contains=search_upper) | Q(shipper_name__contains=search_capitalize) |
-                        Q(client_name__contains=search_lower) | Q(client_name__contains=search_upper) | Q(client_name__contains=search_capitalize) |
+                        Q(client_name__name__contains=search_lower) | Q(client_name__name__contains=search_upper) | Q(client_name__name__contains=search_capitalize) |
                         Q(job_number__contains=search_lower) | Q(job_number__contains=search_upper) | Q(job_number__contains=search_capitalize) |
                         Q(enquiry_number__contains=search_lower) | Q(enquiry_number__contains=search_upper) | Q(enquiry_number__contains=search_capitalize)
                     )
