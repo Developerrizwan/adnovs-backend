@@ -628,8 +628,19 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
                 if job:
                     cost_entry = cost_entry.filter(job_no__id=job)
-                    
+
+                income_amount=0
+                expenses_amount=0
+
+
+                for cost in cost_entry:
+                    if cost.dr_cr=='Cr':
+                        income_amount += int(cost.amount)
+                    elif cost.dr_cr=='Dr':
+                        expenses_amount += int(cost.amount)
+
                 serializer = CostEntrySerializer(cost_entry, many=True)
+                company_serializer = CompanySerializer(coa.company)
                 cost_entry_list.append({
                     'coa_id': coa.id,
                     'code': coa.code,
@@ -651,9 +662,11 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                     'language_name': coa.language_name,
                     'currency': coa.currency,
                     # 'additional_reference_code': coa.additional_reference_code,
-                    'company': coa.company.name,
+                    'company': company_serializer.data,
                     'remarks': coa.remarks,
-                    'cost_entry': serializer.data
+                    'cost_entry': serializer.data,
+                    'income_amount': income_amount,
+                    'expenses_amount': expenses_amount
                 })
 
             return Response(cost_entry_list)
