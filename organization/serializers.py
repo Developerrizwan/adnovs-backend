@@ -201,3 +201,10 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccountDetails
         fields = '__all__' 
+    
+class AccountDetailsGetSerializer(serializers.ModelSerializer):
+    ac_name = CoaSerializer()
+    vouchers = VouchersSerializer()
+    class Meta:
+        model = AccountDetails
+        fields = '__all__' 
