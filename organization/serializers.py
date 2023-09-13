@@ -194,6 +194,7 @@ class VoucherGetSerializer(serializers.ModelSerializer):
     party_account = CoaSerializer()
     job = JobSerializer()
     company = CompanySerializer()
+    invoice = InvoicesSerializer()
     class Meta:
         model = Vouchers
         fields = '__all__'

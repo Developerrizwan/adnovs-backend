@@ -314,6 +314,44 @@ class Job(models.Model):
     broker = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=True, null=True, related_name='broker_jobs')
     transporter = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=True, null=True, related_name='transporter_jobs')
 
+
+    
+class Invoices(models.Model):
+
+    Sales= 'Sales'
+    Purchase= 'Purchase'
+    
+    INVOICE_TYPE_CHOICES = (
+        (Sales, 'Sales'),
+        (Purchase, 'Purchase'),
+    )
+
+    invoice_number = models.CharField(max_length=255, default='NA')
+    bl_number = models.CharField(max_length=255, blank=True, null=True)
+    date = models.DateTimeField(default=timezone.now, blank=False, null=False)
+    invoice_type = models.CharField("Invoice Type", max_length=255, choices=INVOICE_TYPE_CHOICES, blank=False, null=False)
+    consignee_name = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=True, null=True, related_name="consigneename_Invoice")
+    client_name = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=True, null=True, related_name="clientinvoice")
+    currency_sar = models.CharField(max_length=255, blank=True, null=True)
+    bayan_number = models.CharField(max_length=255, blank=True, null=True)
+    shipper_name = models.CharField(max_length=255, blank=True, null=True)
+    ex_rate = models.CharField(max_length=255, blank=True, null=True) 
+    pod = models.CharField(max_length=255, blank=True, null=True)
+    poa = models.CharField(max_length=255, blank=True, null=True)
+    fc_amount = models.CharField(max_length=255, blank=True, null=True)
+    amount_sar = models.CharField(max_length=255, blank=True, null=True)
+    ref_data = models.DateTimeField(blank=True, null=True)
+    due_date = models.DateTimeField(blank=True, null=True)
+    bill_amount = models.CharField(max_length=255, blank=True, null=True)
+    narration = models.CharField(max_length=255, blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True)
+    party_account =models.ForeignKey(Organization,on_delete=models.CASCADE,blank=True,null=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False)
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
+    language_address = models.CharField(max_length=500, blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    last_time_generated = models.DateTimeField(default=timezone.now)
+    
 class Vouchers(models.Model):
 
     Journal = 'Journal'
@@ -362,45 +400,8 @@ class Vouchers(models.Model):
     voucher_from_type = models.CharField(max_length=255, blank=True, null=True)
     voucher_to = models.CharField(max_length=255, blank=True, null=True)
     voucher_to_type = models.CharField(max_length=255, blank=True, null=True) 
+    invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE, blank=True, null=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=True, null=True)
-    
-class Invoices(models.Model):
-
-    Sales= 'Sales'
-    Purchase= 'Purchase'
-    
-    INVOICE_TYPE_CHOICES = (
-        (Sales, 'Sales'),
-        (Purchase, 'Purchase'),
-    )
-
-    invoice_number = models.CharField(max_length=255, default='NA')
-    bl_number = models.CharField(max_length=255, blank=True, null=True)
-    date = models.DateTimeField(default=timezone.now, blank=False, null=False)
-    invoice_type = models.CharField("Invoice Type", max_length=255, choices=INVOICE_TYPE_CHOICES, blank=False, null=False)
-    consignee_name = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=True, null=True, related_name="consigneename_Invoice")
-    client_name = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=True, null=True, related_name="clientinvoice")
-    currency_sar = models.CharField(max_length=255, blank=True, null=True)
-    bayan_number = models.CharField(max_length=255, blank=True, null=True)
-    shipper_name = models.CharField(max_length=255, blank=True, null=True)
-    ex_rate = models.CharField(max_length=255, blank=True, null=True) 
-    pod = models.CharField(max_length=255, blank=True, null=True)
-    poa = models.CharField(max_length=255, blank=True, null=True)
-    fc_amount = models.CharField(max_length=255, blank=True, null=True)
-    amount_sar = models.CharField(max_length=255, blank=True, null=True)
-    ref_data = models.DateTimeField(blank=True, null=True)
-    due_date = models.DateTimeField(blank=True, null=True)
-    bill_amount = models.CharField(max_length=255, blank=True, null=True)
-    narration = models.CharField(max_length=255, blank=True, null=True)
-    remarks = models.TextField(blank=True, null=True)
-    party_account =models.ForeignKey(Organization,on_delete=models.CASCADE,blank=True,null=True)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False)
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, blank=False, null=False)
-    language_address = models.CharField(max_length=500, blank=True, null=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    last_time_generated = models.DateTimeField(default=timezone.now)
-    
-
 # class Coa(models.Model):
     
 #     BS = 'Balance Sheet'
