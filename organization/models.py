@@ -176,6 +176,7 @@ class Job(models.Model):
     Invoiced = 'Invoiced'
     Finished = 'Finished'
     Cancelled = 'Cancelled'
+    RFQ = 'RFQ'
 
 
     JOB_STATUS_CHOICES = (
@@ -192,7 +193,8 @@ class Job(models.Model):
         (Delivered, 'Delivered'),
         (Invoiced, 'Invoiced'),
         (Finished, 'Finished'),
-        (Cancelled, 'Cancelled')
+        (Cancelled, 'Cancelled'),
+        (RFQ, 'RFQ')
     )
 
 
