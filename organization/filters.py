@@ -94,10 +94,11 @@ class InvoicesMasterFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if queryset.model:
             job = request.query_params.get('job', None)
+            type = request.query_params.get('type', None)
             if job:
                 queryset = queryset.filter(job__id=job)
-            else:
-                queryset=queryset
+            if type:
+                queryset = queryset.filter(invoice_type=type)
         return queryset
 
 
