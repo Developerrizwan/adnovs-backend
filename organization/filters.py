@@ -63,9 +63,12 @@ class InvoicesFliter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if queryset.model:
             type = request.query_params.get('type', None)
+            job = request.query_params.get('job', None)
             search = request.query_params.get('search', None)
             if queryset.filter(company__users=request.user):
                 queryset = queryset.filter(company__users__email=request.user.email)
+                if job:
+                    queryset = queryset.filter(job__id=job)
                 if search:
                     search_lower = search.lower()
                     search_upper = search.upper()
