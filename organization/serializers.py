@@ -193,6 +193,10 @@ class InvoicesGetSerializer(serializers.ModelSerializer):
 class VoucherGetSerializer(serializers.ModelSerializer):
     client_name = serializers.SerializerMethodField()
     def get_client_name(self, obj):
+
+        if not obj.invoice:
+            return None
+        
         client = obj.invoice.client_name
         return OrganizationSerializer(client).data
     party_account = CoaSerializer()
