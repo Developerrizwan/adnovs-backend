@@ -191,6 +191,10 @@ class InvoicesGetSerializer(serializers.ModelSerializer):
 
 
 class VoucherGetSerializer(serializers.ModelSerializer):
+    client_name = serializers.SerializerMethodField()
+    def get_client_name(self, obj):
+        client = obj.invoice.client_name
+        return OrganizationSerializer(client).data
     party_account = CoaSerializer()
     job = JobSerializer()
     company = CompanySerializer()
