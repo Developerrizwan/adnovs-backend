@@ -51,8 +51,15 @@ class VoucherFliter(filters.BaseFilterBackend):
             if queryset.filter(company__users=request.user):
                 queryset = queryset.filter(company__users__email=request.user.email)
                 if search:
-                    queryset = queryset.filter(Q(voucher_type__contains=search)|Q(branch__contains=search)|Q(amount_sar__contains=search)|
-                            Q(division__contains=search)|Q(naration__contains=search)|Q(outstanding_amount__contains=search))
+                    search_lower = search.lower()
+                    search_upper = search.upper()
+                    search_capitalize = search.capitalize()
+                    queryset = queryset.filter(Q(voucher_type__contains=search_lower)|Q(voucher_type__contains=search_upper)|Q(voucher_type__contains=search_capitalize)|
+                                               Q(branch__contains=search_lower)|Q(branch__contains=search_upper)|Q(branch__contains=search_capitalize)|
+                                               Q(amount_sar__contains=search_lower)| Q(amount_sar__contains=search_capitalize)| Q(amount_sar__contains=search_upper)|
+                                               Q(division__contains=search_lower)| Q(division__contains=search_upper)| Q(division__contains=search_capitalize)|
+                                               Q(naration__contains=search_lower)| Q(naration__contains=search_capitalize)| Q(naration__contains=search_upper)|
+                                               Q(outstanding_amount__contains=search_lower)|Q(outstanding_amount__contains=search_upper) |Q(outstanding_amount__contains=search_capitalize))
                 if type:
                     queryset = queryset.filter(voucher_type=type)
             else:
@@ -82,7 +89,18 @@ class InvoicesFliter(filters.BaseFilterBackend):
                 queryset=[]
             return queryset   
         
-        
+
+class InvoicesMasterFilter(filters.BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        if queryset.model:
+            job = request.query_params.get('job', None)
+            if job:
+                queryset = queryset.filter(job__id=job)
+            else:
+                queryset=queryset
+        return queryset
+
+
 class OrganizationFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if queryset.model:
