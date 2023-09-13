@@ -135,11 +135,10 @@ class CoaFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if queryset.model:
             search = request.query_params.get('search', None)
-            print(search)
             if queryset.filter(company__users__email=request.user.email):
                 queryset = queryset.filter(company__users__email=request.user.email)
                 if search:
-                    queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(type___contains=search)|
+                    queryset = queryset.filter(Q(code__contains=search)|Q(name__contains=search)|Q(type__contains=search)|
                             Q(coa_type__contains=search)|Q(is_direct_indirect__contains=search)|Q(dr_cr__contains=search)|
                             Q(subgroup__contains=search)|Q(category__contains=search)|Q(group__contains=search)|Q(language_name__contains=search)|
                             Q(long_name__contains=search)|Q(additional_reference_code__contains=search))

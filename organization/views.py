@@ -258,7 +258,7 @@ class CompanyViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Crea
     """Manage Company in the Database"""
 
     permission_classes = (IsAuthenticated, )
-    queryset = Company.objects.all()
+    queryset = Company.objects.all().order_by('-id')
     serializer_class = CompanySerializer
     filter_backends = [CompanyFliter]
 
@@ -267,7 +267,7 @@ class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     """Manage Job in the Database"""
 
     permission_classes = (IsAuthenticated, )
-    queryset = Job.objects.all()
+    queryset = Job.objects.all().order_by('-id')
     serializer_class = JobSerializer
     filter_backends = [TypeFilter]
 
@@ -302,7 +302,7 @@ class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
     """Manage Vouchers in the Database"""
 
     permission_classes = (IsAuthenticated, )
-    queryset = Vouchers.objects.all()
+    queryset = Vouchers.objects.all().order_by('-id')
     serializer_class = VouchersSerializer
 
     def get_serializer_class(self):
@@ -315,7 +315,7 @@ class InvoicesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
     """Manage Invoices in the Database"""
 
     permission_classes = (IsAuthenticated, )
-    queryset = Invoices.objects.all()
+    queryset = Invoices.objects.all().order_by('-id')
     serializer_class = InvoicesSerializer
     filter_backends=[InvoicesMasterFilter]
 
@@ -388,7 +388,7 @@ class GetcompanyViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
-    queryset = Company.objects.all()
+    queryset = Company.objects.all().order_by('-id')
     serializer_class = CompanySerializer
 
 
@@ -397,7 +397,7 @@ class GetjobViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
-    queryset = Job.objects.all()
+    queryset = Job.objects.all().order_by('-id')
     serializer_class = JobGetSerializer
     filter_backends = [TypeFilter]
 
@@ -407,7 +407,7 @@ class GetvoucherViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
-    queryset = Vouchers.objects.all()
+    queryset = Vouchers.objects.all().order_by('-id')
     serializer_class = VoucherGetSerializer
     filter_backends = [VoucherFliter]
 
@@ -417,7 +417,7 @@ class GetinvoiceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
-    queryset = Invoices.objects.all()
+    queryset = Invoices.objects.all().order_by('-id')
     serializer_class = InvoicesGetSerializer
     filter_backends = [InvoicesFliter]
 
@@ -471,7 +471,7 @@ class UserRelatedCountsViewSet(viewsets.GenericViewSet):
 class CoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage Coa in the Database"""
     permission_classes = (IsAuthenticated, )
-    queryset = Coa.objects.all()
+    queryset = Coa.objects.all().order_by('-id')
     serializer_class = CoaSerializer
     filter_backends = [CoaFilter]
 
@@ -480,7 +480,7 @@ class GetCoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     """Get all coa"""
 
     permission_classes = (IsAuthenticated,)
-    queryset = Coa.objects.all()
+    queryset = Coa.objects.all().order_by('-id')
     serializer_class = CoaGetSerializer
     filter_backends = [CoaFilter]
 
@@ -505,7 +505,7 @@ class GetCoaGroupViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     """Get all coa group"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated,)
-    queryset = CoaGroup.objects.all()
+    queryset = CoaGroup.objects.all().order_by('-id')
     serializer_class = CoaGroupSerializer
     filter_backends = [CoaGroupFilter]
 
@@ -514,7 +514,7 @@ class PodViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     """Manage Pod in the Database"""
     # pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
-    queryset = Pod.objects.all()
+    queryset = Pod.objects.all().order_by('-id')
     serializer_class = PodSerializer
     filter_backends = [SearchFilter]
 
@@ -523,7 +523,7 @@ class PoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
     """Manage Poa in the Database"""
     # pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
-    queryset = Poa.objects.all()
+    queryset = Poa.objects.all().order_by('-id')
     serializer_class = PoaSerializer
     filter_backends = [SearchFilter]
 
@@ -540,7 +540,7 @@ class OrganizationViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins
     """Manage Organization in the Database"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
-    queryset = Organization.objects.all()
+    queryset = Organization.objects.all().order_by('-id')
     serializer_class = OrganizationSerializer
 
     def get_serializer_class(self):
@@ -552,7 +552,7 @@ class OrganizationViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins
 class GetOrganzationViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     """Get all Organizations"""
     permission_classes = (IsAuthenticated, )
-    queryset = Organization.objects.all()
+    queryset = Organization.objects.all().order_by('-id')
     serializer_class = OrganizationGetSerializer
     filter_backends = [OrganizationFilter]
 
@@ -561,7 +561,7 @@ class ChargeViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Creat
     """Manage charge in the Database"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
-    queryset = Charge.objects.all()
+    queryset = Charge.objects.all().order_by('-id')
     serializer_class = ChargeSerializer
     filter_backends = [ChargeFilter]
 
@@ -569,7 +569,7 @@ class ChargeViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Creat
 class GetchargeViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     """Get all charges"""
     permission_classes = (IsAuthenticated, )
-    queryset = Charge.objects.all()
+    queryset = Charge.objects.all().order_by('-id')
     serializer_class = ChargeGetSerializer
     filter_backends = [ChargeFilter]
 
@@ -578,14 +578,14 @@ class CostEntryViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cr
     """Manage costentry in the Database"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
-    queryset = CostEntry.objects.all()
+    queryset = CostEntry.objects.all().order_by('-id')
     serializer_class = CostEntrySerializer
 
 
 class GetCostEntryViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     """Get all CostEntry"""
     permission_classes = (IsAuthenticated, )
-    queryset = CostEntry.objects.all()
+    queryset = CostEntry.objects.all().order_by('-id')
     serializer_class = CostEntryGetSerializer
     filter_backends = [CostEntryFilter]
 
@@ -594,7 +594,7 @@ class AccountDetailsViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixi
     """Manage costentry in the Database"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated,)
-    queryset = AccountDetails.objects.all()
+    queryset = AccountDetails.objects.all().order_by('-id')
     serializer_class = AccountDetailsSerializer
     filter_backends = [AccountFilter]
 
@@ -606,7 +606,7 @@ class AccountDetailsViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixi
 
 class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     pagination_class = CustomPagination
-    queryset = Coa.objects.all()
+    queryset = Coa.objects.all().order_by('-id')
     permission_classes = (IsAuthenticated,)
 
     def list(self, request, *args, **kwargs):
