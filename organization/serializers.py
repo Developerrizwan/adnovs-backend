@@ -199,7 +199,7 @@ class VoucherGetSerializer(serializers.ModelSerializer):
         
         client = obj.invoice.client_name
         return OrganizationSerializer(client).data
-    party_account = CoaSerializer()
+    # party_account = CoaSerializer()
     job = JobSerializer()
     company = CompanySerializer()
     invoice = InvoicesSerializer()
