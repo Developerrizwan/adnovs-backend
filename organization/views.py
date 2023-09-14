@@ -637,9 +637,9 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 for cost in cost_entry:
                      
                     if cost.dr_cr=='Cr':
-                        income_amount += int(cost.amount if cost.amount else 0)
+                        income_amount += float(cost.amount if cost.amount else 0.0)
                     elif cost.dr_cr=='Dr':
-                        expenses_amount += int(cost.amount if cost.amount else 0)
+                        expenses_amount += float(cost.amount if cost.amount else 0.0)
 
                 serializer = CostEntrySerializer(cost_entry, many=True)
                 company_serializer = CompanySerializer(coa.company)
