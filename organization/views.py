@@ -687,9 +687,8 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         end_date = request.query_params.get('end_date',None)
         if Coa.objects.filter(id=coa_id).exists():
             coa = Coa.objects.filter(id=coa_id).first()
-            print(coa)
-            invoices = Invoices.objects.filter(party_account__coa=coa)
-            print(invoices)
+
+            invoices = Invoices.objects.filter(party_account__coa=coa, created_at__range=[start_date, end_date]).order_by('created_at')
             respone =[]
             res_obj={}
             for invoice in invoices:
@@ -701,11 +700,11 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                         "dr_amount":0,
                         "cr_amount":0,
                         "net_amount":0,
-                        "party_account":invoice.party_account.name,
-                        "job_no":invoice.job.job_number,
-                        "narrations":invoice.narration,
-                        "branch":invoice.branch,
-                        "language_name":coa.language_name
+                        "party_account":invoice.party_account.name if invoice.party_account else "",
+                        "job_no":invoice.job.job_number if invoice.job.job_number else "",
+                        "narrations":invoice.narration if invoice.narration else "",
+                        "branch":invoice.branch if invoice.branch else "",
+                        "language_name":coa.language_name if coa.language_name else ""
                         }
                 cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
                 
