@@ -192,6 +192,8 @@ class InvoicesGetSerializer(serializers.ModelSerializer):
 
 class VoucherGetSerializer(serializers.ModelSerializer):
     client_name = serializers.SerializerMethodField()
+    party_account = serializers.SerializerMethodField()
+    
     def get_client_name(self, obj):
 
         if not obj.invoice:
@@ -199,10 +201,26 @@ class VoucherGetSerializer(serializers.ModelSerializer):
         
         client = obj.invoice.client_name
         return OrganizationSerializer(client).data
-    # party_account = CoaSerializer()
+    
+    def get_party_account(self, obj):
+
+        if not obj.party_account or not obj.party_account_type:
+            return None
+        
+        if obj.party_account_type == 'organization':
+            org = Organization.objects.get(id=obj.party_account)
+            return OrganizationSerializer(org).data
+        
+        if obj.party_account_type == 'coa':
+            coa = Coa.objects.get(id=obj.party_account)
+            return CoaSerializer(coa).data
+        
+        return None
+
     job = JobSerializer()
     company = CompanySerializer()
     invoice = InvoicesSerializer()
+
     class Meta:
         model = Vouchers
         fields = '__all__'
