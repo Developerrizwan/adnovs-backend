@@ -618,16 +618,16 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         queryset = Coa.objects.filter(company__users__email=request.user.email)
 
         queryset = queryset.filter(coa_type=coa_type)
-        page = self.paginate_queryset(queryset)
+        # page = self.paginate_queryset(queryset)
 
-        if page is not None:
+        if queryset is not None:
             cost_entry_list = []
-            for coa in page:
+            for coa in queryset:
                 cost_entry = CostEntry.objects.filter(charge__coa=coa)
                 if start_date and end_date:
                     cost_entry = cost_entry.filter(created_at__range=(start_date, end_date))
 
-                if job:
+                if job is not None:
                     cost_entry = cost_entry.filter(job_no__id=job)
 
                 income_amount=0
@@ -655,8 +655,8 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                     # 'is_direct_indirect': coa.is_direct_indirect,
                     'dr_cr': coa.dr_cr,
                     'category': coa.category,
-                    'group': coa.group.code,
-                    'subgroup': coa.subgroup.code,
+                    # 'group': coa.group.code,
+                    # 'subgroup': coa.subgroup.code,
                     'type': coa.type,
                     'short_name': coa.short_name,
                     'long_name': coa.long_name,
@@ -671,5 +671,5 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 })
 
             return Response(cost_entry_list)
-
-        return Response([])
+        else:
+            return Response([])
