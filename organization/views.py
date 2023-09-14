@@ -627,7 +627,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 if start_date and end_date:
                     cost_entry = cost_entry.filter(created_at__range=(start_date, end_date))
 
-                if job is not None and int(job):
+                if job is not None and int(job) :
                     cost_entry = cost_entry.filter(job_no__id=job)
 
                 income_amount=0
