@@ -610,11 +610,11 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     permission_classes = (IsAuthenticated,)
 
     def list(self, request, *args, **kwargs):
-        job = self.request.query_params.get('job', None)
-        start_date = self.request.query_params.get('start_date', None)
-        end_date = self.request.query_params.get('end_date',None)
-        organization = self.request.query_params.get('organization', None)
-        coa_type = self.request.query_params.get('type', None) 
+        job = request.query_params.get('job', None)
+        start_date = request.query_params.get('start_date', None)
+        end_date = request.query_params.get('end_date',None)
+        organization = request.query_params.get('organization', None)
+        coa_type = request.query_params.get('type', None) 
         queryset = Coa.objects.filter(company__users__email=request.user.email)
 
         queryset = queryset.filter(coa_type=coa_type)
@@ -635,10 +635,11 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
 
                 for cost in cost_entry:
+                     
                     if cost.dr_cr=='Cr':
-                        income_amount += int(cost.amount)
+                        income_amount += int(cost.amount if cost.amount else 0)
                     elif cost.dr_cr=='Dr':
-                        expenses_amount += int(cost.amount)
+                        expenses_amount += int(cost.amount if cost.amount else 0)
 
                 serializer = CostEntrySerializer(cost_entry, many=True)
                 company_serializer = CompanySerializer(coa.company)
