@@ -340,6 +340,7 @@ class Invoices(models.Model):
     ex_rate = models.CharField(max_length=255, blank=True, null=True) 
     pod = models.CharField(max_length=255, blank=True, null=True)
     poa = models.CharField(max_length=255, blank=True, null=True)
+    branch = models.CharField(max_length=255,default='JEDDAH', blank=True, null=True)
     fc_amount = models.CharField(max_length=255, blank=True, null=True)
     amount_sar = models.CharField(max_length=255, blank=True, null=True)
     ref_data = models.DateTimeField(blank=True, null=True)

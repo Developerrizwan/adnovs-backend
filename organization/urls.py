@@ -91,6 +91,9 @@ accountdetails_router.register('master/accountdetails', AccountDetailsViewset, b
 profit_loss_router = routers.SimpleRouter() 
 profit_loss_router.register('profit/loss', ProfitLossViewset, basename='profit-loss')
 
+general_ledger_router = routers.SimpleRouter() 
+general_ledger_router.register('general/ledger', GeneralledgerViewset, basename='general-ledger')
+
 urlpatterns = [
     path('',include(get_user_count_router.urls)),
     path('',include(user_delete_router.urls)),
@@ -120,6 +123,7 @@ urlpatterns = [
     path('',include(get_organization_router.urls)),
     path('',include(accountdetails_router.urls)),
     path('',include(profit_loss_router.urls)),
+    path('',include(general_ledger_router.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
     path('user-create/', UserCreateViewSet.as_view(), name='user-create'),
