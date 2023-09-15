@@ -734,3 +734,87 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             return Response(respone)
         else:
             return Response([])
+
+class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
+    pagination_class = CustomPagination
+    queryset = Invoices.objects.all().order_by('-id')
+    permission_classes = (IsAuthenticated,)
+
+    def list(self, request, *args, **kwargs):
+        organization_id = request.query_params.get('organization', None)
+        type = request.query_params.get('type', None)
+        start_date = request.query_params.get('start_date', None)
+        end_date = request.query_params.get('end_date',None)
+        if self.queryset.filter(party_account=organization_id).exists():
+            invoices = Invoices.objects.filter(party_account=organization_id,created_at__range=[start_date, end_date]).order_by('created_at')
+            respone =[]
+            res_obj = {}
+            if type =='receive':
+                invoices= invoices.filter(invoice_type='Sales')
+
+                for invoice in invoices:
+                    res_obj = {
+                        "account":invoice.client_name.name if invoice.client_name else "",
+                        "date":invoice.created_at,
+                        "currency":invoice.currency_sar,
+                        # "dr_amount":0,
+                        # "cr_amount":0,
+                        "net_amount":0,
+                        "party_account":invoice.party_account.name if invoice.party_account else "",
+                        "job_no":invoice.job.job_number if invoice.job.job_number else "",
+                        "narrations":invoice.narration if invoice.narration else "",
+                        "branch":invoice.branch if invoice.branch else "",
+                        # "language_name":coa.language_name if coa.language_name else ""
+                    }
+                    cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
+                    print(cost_entrys)
+                    # if invoice.invoice_type=='Sales':
+                    total_amount = 0
+
+                    for cost_entry in cost_entrys:
+                        fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+                        amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+                        vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
+                        total_amount += (amount)+(float((vat_percent * fcy_amount)/100))
+                    res_obj['net_amount']=total_amount   
+                    respone.append(res_obj)
+
+            elif type =='pay':
+                invoices= invoices.filter(invoice_type='Purchase')
+                for invoice in invoices:
+                    res_obj = {
+                        "account":invoice.client_name.name if invoice.client_name else "",
+                        "date":invoice.created_at,
+                        "currency":invoice.currency_sar,
+                        # "dr_amount":0,
+                        # "cr_amount":0,
+                        "net_amount":0,
+                        "party_account":invoice.party_account.name if invoice.party_account else "",
+                        "job_no":invoice.job.job_number if invoice.job.job_number else "",
+                        "narrations":invoice.narration if invoice.narration else "",
+                        "branch":invoice.branch if invoice.branch else "",
+                        # "language_name":coa.language_name if coa.language_name else ""
+                    }
+                    cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
+                    total_amount = 0
+
+                    for cost_entry in cost_entrys:
+                        fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+                        amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+                        vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
+                        total_amount += (amount)+(float((vat_percent * fcy_amount)/100))
+                    res_obj['net_amount']=total_amount   
+                    respone.append(res_obj)
+
+                total_amount = 0
+
+                for cost_entry in cost_entrys:
+                    fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+                    amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+                    vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
+                    total_amount += (amount)+(float((vat_percent * fcy_amount)/100))
+                res_obj['net_amount']=total_amount   
+                respone.append(res_obj)
+            return Response(respone)
+        else:
+            return Response([])

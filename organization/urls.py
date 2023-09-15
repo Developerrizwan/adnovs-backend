@@ -94,6 +94,9 @@ profit_loss_router.register('profit/loss', ProfitLossViewset, basename='profit-l
 general_ledger_router = routers.SimpleRouter() 
 general_ledger_router.register('general/ledger', GeneralledgerViewset, basename='general-ledger')
 
+account_statement_router = routers.SimpleRouter()
+account_statement_router.register('account/statement', AccountStatementViewset, basename='account-statement')
+
 urlpatterns = [
     path('',include(get_user_count_router.urls)),
     path('',include(user_delete_router.urls)),
@@ -121,6 +124,7 @@ urlpatterns = [
     path('',include(cost_entry_router.urls)),
     path('',include(get_cost_entry_router.urls)),
     path('',include(get_organization_router.urls)),
+    path('',include(account_statement_router.urls)),
     path('',include(accountdetails_router.urls)),
     path('',include(profit_loss_router.urls)),
     path('',include(general_ledger_router.urls)),
