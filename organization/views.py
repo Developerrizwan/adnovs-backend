@@ -805,16 +805,6 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                         total_amount += (amount)+(float((vat_percent * fcy_amount)/100))
                     res_obj['net_amount']=total_amount   
                     respone.append(res_obj)
-
-                total_amount = 0
-
-                for cost_entry in cost_entrys:
-                    fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-                    amount=float(cost_entry.amount if cost_entry.amount else 0.0)
-                    vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
-                    total_amount += (amount)+(float((vat_percent * fcy_amount)/100))
-                res_obj['net_amount']=total_amount   
-                respone.append(res_obj)
             return Response(respone)
         else:
             return Response([])
