@@ -791,7 +791,7 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                         "date":invoice.created_at,
                         "currency":invoice.currency_sar,
                         "voucher_number":"",
-                        "invoice_number":invoice.invoice_number,
+                       "supplier_inv_number":invoice.supplier_inv_number,
                         # "dr_amount":0,
                         # "cr_amount":0,
                         "net_amount":0,
