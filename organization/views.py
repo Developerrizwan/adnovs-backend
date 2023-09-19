@@ -538,10 +538,11 @@ class PoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
 
 class OrganizationViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.RetrieveModelMixin):
     """Manage Organization in the Database"""
-    pagination_class = CustomPagination
+    # pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Organization.objects.all().order_by('-id')
     serializer_class = OrganizationSerializer
+    filter_backends = [OrganizationFilter]
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -757,6 +758,7 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                         "account":invoice.client_name.name if invoice.client_name else "",
                         "date":invoice.created_at,
                         "currency":invoice.currency_sar,
+                        "voucher_number":"",
                         # "dr_amount":0,
                         # "cr_amount":0,
                         "net_amount":0,
@@ -786,6 +788,7 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                         "account":invoice.client_name.name if invoice.client_name else "",
                         "date":invoice.created_at,
                         "currency":invoice.currency_sar,
+                        "voucher_number":"",
                         # "dr_amount":0,
                         # "cr_amount":0,
                         "net_amount":0,
