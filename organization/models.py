@@ -354,6 +354,7 @@ class Invoices(models.Model):
     language_address = models.CharField(max_length=500, blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     last_time_generated = models.DateTimeField(default=timezone.now)
+    supplier_inv_number = models.CharField(max_length=225, blank=True, null=True)
     
 class Vouchers(models.Model):
 
