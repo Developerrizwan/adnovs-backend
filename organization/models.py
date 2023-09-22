@@ -545,7 +545,8 @@ class AccountDetails(models.Model):
         (Cr, 'Cr'),
     ) 
     line_no = models.CharField(max_length=200,blank=True,null=True)
-    ac_name = models.ForeignKey(Coa, on_delete=models.CASCADE, blank=False, null=True)
+    ac_name = models.CharField(max_length=255, blank=False, null=True)
+    ac_name_type = models.CharField(max_length=200,blank=True,null=True)
     vouchers = models.ForeignKey(Vouchers, on_delete=models.CASCADE, blank=False, null=True)
     dr_cr = models.CharField(max_length=200,blank=True,null=True,choices=DR_CR_CHOICES)
     narration = models.CharField(max_length=200,blank=True,null=True)
