@@ -231,7 +231,22 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
         fields = '__all__' 
     
 class AccountDetailsGetSerializer(serializers.ModelSerializer):
-    ac_name = CoaSerializer()
+    ac_name = serializers.SerializerMethodField()
+    def get_ac_name(self, obj):
+
+        if not obj.ac_name or not obj.ac_name_type:
+            return None
+        
+        if obj.ac_name_type == 'organization':
+            org = Organization.objects.get(id=obj.ac_name)
+            return OrganizationSerializer(org).data
+        
+        if obj.ac_name_type == 'coa':
+            coa = Coa.objects.get(id=obj.ac_name)
+            return CoaSerializer(coa).data
+        
+        return None
+    
     vouchers = VouchersSerializer()
     class Meta:
         model = AccountDetails
