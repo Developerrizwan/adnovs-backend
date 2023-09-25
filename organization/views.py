@@ -591,7 +591,8 @@ class GetCostEntryViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     filter_backends = [CostEntryFilter]
 
 
-class AccountDetailsViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.RetrieveModelMixin):
+class AccountDetailsViewset(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin,
+                             mixins.DestroyModelMixin, mixins.RetrieveModelMixin):
     """Manage costentry in the Database"""
     pagination_class = CustomPagination
     permission_classes = (IsAuthenticated,)

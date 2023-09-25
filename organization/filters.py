@@ -82,7 +82,8 @@ class InvoicesFliter(filters.BaseFilterBackend):
                     search_capitalize = search.capitalize()
                     queryset = queryset.filter(Q(invoice_number__contains=search_lower)|Q(invoice_number__contains=search_upper)|Q(invoice_number__contains=search_capitalize)|Q(bl_number__contains=search)|Q(invoice_type__contains=search)|
                             Q(shipper_name__contains=search)|Q(ex_rate__contains=search)|Q(poa__contains=search)|Q(pod__contains=search)|
-                            Q(amount_sar__contains=search)|Q(fc_amount__contains=search)|Q(narration__contains=search))
+                            Q(amount_sar__contains=search)|Q(fc_amount__contains=search)|Q(narration__contains=search)|
+                            Q(payment_status__contains=search_lower)|Q(payment_status__contains=search_upper)|Q(payment_status__contains=search_capitalize))
                 if type:
                     queryset = queryset.filter(invoice_type=type)
             else:
