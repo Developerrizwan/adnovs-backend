@@ -690,7 +690,7 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         if Coa.objects.filter(id=coa_id).exists():
             coa = Coa.objects.filter(id=coa_id).first()
 
-            invoices = Invoices.objects.filter(party_account__coa=coa, created_at__range=[start_date, end_date]).order_by('created_at')
+            invoices = Invoices.objects.filter(coa=coa, created_at__range=[start_date, end_date]).order_by('created_at')
             respone =[]
             res_obj={}
             for invoice in invoices:
