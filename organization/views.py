@@ -684,7 +684,6 @@ def get_vat_input_coa_response(coa, start_date, end_date):
     respone =[]
     res_obj={}
     for invoice in invoices:
-
         cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
         
         for cost_entry in cost_entrys:
@@ -809,9 +808,10 @@ def get_vat_output_coa_response(coa,start_date,end_date):
             respone.append(res_obj)
 
     try:
-        coa_account_details = AccountDetails.filter(ac_name=coa.id, ac_name_type='coa')
+        voucher_accounts = AccountDetails.filter(vouchers__date__range=[start_date, end_date])
+        coa_account_details = voucher_accounts.filter(ac_name=coa.id, ac_name_type='coa')
         organizations = Organization.filter(coa=coa).values_list('id')
-        org_account_details = AccountDetails.filter(ac_name__in=organizations, ac_name_type='organization')
+        org_account_details = voucher_accounts.filter(ac_name__in=organizations, ac_name_type='organization')
 
         account_details = coa_account_details.union(org_account_details)
         account_details = account_details.filter(dr_cr='cr')
@@ -908,9 +908,10 @@ def get_other_coa_response(coa, start_date, end_date):
     
 
     try:
-        coa_account_details = AccountDetails.filter(ac_name=coa.id, ac_name_type='coa')
+        voucher_accounts = AccountDetails.filter(vouchers__date__range=[start_date, end_date])
+        coa_account_details = voucher_accounts.filter(ac_name=coa.id, ac_name_type='coa')
         organizations = Organization.filter(coa=coa).values_list('id')
-        org_account_details = AccountDetails.filter(ac_name__in=organizations, ac_name_type='organization')
+        org_account_details = voucher_accounts.filter(ac_name__in=organizations, ac_name_type='organization')
 
         account_details = coa_account_details.union(org_account_details)
 
@@ -945,7 +946,6 @@ def get_other_coa_response(coa, start_date, end_date):
                 res_obj['amount'] = amount
                 res_obj['cr_amount']=total_amount
                 res_obj['net_amount']=total_amount
-                res_obj.append(res_obj)
                 respone.append(res_obj)
             else:
                 res_obj = {
@@ -977,7 +977,6 @@ def get_other_coa_response(coa, start_date, end_date):
                 res_obj['amount'] = amount
                 res_obj['dr_amount']=total_amount
                 res_obj['net_amount']=total_amount
-                res_obj.append(res_obj)
                 respone.append(res_obj)
     except:
         pass
