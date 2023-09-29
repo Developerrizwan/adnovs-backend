@@ -717,8 +717,10 @@ def get_vat_input_coa_response(coa, start_date, end_date):
             res_obj['fcy_amount'] = fcy_amount
             res_obj['amount'] = amount
             res_obj['dr_amount']=total_amount
-            res_obj['net_amount']=total_amount   
-            respone.append(res_obj)
+            res_obj['net_amount']=total_amount
+
+            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                respone.append(res_obj)
     
     try:
         coa_account_details = AccountDetails.filter(ac_name=coa.id, ac_name_type='coa')
@@ -758,8 +760,9 @@ def get_vat_input_coa_response(coa, start_date, end_date):
             res_obj['amount'] = amount
             res_obj['dr_amount']=total_amount
             res_obj['net_amount']=total_amount
-            res_obj.append(res_obj)
-            respone.append(res_obj)
+
+            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                respone.append(res_obj)
     except:
         pass
     
@@ -805,7 +808,9 @@ def get_vat_output_coa_response(coa,start_date,end_date):
             res_obj['amount'] = amount
             res_obj['cr_amount']=total_amount
             res_obj['net_amount']=total_amount   
-            respone.append(res_obj)
+
+            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                respone.append(res_obj)
 
     try:
         voucher_accounts = AccountDetails.filter(vouchers__date__range=[start_date, end_date])
@@ -846,8 +851,9 @@ def get_vat_output_coa_response(coa,start_date,end_date):
             res_obj['amount'] = amount
             res_obj['cr_amount']=total_amount
             res_obj['net_amount']=total_amount
-            res_obj.append(res_obj)
-            respone.append(res_obj)
+            
+            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                respone.append(res_obj)
     except:
         pass
     
@@ -893,7 +899,9 @@ def get_other_coa_response(coa, start_date, end_date):
                 res_obj['amount'] = amount
                 res_obj['cr_amount']=total_amount
                 res_obj['net_amount']=total_amount   
-                respone.append(res_obj)
+                
+                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                    respone.append(res_obj)
             else:
                 fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
                 amount=float(cost_entry.amount if cost_entry.amount else 0.0)
@@ -904,7 +912,9 @@ def get_other_coa_response(coa, start_date, end_date):
                 res_obj['amount'] = amount
                 res_obj['dr_amount']=total_amount
                 res_obj['net_amount']=total_amount   
-                respone.append(res_obj)
+                
+                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                    respone.append(res_obj)
     
 
     try:
@@ -946,7 +956,9 @@ def get_other_coa_response(coa, start_date, end_date):
                 res_obj['amount'] = amount
                 res_obj['cr_amount']=total_amount
                 res_obj['net_amount']=total_amount
-                respone.append(res_obj)
+                
+                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                    respone.append(res_obj)
             else:
                 res_obj = {
                     "account":coa.name,
@@ -977,7 +989,9 @@ def get_other_coa_response(coa, start_date, end_date):
                 res_obj['amount'] = amount
                 res_obj['dr_amount']=total_amount
                 res_obj['net_amount']=total_amount
-                respone.append(res_obj)
+                
+                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                    respone.append(res_obj)
     except:
         pass
     
@@ -996,9 +1010,9 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
             coa = Coa.objects.filter(id=coa_id).first()
             if coa.id == 429: # For VAT INPUT
-                response = get_vat_input_coa_response
+                response = get_vat_input_coa_response(coa, start_date, end_date)
             elif coa.id == 430: # For VAT OUTPUT
-                response = get_vat_output_coa_response(coa)
+                response = get_vat_output_coa_response(coa, start_date, end_date)
             else:     
                 response = get_other_coa_response(coa, start_date, end_date)
             return Response(response)
