@@ -1035,6 +1035,51 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         else:
             return Response([])
 
+
+def get_account_invoices_response(id, user):
+
+    invoices = Invoices.objects.filter(company__users=user).filter(Q(client_name__id=id) | Q(consignee_name__id=id) | Q(party_account__id=id)).order_by('created_at')
+    respone =[]
+    res_obj={}
+    for invoice in invoices:
+        res_obj = {
+                "id":invoice.id,
+                "date":invoice.date,
+                "amount":0,
+                "invoice_number":invoice.invoice_number,
+                "payment_status":invoice.payment_status,
+                "paid_amount":invoice.paid_amount,
+                }
+        
+        cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
+        
+        total_amount = 0
+
+        for cost_entry in cost_entrys:
+            fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+            amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+            vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
+            total_amount += float(amount)+float((vat_percent * fcy_amount)/100)
+        
+        res_obj['amount']=total_amount  
+        respone.append(res_obj)
+        
+    return respone
+
+class GetCoaInvoicesViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
+   
+    queryset = Coa.objects.all().order_by('-id')
+    permission_classes = (IsAuthenticated,)
+
+    def list(self, request, *args, **kwargs):
+        acc_id = request.query_params.get('account', None)
+    
+        if acc_id:
+            response = get_account_invoices_response(acc_id, request.user)
+            return Response(response)
+        else:
+            return Response([])
+
 class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     pagination_class = CustomPagination
     queryset = Invoices.objects.all().order_by('-id')

@@ -94,6 +94,9 @@ profit_loss_router.register('profit/loss', ProfitLossViewset, basename='profit-l
 general_ledger_router = routers.SimpleRouter() 
 general_ledger_router.register('general/ledger', GeneralledgerViewset, basename='general-ledger')
 
+coa_invoices_router = routers.SimpleRouter() 
+coa_invoices_router.register('get_coa_invoices', GetCoaInvoicesViewset, basename='general-ledger')
+
 account_statement_router = routers.SimpleRouter()
 account_statement_router.register('account/statement', AccountStatementViewset, basename='account-statement')
 
@@ -115,7 +118,7 @@ urlpatterns = [
     path('',include(coa_categoryrouter.urls)),
     path('',include(pod_router.urls)),
     path('',include(poa_router.urls)),
-    # path('',include(pol_router.urls)),
+    path('',include(coa_invoices_router.urls)),
     path('',include(get_coa_group_router.urls)),
     path('',include(coa_grouprouter.urls)),
     path('',include(organization_router.urls)),
