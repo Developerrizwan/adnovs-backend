@@ -280,6 +280,8 @@ class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
         type = serializer.validated_data['type']
         branch = serializer.validated_data['branch']
         job_type = serializer.validated_data['job_type']
+        job_number = serializer.validated_data['job_number']
+        enquiry_number = serializer.validated_data['enquiry_number']
         job_status_first_chars = "".join(word[0] for word in type.split())
         # job_number = f"{branch[:3]}{job_status_first_chars}{str(year)[-2:]}{job_id:02}"
 
