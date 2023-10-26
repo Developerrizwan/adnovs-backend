@@ -289,7 +289,7 @@ class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
             job_number = serializer.validated_data['job_number']
         
         if 'enquiry_number' in serializer.validated_data:
-            job_number = serializer.validated_data['enquiry_number']
+            enquiry_number = serializer.validated_data['enquiry_number']
 
         if job_type == 'Job':
             job_number = job_number = f"{branch[:3].upper()}{job_status_first_chars}{str(year)[-2:]}{job_id:02}"
