@@ -256,7 +256,7 @@ class Job(models.Model):
     Transportation = 'Transportation'
     Warehousing = 'Warehousing'
     Customs_Clearance = 'Customs Clearance'
-    Other = ' Other' 
+    Other = 'Other' 
     
     FREIGHT_CHOICES = (
         (Air_Freight, 'Air Freight'),
