@@ -265,7 +265,7 @@ class Job(models.Model):
         (Transportation, 'Transportation'),
         (Warehousing, 'Warehousing'),
         (Customs_Clearance,'Customs Clearance'),
-        ( Other, ' Other')
+        ( Other, 'Other')
     )
 
     ORGANIZATION_CHOICES = (
