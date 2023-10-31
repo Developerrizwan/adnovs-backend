@@ -24,6 +24,8 @@ class Company(models.Model):
     company_name_lang=models.CharField(max_length=200, blank=True, null=True)
     sinv_count = models.BigIntegerField(default=0)
     pinv_count = models.BigIntegerField(default=0)
+    job_count = models.BigIntegerField(default=0)
+    enquiry_count = models.BigIntegerField(default=0)
 
 
 class CoaGroup(models.Model):
