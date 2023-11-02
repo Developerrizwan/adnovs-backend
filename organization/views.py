@@ -1136,7 +1136,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
             "party_account":account.name if account else "",
             "job_no": "",
-            "narrations":voucher.narration if voucher.narration else "",
+            "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
         response.append(res_obj)
@@ -1153,7 +1153,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
             "party_account":account.name if account else "",
             "job_no": "",
-            "narrations":voucher.narration if voucher.narration else "",
+            "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
         response.append(res_obj)
@@ -1208,7 +1208,7 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
             "party_account":account.name if account else "",
             "job_no": "",
-            "narrations":voucher.narration if voucher.narration else "",
+            "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
         response.append(res_obj)
@@ -1225,7 +1225,7 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
             "party_account":account.name if account else "",
             "job_no": "",
-            "narrations":voucher.narration if voucher.narration else "",
+            "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
         response.append(res_obj)
