@@ -377,6 +377,14 @@ class Vouchers(models.Model):
         (CreditNote, 'CreditNote'),
         (DebitNote,'DebitNote')
     )
+    
+    Customer = 'Customer'
+    Vendor= 'Vendor'
+    
+    VOUCHER_FOR_CHOICES = (
+        (Customer, 'Customer'),
+        (Vendor, 'Vendor'),
+    )
 
     voucher_type = models.CharField("Voucher Type", max_length=255, choices=VOUCHER_TYPE_CHOICES)
     date = models.DateTimeField(default=timezone.now, blank=False, null=True)
@@ -410,58 +418,11 @@ class Vouchers(models.Model):
     voucher_from = models.CharField(max_length=255, blank=True, null=True)
     voucher_from_type = models.CharField(max_length=255, blank=True, null=True)
     voucher_to = models.CharField(max_length=255, blank=True, null=True)
-    voucher_to_type = models.CharField(max_length=255, blank=True, null=True) 
+    voucher_to_type = models.CharField(max_length=255, blank=True, null=True)
+    voucher_for = models.CharField("Voucher For", max_length=255, choices=VOUCHER_FOR_CHOICES) 
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE, blank=True, null=True)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=True, null=True)
-# class Coa(models.Model):
-    
-#     BS = 'Balance Sheet'
-#     PL = 'Profit and Loss'
-    
-#     COA_CHOICES = (    
-#         ('BS', 'Balance Sheet'),         
-#         ('PL', 'Profit and Loss'),    
-#     )
-    
-#     Direct = 'Direct'
-#     Indirect = 'Indirect'
-    
-    
-#     DIRECT_INDIRECT_CHOICES = (
-#         ('Direct', 'Direct'),
-#         ('Indirect', 'Indirect'),
-#     ) 
-    
-#     Dr = 'Dr'
-#     Cr = 'Cr'
-    
-#     DR_CR_CHOICES = (
-#         ('Dr', 'Dr'),
-#         ('Cr', 'Cr'),
-#     )
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=True, null=True) 
 
-#     code = models.CharField(max_length=200,blank=True, null=True)
-#     name = models.CharField(max_length=200,blank=True, null=True) 
-#     status = models.BooleanField(blank=True, null=True)
-#     subledger_requried = models.BooleanField(blank=True, null=True)
-#     charge_required = models.BooleanField(blank=True, null=True)
-#     job_required = models.BooleanField(blank=True, null=True)
-#     asset_required = models.BooleanField(blank=True, null=True)
-#     coa_type = models.CharField(max_length=200,blank=True, null=True)
-#     is_direct_indirect = models.CharField(max_length=200, blank=True, null=True)
-#     dr_cr = models.CharField(max_length=200,choices=DR_CR_CHOICES)
-#     category = models.CharField(max_length=200,blank=True, null=True)
-#     group = models.CharField(max_length=200,blank=True, null=True)
-#     subgroup = models.CharField(max_length=200,blank=True, null=True)
-#     type= models.CharField(max_length=200,blank=True, null=True)
-#     short_name = models.CharField(max_length=200,blank=True, null=True)
-#     long_name = models.CharField(max_length=200,blank=True, null=True) 
-#     language_name = models.CharField(max_length=200,blank=True, null=True)
-#     currency=models.CharField(max_length=500,blank=True,null=True)
-#     additional_reference_code=models.CharField(max_length=200,blank=True,null=True)
-#     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=True)
-#     remarks=models.TextField(blank=True,null=True)
-    
 
 class CoaCategory(models.Model):
     Dr = 'Dr'

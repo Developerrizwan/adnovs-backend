@@ -1093,6 +1093,148 @@ class GetCoaInvoicesViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         else:
             return Response([])
 
+
+def get_account_payment_statement(invoices, org_id, start_date, end_date):
+    response =[]
+    for invoice in invoices:
+        res_obj = {
+            "account":invoice.client_name.name if invoice.client_name else "",
+            "date":invoice.created_at,
+            "currency":invoice.currency_sar,
+            "voucher_number":"",
+            "invoice_number":invoice.supplier_inv_number,
+            "net_amount":0,
+            "party_account":invoice.party_account.name if invoice.party_account else "",
+            "job_no":invoice.job.job_number if invoice.job.job_number else "",
+            "narrations":invoice.narration if invoice.narration else "",
+            "branch":invoice.branch if invoice.branch else "",
+            # "language_name":coa.language_name if coa.language_name else ""
+        }
+        cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
+        total_amount = 0
+
+        for cost_entry in cost_entrys:
+            fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+            amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+            vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
+            total_amount += (amount)+(float((vat_percent * fcy_amount)/100))
+        res_obj['net_amount']=total_amount   
+        response.append(res_obj)
+    
+    try:
+        vouchers = Vouchers.objects.filter(party_account=org_id, party_account_type='organization', date__range=[start_date, end_date])
+        payment_vouchers = vouchers.filter(voucher_type='Payment')
+        
+        for voucher in payment_vouchers:
+            account = Organization.objects.filter(id=voucher.party_account).first()
+            res_obj = {
+                "account": account.name if account else "",
+                "date":voucher.date,
+                "currency":voucher.currency,
+                "voucher_number":voucher.voucher_type,
+                "invoice_number":"",
+                "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+                "party_account":account.name if account else "",
+                "job_no": "",
+                "narrations":voucher.narration if voucher.narration else "",
+                "branch":voucher.branch if voucher.branch else "",
+            }
+            response.append(res_obj)
+        
+        debit_credit_vouchers = vouchers.filter(Q(voucher_type='CreditNote') | Q(voucher_type='DebitNote'), voucher_for='Vendor')
+        for voucher in debit_credit_vouchers:
+            account = Organization.objects.filter(id=voucher.party_account).first() 
+            res_obj = {
+                "account": account.name if account else "",
+                "date":voucher.date,
+                "currency":voucher.currency,
+                "voucher_number":voucher.voucher_type,
+                "invoice_number":"",
+                "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+                "party_account":account.name if account else "",
+                "job_no": "",
+                "narrations":voucher.narration if voucher.narration else "",
+                "branch":voucher.branch if voucher.branch else "",
+            }
+            response.append(res_obj)
+    except:
+        pass
+    
+    return response
+
+
+def get_account_receivable_statement(invoices, org_id, start_date, end_date):   
+    
+    response=[]
+    for invoice in invoices:
+        res_obj = {
+            "account":invoice.client_name.name if invoice.client_name else "",
+            "date":invoice.created_at,
+            "currency":invoice.currency_sar,
+            "voucher_number":"",
+            "invoice_number":invoice.invoice_number,
+            "net_amount":0,
+            "party_account":invoice.party_account.name if invoice.party_account else "",
+            "job_no":invoice.job.job_number if invoice.job.job_number else "",
+            "narrations":invoice.narration if invoice.narration else "",
+            "branch":invoice.branch if invoice.branch else "",
+            # "language_name":coa.language_name if coa.language_name else ""
+        }
+        cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
+        print(cost_entrys)
+        # if invoice.invoice_type=='Sales':
+        total_amount = 0
+
+        for cost_entry in cost_entrys:
+            fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+            amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+            vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
+            total_amount += (amount)+(float((vat_percent * fcy_amount)/100))
+        res_obj['net_amount']=total_amount   
+        response.append(res_obj)
+    
+    try:
+        vouchers = Vouchers.objects.filter(party_account=org_id, party_account_type='organization', date__range=[start_date, end_date])
+        payment_vouchers = vouchers.filter(voucher_type='Receipt')
+        
+        for voucher in payment_vouchers:
+            account = Organization.objects.filter(id=voucher.party_account).first()
+            res_obj = {
+                "account": account.name if account else "",
+                "date":voucher.date,
+                "currency":voucher.currency,
+                "voucher_number":voucher.voucher_type,
+                "invoice_number":"",
+                "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+                "party_account":account.name if account else "",
+                "job_no": "",
+                "narrations":voucher.narration if voucher.narration else "",
+                "branch":voucher.branch if voucher.branch else "",
+            }
+            response.append(res_obj)
+        
+        debit_credit_vouchers = vouchers.filter(Q(voucher_type='CreditNote') | Q(voucher_type='DebitNote'), voucher_for='Customer')
+        for voucher in debit_credit_vouchers:
+            account = Organization.objects.filter(id=voucher.party_account).first() 
+            res_obj = {
+                "account": account.name if account else "",
+                "date":voucher.date,
+                "currency":voucher.currency,
+                "voucher_number":voucher.voucher_type,
+                "invoice_number":"",
+                "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+                "party_account":account.name if account else "",
+                "job_no": "",
+                "narrations":voucher.narration if voucher.narration else "",
+                "branch":voucher.branch if voucher.branch else "",
+            }
+            response.append(res_obj)
+    except:
+        pass
+    
+    return response
+
+
 class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     pagination_class = CustomPagination
     queryset = Invoices.objects.all().order_by('-id')
@@ -1103,70 +1245,14 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         type = request.query_params.get('type', None)
         start_date = request.query_params.get('start_date', None)
         end_date = request.query_params.get('end_date',None)
-        if self.queryset.filter(party_account=organization_id).exists():
-            invoices = Invoices.objects.filter(party_account=organization_id,created_at__range=[start_date, end_date]).order_by('created_at')
-            respone =[]
-            res_obj = {}
-            if type =='receive':
-                invoices= invoices.filter(invoice_type='Sales')
-
-                for invoice in invoices:
-                    res_obj = {
-                        "account":invoice.client_name.name if invoice.client_name else "",
-                        "date":invoice.created_at,
-                        "currency":invoice.currency_sar,
-                        "voucher_number":"",
-                        "invoice_number":invoice.invoice_number,
-                        # "dr_amount":0,
-                        # "cr_amount":0,
-                        "net_amount":0,
-                        "party_account":invoice.party_account.name if invoice.party_account else "",
-                        "job_no":invoice.job.job_number if invoice.job.job_number else "",
-                        "narrations":invoice.narration if invoice.narration else "",
-                        "branch":invoice.branch if invoice.branch else "",
-                        # "language_name":coa.language_name if coa.language_name else ""
-                    }
-                    cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
-                    print(cost_entrys)
-                    # if invoice.invoice_type=='Sales':
-                    total_amount = 0
-
-                    for cost_entry in cost_entrys:
-                        fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-                        amount=float(cost_entry.amount if cost_entry.amount else 0.0)
-                        vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
-                        total_amount += (amount)+(float((vat_percent * fcy_amount)/100))
-                    res_obj['net_amount']=total_amount   
-                    respone.append(res_obj)
-
-            elif type =='pay':
-                invoices= invoices.filter(invoice_type='Purchase')
-                for invoice in invoices:
-                    res_obj = {
-                        "account":invoice.client_name.name if invoice.client_name else "",
-                        "date":invoice.created_at,
-                        "currency":invoice.currency_sar,
-                        "voucher_number":"",
-                       "invoice_number":invoice.supplier_inv_number,
-                        # "dr_amount":0,
-                        # "cr_amount":0,
-                        "net_amount":0,
-                        "party_account":invoice.party_account.name if invoice.party_account else "",
-                        "job_no":invoice.job.job_number if invoice.job.job_number else "",
-                        "narrations":invoice.narration if invoice.narration else "",
-                        "branch":invoice.branch if invoice.branch else "",
-                        # "language_name":coa.language_name if coa.language_name else ""
-                    }
-                    cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
-                    total_amount = 0
-
-                    for cost_entry in cost_entrys:
-                        fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-                        amount=float(cost_entry.amount if cost_entry.amount else 0.0)
-                        vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
-                        total_amount += (amount)+(float((vat_percent * fcy_amount)/100))
-                    res_obj['net_amount']=total_amount   
-                    respone.append(res_obj)
-            return Response(respone)
-        else:
-            return Response([])
+        
+        invoices = Invoices.objects.filter(party_account=organization_id,created_at__range=[start_date, end_date]).order_by('created_at')
+        response =[]
+        res_obj = {}
+        if type =='receive':
+            invoices= invoices.filter(invoice_type='Sales')
+            response= get_account_receivable_statement(invoices, organization_id, start_date, end_date)
+        elif type =='pay':
+            invoices= invoices.filter(invoice_type='Purchase')
+            response = get_account_payment_statement(invoices, organization_id, start_date, end_date)
+        return Response(response)
