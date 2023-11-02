@@ -1121,44 +1121,44 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
         res_obj['net_amount']=total_amount   
         response.append(res_obj)
     
-    try:
-        vouchers = Vouchers.objects.filter(party_account=org_id, party_account_type='organization', date__range=[start_date, end_date])
-        payment_vouchers = vouchers.filter(voucher_type='Payment')
-        
-        for voucher in payment_vouchers:
-            account = Organization.objects.filter(id=voucher.party_account).first()
-            res_obj = {
-                "account": account.name if account else "",
-                "date":voucher.date,
-                "currency":voucher.currency,
-                "voucher_number":voucher.voucher_type,
-                "invoice_number":"",
-                "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
-                "party_account":account.name if account else "",
-                "job_no": "",
-                "narrations":voucher.narration if voucher.narration else "",
-                "branch":voucher.branch if voucher.branch else "",
-            }
-            response.append(res_obj)
-        
-        debit_credit_vouchers = vouchers.filter(Q(voucher_type='CreditNote') | Q(voucher_type='DebitNote'), voucher_for='Vendor')
-        for voucher in debit_credit_vouchers:
-            account = Organization.objects.filter(id=voucher.party_account).first() 
-            res_obj = {
-                "account": account.name if account else "",
-                "date":voucher.date,
-                "currency":voucher.currency,
-                "voucher_number":voucher.voucher_type,
-                "invoice_number":"",
-                "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
-                "party_account":account.name if account else "",
-                "job_no": "",
-                "narrations":voucher.narration if voucher.narration else "",
-                "branch":voucher.branch if voucher.branch else "",
-            }
-            response.append(res_obj)
-    except:
-        pass
+    # try:
+    vouchers = Vouchers.objects.filter(party_account=org_id, party_account_type='organization', date__range=[start_date, end_date])
+    payment_vouchers = vouchers.filter(voucher_type='Payment')
+    
+    for voucher in payment_vouchers:
+        account = Organization.objects.filter(id=voucher.party_account).first()
+        res_obj = {
+            "account": account.name if account else "",
+            "date":voucher.date,
+            "currency":voucher.currency,
+            "voucher_number":voucher.voucher_type,
+            "invoice_number":"",
+            "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+            "party_account":account.name if account else "",
+            "job_no": "",
+            "narrations":voucher.narration if voucher.narration else "",
+            "branch":voucher.branch if voucher.branch else "",
+        }
+        response.append(res_obj)
+    
+    debit_credit_vouchers = vouchers.filter(Q(voucher_type='CreditNote') | Q(voucher_type='DebitNote'), voucher_for='Vendor')
+    for voucher in debit_credit_vouchers:
+        account = Organization.objects.filter(id=voucher.party_account).first() 
+        res_obj = {
+            "account": account.name if account else "",
+            "date":voucher.date,
+            "currency":voucher.currency,
+            "voucher_number":voucher.voucher_type,
+            "invoice_number":"",
+            "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+            "party_account":account.name if account else "",
+            "job_no": "",
+            "narrations":voucher.narration if voucher.narration else "",
+            "branch":voucher.branch if voucher.branch else "",
+        }
+        response.append(res_obj)
+    # except:
+    #     pass
     
     return response
 
@@ -1193,44 +1193,44 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
         res_obj['net_amount']=total_amount   
         response.append(res_obj)
     
-    try:
-        vouchers = Vouchers.objects.filter(party_account=org_id, party_account_type='organization', date__range=[start_date, end_date])
-        payment_vouchers = vouchers.filter(voucher_type='Receipt')
-        
-        for voucher in payment_vouchers:
-            account = Organization.objects.filter(id=voucher.party_account).first()
-            res_obj = {
-                "account": account.name if account else "",
-                "date":voucher.date,
-                "currency":voucher.currency,
-                "voucher_number":voucher.voucher_type,
-                "invoice_number":"",
-                "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
-                "party_account":account.name if account else "",
-                "job_no": "",
-                "narrations":voucher.narration if voucher.narration else "",
-                "branch":voucher.branch if voucher.branch else "",
-            }
-            response.append(res_obj)
-        
-        debit_credit_vouchers = vouchers.filter(Q(voucher_type='CreditNote') | Q(voucher_type='DebitNote'), voucher_for='Customer')
-        for voucher in debit_credit_vouchers:
-            account = Organization.objects.filter(id=voucher.party_account).first() 
-            res_obj = {
-                "account": account.name if account else "",
-                "date":voucher.date,
-                "currency":voucher.currency,
-                "voucher_number":voucher.voucher_type,
-                "invoice_number":"",
-                "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
-                "party_account":account.name if account else "",
-                "job_no": "",
-                "narrations":voucher.narration if voucher.narration else "",
-                "branch":voucher.branch if voucher.branch else "",
-            }
-            response.append(res_obj)
-    except:
-        pass
+    # try:
+    vouchers = Vouchers.objects.filter(party_account=org_id, party_account_type='organization', date__range=[start_date, end_date])
+    payment_vouchers = vouchers.filter(voucher_type='Receipt')
+    
+    for voucher in payment_vouchers:
+        account = Organization.objects.filter(id=voucher.party_account).first()
+        res_obj = {
+            "account": account.name if account else "",
+            "date":voucher.date,
+            "currency":voucher.currency,
+            "voucher_number":voucher.voucher_type,
+            "invoice_number":"",
+            "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+            "party_account":account.name if account else "",
+            "job_no": "",
+            "narrations":voucher.narration if voucher.narration else "",
+            "branch":voucher.branch if voucher.branch else "",
+        }
+        response.append(res_obj)
+    
+    debit_credit_vouchers = vouchers.filter(Q(voucher_type='CreditNote') | Q(voucher_type='DebitNote'), voucher_for='Customer')
+    for voucher in debit_credit_vouchers:
+        account = Organization.objects.filter(id=voucher.party_account).first() 
+        res_obj = {
+            "account": account.name if account else "",
+            "date":voucher.date,
+            "currency":voucher.currency,
+            "voucher_number":voucher.voucher_type,
+            "invoice_number":"",
+            "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+            "party_account":account.name if account else "",
+            "job_no": "",
+            "narrations":voucher.narration if voucher.narration else "",
+            "branch":voucher.branch if voucher.branch else "",
+        }
+        response.append(res_obj)
+    # except:
+    #     pass
     
     return response
 
