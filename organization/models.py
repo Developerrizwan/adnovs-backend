@@ -419,7 +419,7 @@ class Vouchers(models.Model):
     voucher_from_type = models.CharField(max_length=255, blank=True, null=True)
     voucher_to = models.CharField(max_length=255, blank=True, null=True)
     voucher_to_type = models.CharField(max_length=255, blank=True, null=True)
-    voucher_for = models.CharField("Voucher For", max_length=255, choices=VOUCHER_FOR_CHOICES) 
+    voucher_for = models.CharField("Voucher For", max_length=255, choices=VOUCHER_FOR_CHOICES, blank=True, null=True) 
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE, blank=True, null=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=True, null=True) 
 
