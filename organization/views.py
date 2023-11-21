@@ -1245,8 +1245,11 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         type = request.query_params.get('type', None)
         start_date = request.query_params.get('start_date', None)
         end_date = request.query_params.get('end_date',None)
+        payment = request.query_params.get('payment',None)
         
         invoices = Invoices.objects.filter(party_account=organization_id,created_at__range=[start_date, end_date]).order_by('created_at')
+        if payment is not None:
+            invoices = invoices.filter(payment_status=payment)
         response =[]
         res_obj = {}
         if type =='receive':
