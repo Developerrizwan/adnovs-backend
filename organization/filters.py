@@ -7,6 +7,7 @@ class TypeFilter(filters.BaseFilterBackend):
         if queryset.model:
             type = request.query_params.get('type', None)
             search = request.query_params.get('search', None)
+            queryset=queryset.exclude(isdeleted = True)
             if queryset.filter(company__users=request.user):
                 queryset=queryset.filter(company__users=request.user)
                 if search:
