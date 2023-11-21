@@ -1070,6 +1070,7 @@ def get_account_invoices_response(id, user):
                 "invoice_number":invoice.invoice_number,
                 "payment_status":invoice.payment_status,
                 "paid_amount":invoice.paid_amount,
+                "type":invoice.invoice_type
                 }
         
         cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
