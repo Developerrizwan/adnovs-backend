@@ -245,6 +245,7 @@ class Job(models.Model):
             ('40ST', '40’ST'),
             ('40OT', '40’OT'),
             ('40HC', '40’HC'),
+            ('40HQ', '40’HC'),
             ('FLAT_RACK', 'FLAT RACK'),
             ('FTL', 'FTL'),
             ('LTL', 'LTL'),
@@ -503,6 +504,7 @@ class CostEntry(models.Model):
     tax_group_code=models.CharField(max_length=200,blank=True,null=True)
     created_at = models.DateTimeField(default=timezone.now)
     is_included = models.BooleanField(default=False)
+    quantity = models.IntegerField(default=0)
     
 class AccountDetails(models.Model):
     Dr = 'Dr'
