@@ -302,7 +302,7 @@ class Job(models.Model):
     client_name = models.ForeignKey(Organization, on_delete=models.CASCADE, blank=True, null=True, related_name='client_name_jobs')
     remarks = models.TextField(blank=True, null=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=False, null=False)
-    is_deleted = models.BooleanField(default=True)
+    isdeleted = models.BooleanField(default=False)
     deleted_by = models.ForeignKey(get_user_model(),on_delete=models.CASCADE, null=True, blank=False, related_name='deleted_jobs')
     deleted_at = models.DateTimeField(default=timezone.now)
     created_by =  models.ForeignKey(get_user_model(), on_delete=models.CASCADE, null=True, blank=False, related_name='created_jobs')

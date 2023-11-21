@@ -309,6 +309,14 @@ class JobViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateMo
         if self.action == 'retrieve':
             return JobGetSerializer
         return JobSerializer
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.isdeleted = True 
+        instance.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.RetrieveModelMixin):
