@@ -682,6 +682,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                     # 'group': coa.group.code,
                     # 'subgroup': coa.subgroup.code,
                     'type': coa.type,
+                    'expense_type':coa.group,
                     'short_name': coa.short_name,
                     'long_name': coa.long_name,
                     'language_name': coa.language_name,
