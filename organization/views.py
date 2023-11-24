@@ -1280,7 +1280,7 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         start_date = request.query_params.get('start_date', None)
         end_date = request.query_params.get('end_date', None)
         branch = request.query_params.get('branch', None)
-        queryset = Coa.objects.filter(company__users__email=request.user.email).filter(Q(type='Asset')| Q(type = 'Equity')| Q(type = 'Liability'))
+        queryset = Coa.objects.filter(company__users__email=request.user.email).filter(Q(type='ASSET')| Q(type = 'EQUITY')| Q(type = 'LIABILITY'))
 
         #date_object = datetime.strptime(date, "%Y-%m-%d").date()
 
@@ -1292,7 +1292,8 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         for coa in queryset:
             amount=0
             response = get_other_coa_response(coa, start_date, end_date, request.user)
-            amount += response['net_amount']
+            for amt in response:
+                amount += amt['net_amount']
             # amount += int(response['net_amount'])
             res_obj = {
                 "type": coa.type,
@@ -1321,9 +1322,10 @@ class TrialBalanceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             dr_amount = 0
             cr_amount =0
             response = get_other_coa_response(coa, start_date, end_date, request.user)
-            amount += response['net_amount']
-            dr_amount += response['dr_amount']
-            cr_amount += response['cr_amount']
+            for amt in response:
+                amount += amt['net_amount']
+                dr_amount += amt['dr_amount']
+                cr_amount += amt['cr_amount']
             # amount += int(response['net_amount'])
             res_obj = {
                 "type": coa.type,
