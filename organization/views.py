@@ -1269,3 +1269,36 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             invoices= invoices.filter(invoice_type='Purchase')
             response = get_account_payment_statement(invoices, organization_id, start_date, end_date)
         return Response(response)
+
+
+class SheetReportViewset(viewsets.GenericViewSet, mixins.CreateModelMixin):
+    pagination_class = CustomPagination
+    queryset = Coa.objects.all().order_by('-id')
+    permission_classes = (IsAuthenticated,)
+
+    def create(self, request, *args, **kwargs):
+        date = request.query_params.get('date', None)
+        branch = request.query_params.get('branch', None)
+        queryset = Coa.objects.filter(company__users__email=request.user.email)
+
+        date_object = datetime.strptime(date, "%Y-%m-%d").date()
+
+        # Calculate start time and end time for the given date
+        start_date = datetime.combine(date_object, datetime.min.time())
+        end_date = datetime.combine(date_object, datetime.max.time())
+
+        response=[]
+        for coa in queryset:
+            amount=0
+            response = get_other_coa_response(coa, start_date, end_date, request.user)
+            amount += int(response['net_amount'])
+            res_obj = {
+                "type": coa.type,
+                "account_name": coa.name,
+                "group": coa.group,
+                "total_amount":amount
+            }
+            response.append(res_obj)
+
+        return Response(response, status=status.HTTP_200_OK)
+

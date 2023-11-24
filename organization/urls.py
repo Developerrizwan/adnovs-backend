@@ -100,6 +100,10 @@ coa_invoices_router.register('get_coa_invoices', GetCoaInvoicesViewset, basename
 account_statement_router = routers.SimpleRouter()
 account_statement_router.register('account/statement', AccountStatementViewset, basename='account-statement')
 
+
+sheet_report_router = routers.SimpleRouter() 
+sheet_report_router.register('sheet_report', SheetReportViewset, basename='profit-loss')
+
 urlpatterns = [
     path('',include(get_user_count_router.urls)),
     path('',include(user_delete_router.urls)),
@@ -131,6 +135,7 @@ urlpatterns = [
     path('',include(accountdetails_router.urls)),
     path('',include(profit_loss_router.urls)),
     path('',include(general_ledger_router.urls)),
+    path('',include(sheet_report_router.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
     path('user-create/', UserCreateViewSet.as_view(), name='user-create'),
