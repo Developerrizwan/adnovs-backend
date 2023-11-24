@@ -1277,15 +1277,16 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.CreateModelMixin):
     permission_classes = (IsAuthenticated,)
 
     def create(self, request, *args, **kwargs):
-        date = request.query_params.get('date', None)
+        start_date = request.query_params.get('start_date', None)
+        end_date = request.query_params.get('end_date', None)
         branch = request.query_params.get('branch', None)
-        queryset = Coa.objects.filter(company__users__email=request.user.email)
+        queryset = Coa.objects.filter(company__users__email=request.user.email).filter(Q(type='Asset')| Q(type = 'Equity')| Q(type = 'Liability'))
 
-        date_object = datetime.strptime(date, "%Y-%m-%d").date()
+        #date_object = datetime.strptime(date, "%Y-%m-%d").date()
 
         # Calculate start time and end time for the given date
-        start_date = datetime.combine(date_object, datetime.min.time())
-        end_date = datetime.combine(date_object, datetime.max.time())
+        #start_date = datetime.combine(date_object, datetime.min.time())
+        #end_date = datetime.combine(date_object, datetime.max.time())
 
         response=[]
         for coa in queryset:
@@ -1298,6 +1299,39 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.CreateModelMixin):
                 "account_name": coa.name,
                 "group": coa.group.name,
                 "total_amount":amount
+            }
+            response.append(res_obj)
+
+        return Response(response, status=status.HTTP_200_OK)
+    
+class TrialBalanceViewset(viewsets.GenericViewSet, mixins.CreateModelMixin):
+    pagination_class = CustomPagination
+    queryset = Coa.objects.all().order_by('-id')
+    permission_classes = (IsAuthenticated,)
+
+    def create(self, request, *args, **kwargs):
+        start_date = request.query_params.get('start_date', None)
+        end_date = request.query_params.get('end_date', None)
+        branch = request.query_params.get('branch', None)
+        queryset = Coa.objects.filter(company__users__email=request.user.email)
+
+        response=[]
+        for coa in queryset:
+            amount=0
+            dr_amount = 0
+            cr_amount =0
+            response = get_other_coa_response(coa, start_date, end_date, request.user)
+            amount += response['net_amount']
+            dr_amount += response['dr_amount']
+            cr_amount += response['cr_amount']
+            # amount += int(response['net_amount'])
+            res_obj = {
+                "type": coa.type,
+                "account_name": coa.name,
+                "group": coa.group.name,
+                "total_dr_amount":dr_amount,
+                "total_cr_amount":cr_amount,
+                "total_amount":amount,
             }
             response.append(res_obj)
 
