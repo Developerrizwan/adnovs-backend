@@ -1032,7 +1032,6 @@ def get_other_coa_response(coa, start_date, end_date, user):
                     respone.append(res_obj)
     except:
         pass
-    
     return respone
 
 class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
@@ -1291,8 +1290,8 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         response=[]
         for coa in queryset:
             amount=0
-            response = get_other_coa_response(coa, start_date, end_date, request.user)
-            for amt in response:
+            amounts = get_other_coa_response(coa, start_date, end_date, request.user)
+            for amt in amounts:
                 amount += amt['net_amount']
             # amount += int(response['net_amount'])
             res_obj = {
@@ -1321,21 +1320,21 @@ class TrialBalanceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             amount=0
             dr_amount = 0
             cr_amount =0
-            response = get_other_coa_response(coa, start_date, end_date, request.user)
-            for amt in response:
+            amount = get_other_coa_response(coa, start_date, end_date, request.user)
+            for amt in amount:
                 amount += amt['net_amount']
                 dr_amount += amt['dr_amount']
                 cr_amount += amt['cr_amount']
             # amount += int(response['net_amount'])
-            res_obj = {
-                "type": coa.type,
-                "account_name": coa.name,
-                "group": coa.group.name,
-                "total_dr_amount":dr_amount,
-                "total_cr_amount":cr_amount,
-                "total_amount":amount,
-            }
-            response.append(res_obj)
+                res_obj = {
+                    "type": coa.type,
+                    "account_name": coa.name,
+                    "group": coa.group.name,
+                    "total_dr_amount":dr_amount,
+                    "total_cr_amount":cr_amount,
+                    "total_amount":amount,
+                }
+                response.append(res_obj)
 
         return Response(response, status=status.HTTP_200_OK)
 
