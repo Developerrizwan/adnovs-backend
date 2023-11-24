@@ -1317,7 +1317,7 @@ class TrialBalanceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         response=[]
         for coa in queryset:
-            amount=0
+            total_amount=0
             dr_amount = 0
             cr_amount =0
             amount = get_other_coa_response(coa, start_date, end_date, request.user)
@@ -1332,7 +1332,7 @@ class TrialBalanceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                     "group": coa.group.name,
                     "total_dr_amount":dr_amount,
                     "total_cr_amount":cr_amount,
-                    "total_amount":amount,
+                    "total_amount":total_amount
                 }
                 response.append(res_obj)
 
