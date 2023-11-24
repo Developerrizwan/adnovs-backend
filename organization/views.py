@@ -1271,12 +1271,12 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         return Response(response)
 
 
-class SheetReportViewset(viewsets.GenericViewSet, mixins.CreateModelMixin):
+class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     pagination_class = CustomPagination
     queryset = Coa.objects.all().order_by('-id')
     permission_classes = (IsAuthenticated,)
 
-    def create(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):
         start_date = request.query_params.get('start_date', None)
         end_date = request.query_params.get('end_date', None)
         branch = request.query_params.get('branch', None)
@@ -1304,12 +1304,12 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.CreateModelMixin):
 
         return Response(response, status=status.HTTP_200_OK)
     
-class TrialBalanceViewset(viewsets.GenericViewSet, mixins.CreateModelMixin):
+class TrialBalanceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     pagination_class = CustomPagination
     queryset = Coa.objects.all().order_by('-id')
     permission_classes = (IsAuthenticated,)
 
-    def create(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):
         start_date = request.query_params.get('start_date', None)
         end_date = request.query_params.get('end_date', None)
         branch = request.query_params.get('branch', None)
