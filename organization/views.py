@@ -1291,11 +1291,12 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.CreateModelMixin):
         for coa in queryset:
             amount=0
             response = get_other_coa_response(coa, start_date, end_date, request.user)
-            amount += int(response['net_amount'])
+            amount += response['net_amount']
+            # amount += int(response['net_amount'])
             res_obj = {
                 "type": coa.type,
                 "account_name": coa.name,
-                "group": coa.group,
+                "group": coa.group.name,
                 "total_amount":amount
             }
             response.append(res_obj)
