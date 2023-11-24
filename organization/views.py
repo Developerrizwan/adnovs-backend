@@ -1322,7 +1322,7 @@ class TrialBalanceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             cr_amount =0
             amount = get_other_coa_response(coa, start_date, end_date, request.user)
             for amt in amount:
-                amount += amt['net_amount']
+                total_amount += amt['net_amount']
                 dr_amount += amt['dr_amount']
                 cr_amount += amt['cr_amount']
             # amount += int(response['net_amount'])
