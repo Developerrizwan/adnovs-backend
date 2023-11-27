@@ -640,13 +640,14 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         coa_type = request.query_params.get('type', None) 
         queryset = Coa.objects.filter(company__users__email=request.user.email)
 
-        queryset = queryset.filter(coa_type=coa_type)
+        if coa_type is not None:
+            queryset = queryset.filter(coa_type=coa_type)
         # page = self.paginate_queryset(queryset)
 
         if queryset is not None:
             cost_entry_list = []
             for coa in queryset:
-                cost_entry = CostEntry.objects.filter(charge__coa=coa)
+                cost_entry = CostEntry.objects.filter(charge__coa=coa, is_included=True).exclude(invoice=None)
                 if start_date and end_date:
                     cost_entry = cost_entry.filter(created_at__range=(start_date, end_date))
 
