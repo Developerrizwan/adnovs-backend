@@ -504,7 +504,7 @@ class CostEntry(models.Model):
     tax_group_code=models.CharField(max_length=200,blank=True,null=True)
     created_at = models.DateTimeField(default=timezone.now)
     is_included = models.BooleanField(default=False)
-    quantity = models.IntegerField(default=0)
+    quantity = models.IntegerField(default=1)
     
 class AccountDetails(models.Model):
     Dr = 'Dr'
