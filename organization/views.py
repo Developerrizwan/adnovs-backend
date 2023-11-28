@@ -661,14 +661,9 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 for cost in cost_entry:
                      
                     if cost.dr_cr=='Cr':
-                        quantity = float(cost.quantity if cost.quantity else 1)
-                        iamount = float(cost.amount if cost.amount else 0.0)
-                        income_amount+= float(iamount) * float(quantity)
+                        income_amount += float(cost.amount if cost.amount else 0.0)
                     elif cost.dr_cr=='Dr':
-                        quantity = float(cost.quantity if cost.quantity else 1)
-                        eamount = float(cost.amount if cost.amount else 0.0)
-                        expenses_amount += float(eamount) * float(quantity)
-
+                        expenses_amount += float(cost.amount if cost.amount else 0.0)
 
                 serializer = CostEntrySerializer(cost_entry, many=True)
                 company_serializer = CompanySerializer(coa.company)
@@ -738,9 +733,7 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
                 }
 
             fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-            quantity = float(cost_entry.quantity if cost_entry.quantity else 1)
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
-            amount = float(amount) * float(quantity)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
             total_amount = float(amount  + vat_amount)
@@ -785,9 +778,7 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
                     "language_name":coa.language_name if coa.language_name else ""
                     }
             fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-            quantity = float(acc.quantity if acc.quantity else 1)
             amount=float(acc.amount_sar if acc.amount_sar else 0.0)
-            amount = float(amount) * float(quantity)
             vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
             total_amount = float(amount  + vat_amount)
@@ -837,9 +828,7 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
                 }
             
             fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-            quantity = float(cost_entry.quantity if cost_entry.quantity else 1)
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
-            amount = float(amount) * float(quantity)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
             total_amount = float(amount  + vat_amount)
@@ -883,9 +872,7 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
                 "language_name":coa.language_name if coa.language_name else ""
                 }
             fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-            quantity = float(acc.quantity if acc.quantity else 1)
             amount=float(acc.amount_sar if acc.amount_sar else 0.0)
-            amount = float(amount) * float(quantity)
             vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
             total_amount = float(amount  + vat_amount)
@@ -935,9 +922,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
 
             if cost_entry.invoice.invoice_type=='Sales':
                 fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-                quantity = float(cost_entry.quantity if cost_entry.quantity else 1)
                 amount=float(cost_entry.amount if cost_entry.amount else 0.0)
-                amount = float(amount) * float(quantity)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
                 vat_amount = float((vat_percent * amount)/100)
                 total_amount = float(amount  + vat_amount)
@@ -952,9 +937,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                     respone.append(res_obj)
             else:
                 fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-                quantity = float(cost_entry.quantity if cost_entry.quantity else 1)
                 amount=float(cost_entry.amount if cost_entry.amount else 0.0)
-                amount = float(amount) * float(quantity)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
                 vat_amount = float((vat_percent * amount)/100)
                 total_amount = float(amount  + vat_amount)
@@ -1000,9 +983,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                     "language_name":coa.language_name if coa.language_name else ""
                     }
                 fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-                quantity = float(acc.quantity if acc.quantity else 1)
                 amount=float(acc.amount_sar if acc.amount_sar else 0.0)
-                amount = float(amount) * float(quantity)
                 vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
                 vat_amount = float((vat_percent * amount)/100)
                 total_amount = float(amount  + vat_amount)
@@ -1037,9 +1018,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                     "language_name":coa.language_name if coa.language_name else ""
                     }
                 fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-                quantity = float(acc.quantity if acc.quantity else 1)
                 amount=float(acc.amount_sar if acc.amount_sar else 0.0)
-                amount = float(amount) * float(quantity)
                 vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
                 vat_amount = float((vat_percent * amount)/100)
                 total_amount = float(amount  + vat_amount)
@@ -1102,9 +1081,8 @@ def get_account_invoices_response(id, user):
         for cost_entry in cost_entrys:
             fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
-            amount = float(amount) * float(cost_entry.quantity)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
-            total_amount += float(amount)+float((vat_percent * fcy_amount)/100)
+            total_amount += float(amount)+float((vat_percent * amount)/100)
         
         res_obj['amount']=total_amount  
         respone.append(res_obj)
