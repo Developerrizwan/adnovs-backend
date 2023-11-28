@@ -1339,3 +1339,27 @@ class TrialBalanceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         return Response(response, status=status.HTTP_200_OK)
 
+# job_voucher, job_invoice return related to job
+class JobVoucherViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
+    pagination_class = CustomPagination
+    queryset = Vouchers.objects.all().order_by('-id')
+    permission_classes = (IsAuthenticated,)
+    serializer_class = VouchersSerializer
+
+    def list(self, request, *args, **kwargs):
+        job = request.query_params.get('job', None)
+        queryset = self.queryset.filter(job__id=job)
+        serializers = self.serializer_class(queryset, many=True)
+        return Response(serializers.data, status=status.HTTP_200_OK)
+    
+class JobInvoiceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
+    pagination_class = CustomPagination
+    queryset = Invoices.objects.all().order_by('-id')
+    permission_classes = (IsAuthenticated,)
+    serializer_class = InvoicesSerializer
+
+    def list(self, request, *args, **kwargs):
+        job = request.query_params.get('job', None)
+        queryset = self.queryset.filter(job__id=job)
+        serializers = self.serializer_class(queryset, many=True)
+        return Response(serializers.data, status=status.HTTP_200_OK)

@@ -107,6 +107,12 @@ sheet_report_router.register('sheet_report', SheetReportViewset, basename='sheet
 trial_balance_router = routers.SimpleRouter() 
 trial_balance_router.register('trial_balance', TrialBalanceViewset, basename='trial-balance')
 
+job_voucher_router = routers.SimpleRouter() 
+job_voucher_router.register('job_voucher', JobVoucherViewset, basename='trial-balance')
+
+job_invoice_router = routers.SimpleRouter() 
+job_invoice_router.register('job_invoice', JobInvoiceViewset, basename='trial-balance')
+
 
 urlpatterns = [
     path('',include(get_user_count_router.urls)),
@@ -141,6 +147,8 @@ urlpatterns = [
     path('',include(general_ledger_router.urls)),
     path('',include(sheet_report_router.urls)),
     path('',include(trial_balance_router.urls)),
+    path('',include(job_voucher_router.urls)),
+    path('',include(job_invoice_router.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
     path('user-create/', UserCreateViewSet.as_view(), name='user-create'),
