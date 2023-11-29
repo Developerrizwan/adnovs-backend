@@ -1114,6 +1114,8 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "voucher_number":"",
             "invoice_number":invoice.supplier_inv_number,
             "net_amount":0,
+            "cr_amount": 0,
+            "dr_amount":0,
             "party_account":invoice.party_account.name if invoice.party_account else "",
             "job_no":invoice.job.job_number if invoice.job.job_number else "",
             "narrations":invoice.narration if invoice.narration else "",
@@ -1127,7 +1129,8 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
-            total_amount += (amount)+(float((vat_percent * fcy_amount)/100))
+            total_amount += (amount)+(float((vat_percent * amount)/100))
+        res_obj["dr_amount"] = total_amount
         res_obj['net_amount']=total_amount   
         response.append(res_obj)
     
@@ -1143,7 +1146,9 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "currency":voucher.currency,
             "voucher_number":voucher.voucher_type,
             "invoice_number":"",
-            "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+            "cr_amount":  0,
+            "dr_amount": total_amount,
+            "net_amount": total_amount,
             "party_account":account.name if account else "",
             "job_no": "",
             "narrations":voucher.naration if voucher.naration else "",
@@ -1160,6 +1165,9 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "currency":voucher.currency,
             "voucher_number":voucher.voucher_type,
             "invoice_number":"",
+            "cr_amount":  0,
+            "dr_amount": total_amount,
+            "net_amount": total_amount,
             "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
             "party_account":account.name if account else "",
             "job_no": "",
@@ -1181,8 +1189,10 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             "account":invoice.client_name.name if invoice.client_name else "",
             "date":invoice.created_at,
             "currency":invoice.currency_sar,
-            "voucher_number":"",
+            "voucher_number":"Invoice",
             "invoice_number":invoice.invoice_number,
+            "cr_amount": 0,
+            "dr_amount":0,
             "net_amount":0,
             "party_account":invoice.party_account.name if invoice.party_account else "",
             "job_no":invoice.job.job_number if invoice.job.job_number else "",
@@ -1199,7 +1209,9 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
-            total_amount += (amount)+(float((vat_percent * fcy_amount)/100))
+            total_amount += (amount)+(float((vat_percent * amount)/100))
+        
+        res_obj['cr_amount'] = total_amount
         res_obj['net_amount']=total_amount   
         response.append(res_obj)
     
@@ -1209,13 +1221,16 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
     
     for voucher in payment_vouchers:
         account = Organization.objects.filter(id=voucher.party_account).first()
+        total_amount = voucher.amount_sar if voucher.amount_sar else 0
         res_obj = {
             "account": account.name if account else "",
             "date":voucher.date,
             "currency":voucher.currency,
             "voucher_number":voucher.voucher_type,
             "invoice_number":"",
-            "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+            "cr_amount":  total_amount,
+            "dr_amount": 0,
+            "net_amount": total_amount,
             "party_account":account.name if account else "",
             "job_no": "",
             "narrations":voucher.naration if voucher.naration else "",
@@ -1226,13 +1241,16 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
     debit_credit_vouchers = vouchers.filter(Q(voucher_type='CreditNote') | Q(voucher_type='DebitNote'), voucher_for='Customer')
     for voucher in debit_credit_vouchers:
         account = Organization.objects.filter(id=voucher.party_account).first() 
+        total_amount = voucher.amount_sar if voucher.amount_sar else 0
         res_obj = {
             "account": account.name if account else "",
             "date":voucher.date,
             "currency":voucher.currency,
             "voucher_number":voucher.voucher_type,
             "invoice_number":"",
-            "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+            "cr_amount":  total_amount,
+            "dr_amount": 0,
+            "net_amount": total_amount,
             "party_account":account.name if account else "",
             "job_no": "",
             "narrations":voucher.naration if voucher.naration else "",
