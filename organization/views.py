@@ -1126,12 +1126,11 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
         total_amount = 0
 
         for cost_entry in cost_entrys:
-            fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
             total_amount += (amount)+(float((vat_percent * amount)/100))
         res_obj["dr_amount"] = total_amount
-        res_obj['net_amount']=total_amount   
+        res_obj['net_amount']= float(res_obj['dr_amount']) - float(res_obj['cr_amount'])  
         response.append(res_obj)
     
     # try:
@@ -1139,7 +1138,11 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
     payment_vouchers = vouchers.filter(voucher_type='Payment')
     
     for voucher in payment_vouchers:
+        voucher_accounts = AccountDetails.objects.filter(vouchers=voucher)
         account = Organization.objects.filter(id=voucher.party_account).first()
+        total_amount = 0
+        dr_amount = 0
+        cr_amount = 0
         res_obj = {
             "account": account.name if account else "",
             "date":voucher.date,
@@ -1147,18 +1150,37 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "voucher_number":voucher.voucher_type,
             "invoice_number":"",
             "cr_amount":  0,
-            "dr_amount": total_amount,
-            "net_amount": total_amount,
+            "dr_amount": 0,
+            "net_amount": 0,
             "party_account":account.name if account else "",
             "job_no": "",
             "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
+        for acc in voucher_accounts:
+            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
+            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+            vat_amount = float((vat_percent * amount)/100)
+            total_amt = float(amount  + vat_amount)
+
+            if acc.dr_cr == "cr":
+                cr_amount = float(cr_amount) + total_amt
+            else:
+                dr_amount = float(dr_amount) + total_amt
+
+        total_amount = float(dr_amount) - float(cr_amount)
+        res_obj['dr_amount'] =dr_amount
+        res_obj['cr_amount'] = cr_amount
+        res_obj['net_amount'] = total_amount
         response.append(res_obj)
     
     debit_credit_vouchers = vouchers.filter(Q(voucher_type='CreditNote') | Q(voucher_type='DebitNote'), voucher_for='Vendor')
     for voucher in debit_credit_vouchers:
-        account = Organization.objects.filter(id=voucher.party_account).first() 
+        voucher_accounts = AccountDetails.objects.filter(vouchers=voucher)
+        account = Organization.objects.filter(id=voucher.party_account).first()
+        total_amount = 0
+        dr_amount = 0
+        cr_amount = 0 
         res_obj = {
             "account": account.name if account else "",
             "date":voucher.date,
@@ -1166,14 +1188,28 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "voucher_number":voucher.voucher_type,
             "invoice_number":"",
             "cr_amount":  0,
-            "dr_amount": total_amount,
-            "net_amount": total_amount,
-            "net_amount": voucher.amount_sar if voucher.amount_sar else 0,
+            "dr_amount": 0,
+            "net_amount": 0,
             "party_account":account.name if account else "",
             "job_no": "",
             "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
+        for acc in voucher_accounts:
+            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
+            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+            vat_amount = float((vat_percent * amount)/100)
+            total_amt = float(amount  + vat_amount)
+
+            if acc.dr_cr == "cr":
+                cr_amount = float(cr_amount) + total_amt
+            else:
+                dr_amount = float(dr_amount) + total_amt
+
+        total_amount = float(dr_amount) - float(cr_amount)
+        res_obj['dr_amount'] =dr_amount
+        res_obj['cr_amount'] = cr_amount
+        res_obj['net_amount'] = total_amount
         response.append(res_obj)
     # except:
     #     pass
@@ -1201,61 +1237,98 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             # "language_name":coa.language_name if coa.language_name else ""
         }
         cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
-        print(cost_entrys)
+        # print(cost_entrys)
         # if invoice.invoice_type=='Sales':
         total_amount = 0
 
         for cost_entry in cost_entrys:
-            fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
             total_amount += (amount)+(float((vat_percent * amount)/100))
         
         res_obj['cr_amount'] = total_amount
-        res_obj['net_amount']=total_amount   
+        res_obj['net_amount']= float(res_obj['dr_amount']) - float(res_obj['cr_amount'])   
         response.append(res_obj)
     
     # try:
     vouchers = Vouchers.objects.filter(party_account=org_id, party_account_type='organization', date__range=[start_date, end_date])
-    payment_vouchers = vouchers.filter(voucher_type='Receipt')
+    receipt_vouchers = vouchers.filter(voucher_type='Receipt')
     
-    for voucher in payment_vouchers:
+    for voucher in receipt_vouchers:
+        voucher_accounts = AccountDetails.objects.filter(vouchers=voucher)
         account = Organization.objects.filter(id=voucher.party_account).first()
-        total_amount = voucher.amount_sar if voucher.amount_sar else 0
+        total_amount = 0
+        dr_amount = 0
+        cr_amount = 0
+
         res_obj = {
             "account": account.name if account else "",
             "date":voucher.date,
             "currency":voucher.currency,
             "voucher_number":voucher.voucher_type,
             "invoice_number":"",
-            "cr_amount":  total_amount,
+            "cr_amount":  0,
             "dr_amount": 0,
-            "net_amount": total_amount,
+            "net_amount": 0,
             "party_account":account.name if account else "",
             "job_no": "",
             "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
+
+        for acc in voucher_accounts:
+            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
+            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+            vat_amount = float((vat_percent * amount)/100)
+            total_amt = float(amount  + vat_amount)
+
+            if acc.dr_cr == "cr":
+                cr_amount = float(cr_amount) + total_amt
+            else:
+                dr_amount = float(dr_amount) + total_amt
+
+        total_amount = float(dr_amount) - float(cr_amount)
+        res_obj['dr_amount'] =dr_amount
+        res_obj['cr_amount'] = cr_amount
+        res_obj['net_amount'] = total_amount
         response.append(res_obj)
     
     debit_credit_vouchers = vouchers.filter(Q(voucher_type='CreditNote') | Q(voucher_type='DebitNote'), voucher_for='Customer')
     for voucher in debit_credit_vouchers:
+        voucher_accounts = AccountDetails.objects.filter(vouchers=voucher)
         account = Organization.objects.filter(id=voucher.party_account).first() 
-        total_amount = voucher.amount_sar if voucher.amount_sar else 0
+        total_amount = 0
+        dr_amount = 0
+        cr_amount = 0
         res_obj = {
             "account": account.name if account else "",
             "date":voucher.date,
             "currency":voucher.currency,
             "voucher_number":voucher.voucher_type,
             "invoice_number":"",
-            "cr_amount":  total_amount,
+            "cr_amount":  0,
             "dr_amount": 0,
-            "net_amount": total_amount,
+            "net_amount": 0,
             "party_account":account.name if account else "",
             "job_no": "",
             "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
+        for acc in voucher_accounts:
+            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
+            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+            vat_amount = float((vat_percent * amount)/100)
+            total_amt = float(amount  + vat_amount)
+
+            if acc.dr_cr == "cr":
+                cr_amount = float(cr_amount) + total_amt
+            else:
+                dr_amount = float(dr_amount) + total_amt
+
+        total_amount = float(dr_amount) - float(cr_amount)
+        res_obj['dr_amount'] =dr_amount
+        res_obj['cr_amount'] = cr_amount
+        res_obj['net_amount'] = total_amount
         response.append(res_obj)
     # except:
     #     pass
@@ -1380,4 +1453,23 @@ class JobInvoiceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         job = request.query_params.get('job', None)
         queryset = self.queryset.filter(job__id=job)
         serializers = self.serializer_class(queryset, many=True)
-        return Response(serializers.data, status=status.HTTP_200_OK)
+        response = []
+
+        data = serializers.data
+
+        for invoice in data:
+            cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
+            total_amount = 0
+            fcy_amount = 0
+            for cost_entry in cost_entrys:
+                fy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+                amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+                vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
+                total_amount += (amount)+(float((vat_percent * amount)/100))
+                fcy_amount = fcy_amount + fy_amount
+            
+            invoice['amount_sar'] = total_amount
+            invoice['fc_amount'] = fcy_amount
+            response.append(invoice)
+
+        return Response(response, status=status.HTTP_200_OK)
