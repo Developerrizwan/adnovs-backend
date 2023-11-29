@@ -1362,7 +1362,7 @@ class JobVoucherViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     pagination_class = CustomPagination
     queryset = Vouchers.objects.all().order_by('-id')
     permission_classes = (IsAuthenticated,)
-    serializer_class = VouchersSerializer
+    serializer_class = VouchersJobSerializer
 
     def list(self, request, *args, **kwargs):
         job = request.query_params.get('job', None)
@@ -1374,7 +1374,7 @@ class JobInvoiceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     pagination_class = CustomPagination
     queryset = Invoices.objects.all().order_by('-id')
     permission_classes = (IsAuthenticated,)
-    serializer_class = InvoicesSerializer
+    serializer_class = InvoiceJobSerializer
 
     def list(self, request, *args, **kwargs):
         job = request.query_params.get('job', None)

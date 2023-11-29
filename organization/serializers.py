@@ -252,3 +252,22 @@ class AccountDetailsGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccountDetails
         fields = '__all__' 
+
+class InvoiceJobSerializer(serializers.ModelSerializer):
+    consignee_name = OrganizationSerializer()
+    coa = CoaSerializer()
+    job = JobSerializer()
+    client_name = OrganizationSerializer()
+    party_account = OrganizationSerializer()
+    company = CompanySerializer()
+
+    class Meta:
+        model = Invoices
+        fields = '__all__' 
+
+class VouchersJobSerializer(serializers.ModelSerializer):
+    job = JobSerializer()
+
+    class Meta:
+        model = Vouchers
+        fields = '__all__' 
