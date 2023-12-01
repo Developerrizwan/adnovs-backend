@@ -713,7 +713,7 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
 
             res_obj = {
                 "account":invoice.client_name.name if invoice.client_name else "",
-                "date":invoice.created_at,
+                "date":invoice.date,
                 "currency":invoice.currency_sar,
                 "invoice_number":invoice.invoice_number,
                 "vat_percent":0,
@@ -808,7 +808,7 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
         for cost_entry in cost_entrys:
             res_obj = {
                 "account":invoice.client_name.name if invoice.client_name else "",
-                "date":invoice.created_at,
+                "date":invoice.date,
                 "currency":invoice.currency_sar,
                 "invoice_number":invoice.invoice_number,
                 "vat_percent":0,
@@ -895,12 +895,12 @@ def get_other_coa_response(coa, start_date, end_date, user):
     respone =[]
     res_obj={}
 
-    cost_entrys = CostEntry.objects.filter(charge__coa=coa, invoice__created_at__range=[start_date, end_date], is_included=True, invoice__company__users=user).order_by('created_at')
+    cost_entrys = CostEntry.objects.filter(charge__coa=coa, invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users=user).order_by('date')
     for cost_entry in cost_entrys:
         if cost_entry.invoice:
             res_obj = {
                     "account":cost_entry.invoice.client_name.name if cost_entry.invoice and cost_entry.invoice.client_name else "",
-                    "date":cost_entry.invoice.created_at if cost_entry.invoice else cost_entry.created_at,
+                    "date":cost_entry.invoice.date if cost_entry.invoice else cost_entry.created_at,
                     "currency":cost_entry.invoice.currency_sar if cost_entry.invoice else cost_entry.currency,
                     "invoice_number":cost_entry.invoice.invoice_number if cost_entry.invoice else '',
                     "vat_percent":0,
@@ -1109,7 +1109,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
     for invoice in invoices:
         res_obj = {
             "account":invoice.client_name.name if invoice.client_name else "",
-            "date":invoice.created_at,
+            "date":invoice.date,
             "currency":invoice.currency_sar,
             "voucher_number":"",
             "invoice_number":invoice.supplier_inv_number,
@@ -1223,7 +1223,7 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
     for invoice in invoices:
         res_obj = {
             "account":invoice.client_name.name if invoice.client_name else "",
-            "date":invoice.created_at,
+            "date":invoice.date,
             "currency":invoice.currency_sar,
             "voucher_number":"Invoice",
             "invoice_number":invoice.invoice_number,
@@ -1348,7 +1348,7 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         end_date = request.query_params.get('end_date',None)
         payment = request.query_params.get('payment',None)
         
-        invoices = Invoices.objects.filter(party_account=organization_id,created_at__range=[start_date, end_date]).order_by('created_at')
+        invoices = Invoices.objects.filter(party_account=organization_id,date__range=[start_date, end_date]).order_by('date')
         if payment is not None:
             invoices = invoices.filter(payment_status=payment)
         response =[]
