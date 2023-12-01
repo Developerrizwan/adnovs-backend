@@ -1054,6 +1054,14 @@ def get_other_coa_response(coa, start_date, end_date, user):
             
             if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
                 respone.append(res_obj)
+    
+    respone = sorted(respone, key=lambda obj:obj['date'])
+
+    balance = 0
+    for res in respone:
+        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        res['total_amount'] = balance
+    
     return respone
 
 class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
