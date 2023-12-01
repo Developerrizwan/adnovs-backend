@@ -1064,7 +1064,7 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
     res_obj={}
 
     cost_entrys = CostEntry.objects.filter(invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users__email=user.email).order_by('created_at')
-    cost_entry = cost_entrys.filter(invoice__job=job)
+    cost_entrys = cost_entrys.filter(invoice__job=job)
     for cost_entry in cost_entrys:
         if cost_entry.invoice:
             res_obj = {
@@ -1082,7 +1082,7 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                     "type":"Invoice",
                     "voucher":"",
                     "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
-                    "job_no":cost_entry.invoice.job.job_number if cost_entry.invoice and cost_entry.invoice.job else "",
+                    "job_no": job.job_number,
                     "narrations":cost_entry.invoice.narration if cost_entry.invoice else "",
                     "branch":cost_entry.invoice.branch if cost_entry.invoice else "",
                     "language_name": ""
