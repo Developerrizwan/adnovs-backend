@@ -759,11 +759,11 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
 
         for acc in account_details:
             party_account = None
-        
-            if acc.vouchers.party_account_type == 'coa':
-                party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
-            else:
-                party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
+            if acc.vouchers.party_account:
+                if acc.vouchers.party_account_type == 'coa':
+                    party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
+                else:
+                    party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
                 
             res_obj = {
                     "account":coa.name,
@@ -861,11 +861,11 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
 
         for acc in account_details:
             party_account = None
-        
-            if acc.vouchers.party_account_type == 'coa':
-                party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
-            else:
-                party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
+            if acc.vouchers.party_account:
+                if acc.vouchers.party_account_type == 'coa':
+                    party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
+                else:
+                    party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
                 
             res_obj = {
                 "account":coa.name,
@@ -978,11 +978,11 @@ def get_other_coa_response(coa, start_date, end_date, user):
 
     for acc in account_details:
         party_account = None
-        
-        if acc.vouchers.party_account_type == 'coa':
-            party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
-        else:
-            party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
+        if acc.vouchers.party_account:
+            if acc.vouchers.party_account_type == 'coa':
+                party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
+            else:
+                party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
         
         if acc.dr_cr == 'cr':
             res_obj = {
