@@ -758,6 +758,13 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
         account_details = account_details.filter(dr_cr='dr')
 
         for acc in account_details:
+            party_account = None
+        
+            if acc.vouchers.party_account_type == 'coa':
+                party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
+            else:
+                party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
+                
             res_obj = {
                     "account":coa.name,
                     "date":acc.vouchers.date if acc.vouchers.date else '',
@@ -772,7 +779,7 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
                     "net_amount":0,
                     "type":"Voucher",
                     "voucher":acc.vouchers.branch if acc.vouchers else "",
-                    "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
+                    "party_account": party_account.name if party_account else '',
                     "job_no":acc.job_no.job_number if acc.job_no else "",
                     "narrations": acc.narration,
                     "branch":acc.vouchers.branch if acc.vouchers else "",
@@ -853,6 +860,13 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
         account_details = account_details.filter(dr_cr='cr')
 
         for acc in account_details:
+            party_account = None
+        
+            if acc.vouchers.party_account_type == 'coa':
+                party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
+            else:
+                party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
+                
             res_obj = {
                 "account":coa.name,
                 "date":acc.vouchers.date if acc.vouchers.date else '',
@@ -867,7 +881,7 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
                 "net_amount":0,
                 "type":"Voucher",
                 "voucher":acc.vouchers.branch if acc.vouchers else "",
-                "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
+                "party_account": party_account.name if party_account else '',
                 "job_no":acc.job_no.job_number if acc.job_no else "",
                 "narrations": acc.narration,
                 "branch":acc.vouchers.branch if acc.vouchers else "",
@@ -963,6 +977,13 @@ def get_other_coa_response(coa, start_date, end_date, user):
     account_details = coa_account_details.union(org_account_details)
 
     for acc in account_details:
+        party_account = None
+        
+        if acc.vouchers.party_account_type == 'coa':
+            party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
+        else:
+            party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
+        
         if acc.dr_cr == 'cr':
             res_obj = {
                 "account":coa.name,
@@ -978,7 +999,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "net_amount":0,
                 "type":"Voucher",
                 "voucher":acc.vouchers.branch if acc.vouchers else "",
-                "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
+                "party_account": party_account.name if party_account else '',
                 "job_no":acc.job_no.job_number if acc.job_no else "",
                 "narrations": acc.narration,
                 "branch":acc.vouchers.branch if acc.vouchers else "",
@@ -1013,7 +1034,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "net_amount":0,
                 "type":"Voucher",
                 "voucher":acc.vouchers.branch if acc.vouchers else "",
-                "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
+                "party_account": party_account.name if party_account else '',
                 "job_no":acc.job_no.job_number if acc.job_no else "",
                 "narrations": acc.narration,
                 "branch":acc.vouchers.branch if acc.vouchers else "",
