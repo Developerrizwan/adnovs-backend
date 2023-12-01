@@ -1397,7 +1397,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
     results = []
     for res in response:
         balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
-        res['total_amount'] = balance
+        res['net_amount'] = balance
         results.append(res)
         
     return results
@@ -1523,7 +1523,7 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
     results = []
     for res in response:
         balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
-        res['total_amount'] = balance
+        res['net_amount'] = balance
         results.append(res)
         
     return results
