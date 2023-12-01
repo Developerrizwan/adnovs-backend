@@ -703,7 +703,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
 def get_vat_input_coa_response(coa, start_date, end_date, user):
 
-    invoices = Invoices.objects.filter(created_at__range=[start_date, end_date], invoice_type='Purchase', company__users=user).order_by('created_at')
+    invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Purchase', company__users__email=user.email).order_by('date')
     respone =[]
     res_obj={}
     for invoice in invoices:
@@ -749,8 +749,8 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
                 respone.append(res_obj)
     
     try:
-        coa_account_details = AccountDetails.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users=user)
-        organizations = Organization.filter(company__users=user).values_list('id')
+        coa_account_details = AccountDetails.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users__email=user.email)
+        organizations = Organization.filter(company__users__email=user.email).values_list('id')
         org_account_details = AccountDetails.filter(ac_name__in=organizations, ac_name_type='organization')
 
         account_details = coa_account_details.union(org_account_details)
@@ -799,7 +799,7 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
 
 def get_vat_output_coa_response(coa, start_date, end_date, user):
 
-    invoices = Invoices.objects.filter(created_at__range=[start_date, end_date], invoice_type='Sales', company__users=user).order_by('created_at')
+    invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Sales', company__users__email=user.email).order_by('date')
     respone =[]
     res_obj={}
     for invoice in invoices:
@@ -843,8 +843,8 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
                 respone.append(res_obj)
 
     try:
-        coa_account_details = AccountDetails.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users=user)
-        organizations = Organization.filter(company__users=user).values_list('id')
+        coa_account_details = AccountDetails.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users__email=user.email)
+        organizations = Organization.filter(company__users__email=user.email).values_list('id')
         org_account_details = AccountDetails.filter(ac_name__in=organizations, ac_name_type='organization')
 
         account_details = coa_account_details.union(org_account_details)
@@ -895,7 +895,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
     respone =[]
     res_obj={}
 
-    cost_entrys = CostEntry.objects.filter(charge__coa=coa, invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users=user).order_by('date')
+    cost_entrys = CostEntry.objects.filter(charge__coa=coa, invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users__email=user.email).order_by('created_at')
     for cost_entry in cost_entrys:
         if cost_entry.invoice:
             res_obj = {
@@ -953,9 +953,9 @@ def get_other_coa_response(coa, start_date, end_date, user):
     
 
     try:
-        voucher_accounts = AccountDetails.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users=user)
+        voucher_accounts = AccountDetails.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
         coa_account_details = voucher_accounts.filter(ac_name=coa.id, ac_name_type='coa')
-        organizations = Organization.filter(coa=coa, company__users=user).values_list('id')
+        organizations = Organization.filter(coa=coa, company__users__email=user.email).values_list('id')
         org_account_details = voucher_accounts.filter(ac_name__in=organizations, ac_name_type='organization')
 
         account_details = coa_account_details.union(org_account_details)
@@ -1060,7 +1060,7 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
 def get_account_invoices_response(id, user):
 
-    invoices = Invoices.objects.filter(company__users=user).filter(Q(client_name__id=id) | Q(consignee_name__id=id) | Q(party_account__id=id)).order_by('created_at')
+    invoices = Invoices.objects.filter(company__users__email=user.email).filter(Q(client_name__id=id) | Q(consignee_name__id=id) | Q(party_account__id=id)).order_by('date')
     respone =[]
     res_obj={}
     for invoice in invoices:
@@ -1213,7 +1213,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
         response.append(res_obj)
     # except:
     #     pass
-    
+    response = sorted(response, key= lambda obj:obj['date'])
     return response
 
 
@@ -1332,7 +1332,7 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
         response.append(res_obj)
     # except:
     #     pass
-    
+    response = sorted(response, key= lambda obj:obj['date'])
     return response
 
 
