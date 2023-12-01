@@ -751,6 +751,7 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
     try:
         coa_account_details = AccountDetails.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users__email=user.email)
         organizations = Organization.filter(company__users__email=user.email).values_list('id')
+        organizations = list(map(str, organizations))
         org_account_details = AccountDetails.filter(ac_name__in=organizations, ac_name_type='organization')
 
         account_details = coa_account_details.union(org_account_details)
@@ -845,6 +846,7 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
     try:
         coa_account_details = AccountDetails.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users__email=user.email)
         organizations = Organization.filter(company__users__email=user.email).values_list('id')
+        organizations = list(map(str, organizations))
         org_account_details = AccountDetails.filter(ac_name__in=organizations, ac_name_type='organization')
 
         account_details = coa_account_details.union(org_account_details)
@@ -954,8 +956,9 @@ def get_other_coa_response(coa, start_date, end_date, user):
 
     try:
         voucher_accounts = AccountDetails.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
-        coa_account_details = voucher_accounts.filter(ac_name=coa.id, ac_name_type='coa')
+        coa_account_details = voucher_accounts.filter(ac_name='{0}'.format(coa.id), ac_name_type='coa')
         organizations = Organization.filter(coa=coa, company__users__email=user.email).values_list('id')
+        organizations = list(map(str, organizations))
         org_account_details = voucher_accounts.filter(ac_name__in=organizations, ac_name_type='organization')
 
         account_details = coa_account_details.union(org_account_details)
