@@ -780,7 +780,7 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
                     "type":"Voucher",
                     "voucher":acc.vouchers.branch if acc.vouchers else "",
                     "party_account": party_account.name if party_account else '',
-                    "job_no":acc.job_no.job_number if acc.job_no else "",
+                    "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
                     "narrations": acc.narration,
                     "branch":acc.vouchers.branch if acc.vouchers else "",
                     "language_name":coa.language_name if coa.language_name else ""
@@ -882,7 +882,7 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
                 "type":"Voucher",
                 "voucher":acc.vouchers.branch if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
-                "job_no":acc.job_no.job_number if acc.job_no else "",
+                "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
                 "narrations": acc.narration,
                 "branch":acc.vouchers.branch if acc.vouchers else "",
                 "language_name":coa.language_name if coa.language_name else ""
@@ -1000,7 +1000,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "type":"Voucher",
                 "voucher":acc.vouchers.branch if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
-                "job_no":acc.job_no.job_number if acc.job_no else "",
+                "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
                 "narrations": acc.narration,
                 "branch":acc.vouchers.branch if acc.vouchers else "",
                 "language_name":coa.language_name if coa.language_name else ""
@@ -1035,7 +1035,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "type":"Voucher",
                 "voucher":acc.vouchers.branch if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
-                "job_no":acc.job_no.job_number if acc.job_no else "",
+                "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
                 "narrations": acc.narration,
                 "branch":acc.vouchers.branch if acc.vouchers else "",
                 "language_name":coa.language_name if coa.language_name else ""
@@ -1174,7 +1174,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "dr_amount": 0,
             "net_amount": 0,
             "party_account":account.name if account else "",
-            "job_no": "",
+            "job_no": voucher.job.job_number if voucher.job else "",
             "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
@@ -1212,7 +1212,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "dr_amount": 0,
             "net_amount": 0,
             "party_account":account.name if account else "",
-            "job_no": "",
+            "job_no": voucher.job.job_number if voucher.job else "",
             "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
@@ -1292,7 +1292,7 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             "dr_amount": 0,
             "net_amount": 0,
             "party_account":account.name if account else "",
-            "job_no": "",
+            "job_no": voucher.job.job_number if voucher.job else "",
             "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
@@ -1331,7 +1331,7 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             "dr_amount": 0,
             "net_amount": 0,
             "party_account":account.name if account else "",
-            "job_no": "",
+            "job_no": voucher.job.job_number if voucher.job else "",
             "narrations":voucher.naration if voucher.naration else "",
             "branch":voucher.branch if voucher.branch else "",
         }
