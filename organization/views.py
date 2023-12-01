@@ -749,10 +749,10 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
                 respone.append(res_obj)
     
     try:
-        coa_account_details = AccountDetails.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users__email=user.email)
-        organizations = Organization.filter(company__users__email=user.email).values_list('id')
+        coa_account_details = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users__email=user.email)
+        organizations = Organization.objects.filter(company__users__email=user.email).values_list('id')
         organizations = list(map(str, organizations))
-        org_account_details = AccountDetails.filter(ac_name__in=organizations, ac_name_type='organization')
+        org_account_details = AccountDetails.objects.filter(ac_name__in=organizations, ac_name_type='organization')
 
         account_details = coa_account_details.union(org_account_details)
         account_details = account_details.filter(dr_cr='dr')
@@ -844,10 +844,10 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
                 respone.append(res_obj)
 
     try:
-        coa_account_details = AccountDetails.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users__email=user.email)
-        organizations = Organization.filter(company__users__email=user.email).values_list('id')
+        coa_account_details = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users__email=user.email)
+        organizations = Organization.objects.filter(company__users__email=user.email).values_list('id')
         organizations = list(map(str, organizations))
-        org_account_details = AccountDetails.filter(ac_name__in=organizations, ac_name_type='organization')
+        org_account_details = AccountDetails.objects.filter(ac_name__in=organizations, ac_name_type='organization')
 
         account_details = coa_account_details.union(org_account_details)
         account_details = account_details.filter(dr_cr='cr')
@@ -954,86 +954,88 @@ def get_other_coa_response(coa, start_date, end_date, user):
                     respone.append(res_obj)
     
 
-    voucher_accounts = AccountDetails.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
-    coa_account_details = voucher_accounts.filter(ac_name=str(coa.id), ac_name_type='coa')
-    organizations = Organization.filter(coa=coa, company__users__email=user.email).values_list('id')
-    organizations = list(map(str, organizations))
-    org_account_details = voucher_accounts.filter(ac_name__in=organizations, ac_name_type='organization')
+    try:
+        voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
+        coa_account_details = voucher_accounts.filter(ac_name='{0}'.format(coa.id), ac_name_type='coa')
+        organizations = Organization.objects.filter(coa=coa, company__users__email=user.email).values_list('id')
+        organizations = list(map(str, organizations))
+        org_account_details = voucher_accounts.filter(ac_name__in=organizations, ac_name_type='organization')
 
-    account_details = coa_account_details.union(org_account_details)
+        account_details = coa_account_details.union(org_account_details)
 
-    for acc in account_details:
-        if acc.dr_cr == 'cr':
-            res_obj = {
-                "account":coa.name,
-                "date":acc.vouchers.date if acc.vouchers.date else '',
-                "currency":acc.currency,
-                "invoice_number":"",
-                "vat_percent":0,
-                "fcy_amount":0,
-                "vat_amount":0,
-                "amount":0,
-                "dr_amount":0,
-                "cr_amount":0,
-                "net_amount":0,
-                "type":"Voucher",
-                "voucher":acc.vouchers.branch if acc.vouchers else "",
-                "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
-                "job_no":acc.job_no.job_number if acc.job_no else "",
-                "narrations": acc.narration,
-                "branch":acc.vouchers.branch if acc.vouchers else "",
-                "language_name":coa.language_name if coa.language_name else ""
-                }
-            fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
-            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
-            vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount  + vat_amount)
-            res_obj['vat_percent']= vat_percent
-            res_obj['fcy_amount'] = fcy_amount
-            res_obj['amount'] = amount
-            res_obj['vat_amount'] = vat_amount
-            res_obj['cr_amount']=total_amount
-            res_obj['net_amount']=total_amount
-            
-            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
-                respone.append(res_obj)
-        else:
-            res_obj = {
-                "account":coa.name,
-                "date":acc.vouchers.date if acc.vouchers.date else '',
-                "currency":acc.currency,
-                "invoice_number":"",
-                "vat_percent":0,
-                "fcy_amount":0,
-                "vat_amount":0,
-                "amount":0,
-                "dr_amount":0,
-                "cr_amount":0,
-                "net_amount":0,
-                "type":"Voucher",
-                "voucher":acc.vouchers.branch if acc.vouchers else "",
-                "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
-                "job_no":acc.job_no.job_number if acc.job_no else "",
-                "narrations": acc.narration,
-                "branch":acc.vouchers.branch if acc.vouchers else "",
-                "language_name":coa.language_name if coa.language_name else ""
-                }
-            fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
-            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
-            vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount  + vat_amount)
-            res_obj['vat_percent']= vat_percent
-            res_obj['fcy_amount'] = fcy_amount
-            res_obj['amount'] = amount
-            res_obj['vat_amount'] = vat_amount
-            res_obj['dr_amount']=total_amount
-            res_obj['net_amount']=total_amount
-            
-            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
-                respone.append(res_obj)
-    
+        for acc in account_details:
+            if acc.dr_cr == 'cr':
+                res_obj = {
+                    "account":coa.name,
+                    "date":acc.vouchers.date if acc.vouchers.date else '',
+                    "currency":acc.currency,
+                    "invoice_number":"",
+                    "vat_percent":0,
+                    "fcy_amount":0,
+                    "vat_amount":0,
+                    "amount":0,
+                    "dr_amount":0,
+                    "cr_amount":0,
+                    "net_amount":0,
+                    "type":"Voucher",
+                    "voucher":acc.vouchers.branch if acc.vouchers else "",
+                    "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
+                    "job_no":acc.job_no.job_number if acc.job_no else "",
+                    "narrations": acc.narration,
+                    "branch":acc.vouchers.branch if acc.vouchers else "",
+                    "language_name":coa.language_name if coa.language_name else ""
+                    }
+                fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+                amount=float(acc.amount_sar if acc.amount_sar else 0.0)
+                vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+                vat_amount = float((vat_percent * amount)/100)
+                total_amount = float(amount  + vat_amount)
+                res_obj['vat_percent']= vat_percent
+                res_obj['fcy_amount'] = fcy_amount
+                res_obj['amount'] = amount
+                res_obj['vat_amount'] = vat_amount
+                res_obj['cr_amount']=total_amount
+                res_obj['net_amount']=total_amount
+                
+                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                    respone.append(res_obj)
+            else:
+                res_obj = {
+                    "account":coa.name,
+                    "date":acc.vouchers.date if acc.vouchers.date else '',
+                    "currency":acc.currency,
+                    "invoice_number":"",
+                    "vat_percent":0,
+                    "fcy_amount":0,
+                    "vat_amount":0,
+                    "amount":0,
+                    "dr_amount":0,
+                    "cr_amount":0,
+                    "net_amount":0,
+                    "type":"Voucher",
+                    "voucher":acc.vouchers.branch if acc.vouchers else "",
+                    "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
+                    "job_no":acc.job_no.job_number if acc.job_no else "",
+                    "narrations": acc.narration,
+                    "branch":acc.vouchers.branch if acc.vouchers else "",
+                    "language_name":coa.language_name if coa.language_name else ""
+                    }
+                fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+                amount=float(acc.amount_sar if acc.amount_sar else 0.0)
+                vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+                vat_amount = float((vat_percent * amount)/100)
+                total_amount = float(amount  + vat_amount)
+                res_obj['vat_percent']= vat_percent
+                res_obj['fcy_amount'] = fcy_amount
+                res_obj['amount'] = amount
+                res_obj['vat_amount'] = vat_amount
+                res_obj['dr_amount']=total_amount
+                res_obj['net_amount']=total_amount
+                
+                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                    respone.append(res_obj)
+    except:
+        pass
     return respone
 
 class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
