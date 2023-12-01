@@ -1056,13 +1056,156 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 respone.append(res_obj)
     
     respone = sorted(respone, key=lambda obj:obj['date'])
-
-    balance = 0
-    for res in respone:
-        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
-        res['total_amount'] = balance
-    
     return respone
+
+
+def get_job_ledger_statement_response(job, start_date, end_date, user):
+    respone =[]
+    res_obj={}
+
+    cost_entrys = CostEntry.objects.filter(invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users__email=user.email).order_by('created_at')
+    cost_entry = cost_entrys.filter(invoice__job=job)
+    for cost_entry in cost_entrys:
+        if cost_entry.invoice:
+            res_obj = {
+                    "account":cost_entry.invoice.client_name.name if cost_entry.invoice and cost_entry.invoice.client_name else "",
+                    "date":cost_entry.invoice.date if cost_entry.invoice else cost_entry.created_at,
+                    "currency":cost_entry.invoice.currency_sar if cost_entry.invoice else cost_entry.currency,
+                    "invoice_number":cost_entry.invoice.invoice_number if cost_entry.invoice else '',
+                    "vat_percent":0,
+                    "fcy_amount":0,
+                    "vat_amount":0,
+                    "amount":0,
+                    "dr_amount":0,
+                    "cr_amount":0,
+                    "net_amount":0,
+                    "type":"Invoice",
+                    "voucher":"",
+                    "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
+                    "job_no":cost_entry.invoice.job.job_number if cost_entry.invoice and cost_entry.invoice.job else "",
+                    "narrations":cost_entry.invoice.narration if cost_entry.invoice else "",
+                    "branch":cost_entry.invoice.branch if cost_entry.invoice else "",
+                    "language_name": ""
+                    }
+            
+
+            if cost_entry.invoice.invoice_type=='Sales':
+                fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+                amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+                vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
+                vat_amount = float((vat_percent * amount)/100)
+                total_amount = float(amount  + vat_amount)
+                res_obj['vat_percent']= vat_percent
+                res_obj['fcy_amount'] = fcy_amount
+                res_obj['amount'] = amount
+                res_obj['vat_amount'] = vat_amount
+                res_obj['cr_amount']=total_amount
+                res_obj['net_amount']=total_amount   
+                
+                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                    respone.append(res_obj)
+            else:
+                fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+                amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+                vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
+                vat_amount = float((vat_percent * amount)/100)
+                total_amount = float(amount  + vat_amount)
+                res_obj['vat_percent']= vat_percent
+                res_obj['fcy_amount'] = fcy_amount
+                res_obj['amount'] = amount
+                res_obj['vat_amount'] = vat_amount
+                res_obj['dr_amount']=total_amount
+                res_obj['net_amount']=total_amount   
+                
+                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                    respone.append(res_obj)
+    
+
+    voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
+    account_details = voucher_accounts.filter(vouchers__job=job)
+
+    for acc in account_details:
+        party_account = None
+        if acc.vouchers.party_account:
+            if acc.vouchers.party_account_type == 'coa':
+                party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
+            else:
+                party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
+        
+        if acc.dr_cr == 'cr':
+            res_obj = {
+                "account":job.client_name.name if job.client_name else '',
+                "date":acc.vouchers.date if acc.vouchers.date else '',
+                "currency":acc.currency,
+                "invoice_number":"",
+                "vat_percent":0,
+                "fcy_amount":0,
+                "vat_amount":0,
+                "amount":0,
+                "dr_amount":0,
+                "cr_amount":0,
+                "net_amount":0,
+                "type":"Voucher",
+                "voucher":acc.vouchers.branch if acc.vouchers else "",
+                "party_account": party_account.name if party_account else '',
+                "job_no": job.job_number,
+                "narrations": acc.narration,
+                "branch":acc.vouchers.branch if acc.vouchers else "",
+                "language_name": ""
+                }
+            fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
+            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+            vat_amount = float((vat_percent * amount)/100)
+            total_amount = float(amount  + vat_amount)
+            res_obj['vat_percent']= vat_percent
+            res_obj['fcy_amount'] = fcy_amount
+            res_obj['amount'] = amount
+            res_obj['vat_amount'] = vat_amount
+            res_obj['cr_amount']=total_amount
+            res_obj['net_amount']=total_amount
+            
+            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                respone.append(res_obj)
+        else:
+            res_obj = {
+                "account": job.client_name.name if job.client_name else '',
+                "date":acc.vouchers.date if acc.vouchers.date else '',
+                "currency":acc.currency,
+                "invoice_number":"",
+                "vat_percent":0,
+                "fcy_amount":0,
+                "vat_amount":0,
+                "amount":0,
+                "dr_amount":0,
+                "cr_amount":0,
+                "net_amount":0,
+                "type":"Voucher",
+                "voucher":acc.vouchers.branch if acc.vouchers else "",
+                "party_account": party_account.name if party_account else '',
+                "job_no": job.job_number,
+                "narrations": acc.narration,
+                "branch":acc.vouchers.branch if acc.vouchers else "",
+                "language_name": ""
+                }
+            fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
+            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+            vat_amount = float((vat_percent * amount)/100)
+            total_amount = float(amount  + vat_amount)
+            res_obj['vat_percent']= vat_percent
+            res_obj['fcy_amount'] = fcy_amount
+            res_obj['amount'] = amount
+            res_obj['vat_amount'] = vat_amount
+            res_obj['dr_amount']=total_amount
+            res_obj['net_amount']=total_amount
+            
+            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                respone.append(res_obj)
+    
+    respone = sorted(respone, key=lambda obj:obj['date'])
+    return respone
+
 
 class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     pagination_class = CustomPagination
@@ -1073,8 +1216,9 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         coa_id = request.query_params.get('coa', None)
         start_date = request.query_params.get('start_date', None)
         end_date = request.query_params.get('end_date',None)
-        if Coa.objects.filter(id=coa_id).exists():
-
+        job_id = request.query_params.get('job', None)
+        
+        if coa_id is not None and Coa.objects.filter(id=coa_id).exists():
             coa = Coa.objects.filter(id=coa_id).first()
             if coa.id == 429: # For VAT INPUT
                 response = get_vat_input_coa_response(coa, start_date, end_date, request.user)
@@ -1083,8 +1227,14 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             else:     
                 response = get_other_coa_response(coa, start_date, end_date, request.user)
             return Response(response)
-        else:
-            return Response([])
+        
+        if job_id is not None and Job.objects.filter(id=job_id).exists():
+            job =  Job.objects.filter(id=job_id).first()
+            response = get_job_ledger_statement_response(job, start_date, end_date, request.user)
+            return Response(response)
+
+        
+        return Response([])
 
 
 def get_account_invoices_response(id, user):
@@ -1243,7 +1393,14 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
     # except:
     #     pass
     response = sorted(response, key= lambda obj:obj['date'])
-    return response
+    balance = 0
+    results = []
+    for res in response:
+        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        res['total_amount'] = balance
+        results.append(res)
+        
+    return results
 
 
 def get_account_receivable_statement(invoices, org_id, start_date, end_date):   
@@ -1362,7 +1519,14 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
     # except:
     #     pass
     response = sorted(response, key= lambda obj:obj['date'])
-    return response
+    balance = 0
+    results = []
+    for res in response:
+        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        res['total_amount'] = balance
+        results.append(res)
+        
+    return results
 
 
 class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
