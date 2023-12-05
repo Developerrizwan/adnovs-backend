@@ -56,7 +56,7 @@ coa_grouprouter = routers.SimpleRouter()
 coa_grouprouter.register('master/coagroup', CoaGroupViewSet, basename='coa-group') 
 
 get_coa_group_router=routers.SimpleRouter()
-get_coa_group_router.register('get-coagroup',GetCoaGroupViewSet,basename='getcoagroup')
+get_coa_group_router.register('get-coagroup', GetCoaGroupViewSet,basename='getcoagroup')
 
 pod_router = routers.SimpleRouter() 
 pod_router.register('master/pod', PodViewSet, basename='pod')  

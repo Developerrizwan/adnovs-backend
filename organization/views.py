@@ -520,6 +520,7 @@ class CoaGroupViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
     permission_classes = (IsAuthenticated, )
     queryset = CoaGroup.objects.all().order_by('id')
     serializer_class = CoaGroupSerializer
+    filter_backends = [CoaGroupFilter]
 
 
 class GetCoaGroupViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
