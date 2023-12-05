@@ -803,7 +803,14 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
     except:
         pass
     
-    return respone
+    balance = 0
+    results = []
+    for res in respone:
+        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        res['net_amount'] = balance
+        results.append(res)
+        
+    return results
 
 
 def get_vat_output_coa_response(coa, start_date, end_date, user):
@@ -905,7 +912,14 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
     except:
         pass
     
-    return respone
+    balance = 0
+    results = []
+    for res in respone:
+        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        res['net_amount'] = balance
+        results.append(res)
+        
+    return results
 
 
 def get_other_coa_response(coa, start_date, end_date, user):
@@ -1057,7 +1071,14 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 respone.append(res_obj)
     
     respone = sorted(respone, key=lambda obj:obj['date'])
-    return respone
+    balance = 0
+    results = []
+    for res in respone:
+        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        res['net_amount'] = balance
+        results.append(res)
+        
+    return results
 
 
 def get_job_ledger_statement_response(job, start_date, end_date, user):
@@ -1205,7 +1226,14 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 respone.append(res_obj)
     
     respone = sorted(respone, key=lambda obj:obj['date'])
-    return respone
+    balance = 0
+    results = []
+    for res in respone:
+        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        res['net_amount'] = balance
+        results.append(res)
+        
+    return results
 
 
 class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
