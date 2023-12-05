@@ -984,7 +984,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
             else:
                 party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
         
-        if acc.dr_cr == 'cr':
+        if acc.dr_cr == 'Cr':
             res_obj = {
                 "account":coa.name,
                 "date":acc.vouchers.date if acc.vouchers.date else '',
@@ -1132,7 +1132,7 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
             else:
                 party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
         
-        if acc.dr_cr == 'cr':
+        if acc.dr_cr == 'Cr':
             res_obj = {
                 "account":job.client_name.name if job.client_name else '',
                 "date":acc.vouchers.date if acc.vouchers.date else '',
