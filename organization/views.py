@@ -1319,7 +1319,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "account":invoice.client_name.name if invoice.client_name else "",
             "date":invoice.date,
             "currency":invoice.currency_sar,
-            "voucher_number":"",
+            "voucher_number":"Invoice",
             "invoice_number":invoice.supplier_inv_number,
             "net_amount":0,
             "cr_amount": 0,
