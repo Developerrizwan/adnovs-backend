@@ -1371,8 +1371,8 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             vat_amount = float((vat_percent * amount)/100)
             total_amt = float(amount  + vat_amount)
 
-            if not acc.dr_cr == "Cr":
-                dr_amount = float(dr_amount) + total_amt
+            if acc.dr_cr == "Cr":
+                cr_amount = float(cr_amount) + total_amt
 
         total_amount = float(dr_amount) - float(cr_amount)
         res_obj['dr_amount'] =dr_amount
@@ -1407,8 +1407,8 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             vat_amount = float((vat_percent * amount)/100)
             total_amt = float(amount  + vat_amount)
 
-            if not acc.dr_cr == "Cr":
-                dr_amount = float(dr_amount) + total_amt
+            if acc.dr_cr == "Cr":
+                cr_amount = float(cr_amount) + total_amt
 
         total_amount = float(dr_amount) - float(cr_amount)
         res_obj['dr_amount'] =dr_amount
@@ -1421,11 +1421,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
     balance = 0
     results = []
     for res in response:
-        if res["voucher_number"] == "Invoice":
-            balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
-        else:
-            balance = float(balance) - float(float(res['dr_amount']) - float(res['cr_amount']))
-            
+        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
         res['net_amount'] = balance
         results.append(res)
         
@@ -1497,10 +1493,8 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             vat_amount = float((vat_percent * amount)/100)
             total_amt = float(amount  + vat_amount)
 
-            if acc.dr_cr == "Cr":
-                cr_amount = float(cr_amount) + total_amt
-            # else:
-            #     dr_amount = float(dr_amount) + total_amt
+            if acc.dr_cr == "Dr":
+                dr_amount = float(dr_amount) + total_amt
 
         total_amount = float(dr_amount) - float(cr_amount)
         res_obj['dr_amount'] =dr_amount
@@ -1535,10 +1529,8 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             vat_amount = float((vat_percent * amount)/100)
             total_amt = float(amount  + vat_amount)
 
-            if acc.dr_cr == "Cr":
-                cr_amount = float(cr_amount) + total_amt
-            # else:
-            #     dr_amount = float(dr_amount) + total_amt
+            if acc.dr_cr == "Dr":
+                dr_amount = float(dr_amount) + total_amt
 
         total_amount = float(dr_amount) - float(cr_amount)
         res_obj['dr_amount'] =dr_amount
@@ -1551,11 +1543,7 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
     balance = 0
     results = []
     for res in response:
-        if res["voucher_number"] == "Invoice":
-            balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
-        else:
-            balance = float(balance) - float(float(res['dr_amount']) - float(res['cr_amount']))
-            
+        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
         res['net_amount'] = balance
         results.append(res)
         
