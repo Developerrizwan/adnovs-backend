@@ -696,7 +696,49 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                     'income_amount': income_amount,
                     'expenses_amount': expenses_amount
                 })
-
+                
+                #including vouchers
+                
+                voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=request.user.email)
+                coa_account_details = voucher_accounts.filter(ac_name='{0}'.format(coa.id), ac_name_type='coa')
+                
+                for acc in coa_account_details:
+                    res_obj = {
+                                'coa_id': coa.id,
+                                'code': coa.code,
+                                'name': coa.name,
+                                'coa_type': coa.coa_type,
+                                'dr_cr': coa.dr_cr,
+                                'category': coa.category,
+                                'type': coa.type,
+                                'expense_type':coa.group.name if coa.group else None,
+                                'short_name': coa.short_name,
+                                'long_name': coa.long_name,
+                                'language_name': coa.language_name,
+                                'currency': coa.currency,
+                                'company': company_serializer.data,
+                                'remarks': coa.remarks,
+                                'cost_entry': [],
+                                'income_amount': 0,
+                                'expenses_amount': 0
+                            }     
+                    if (acc.vouchers.voucher_type == "Payment" or ((acc.vouchers.voucher_type == "DebitNote" or acc.vouchers.voucher_type == "CreditNote" ) and acc.vouchers.voucher_for == 'Vendor')) and acc.dr_cr == 'Cr':
+                        
+                        fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+                        amount=float(acc.amount_sar if acc.amount_sar else 0.0)
+                        vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+                        vat_amount = float((vat_percent * amount)/100)
+                        total_amount = float(amount  + vat_amount)
+                        res_obj['income_amount'] = total_amount
+                    
+                    if (acc.vouchers.voucher_type == "Receipt" or ((acc.vouchers.voucher_type == "DebitNote" or acc.vouchers.voucher_type == "CreditNote" ) and acc.vouchers.voucher_for == 'Customer')) and acc.dr_cr == 'Dr':
+                        fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+                        amount=float(acc.amount_sar if acc.amount_sar else 0.0)
+                        vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+                        vat_amount = float((vat_percent * amount)/100)
+                        total_amount = float(amount  + vat_amount)
+                        res_obj['expenses_amount'] = total_amount
+                
             return Response(cost_entry_list)
         else:
             return Response([])
@@ -778,8 +820,8 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
                     "dr_amount":0,
                     "cr_amount":0,
                     "net_amount":0,
-                    "type":"Voucher",
-                    "voucher":acc.vouchers.branch if acc.vouchers else "",
+                    "type": acc.vouchers.voucher_type + " Voucher",
+                    "voucher":acc.vouchers.id if acc.vouchers else "",
                     "party_account": party_account.name if party_account else '',
                     "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
                     "narrations": acc.narration,
@@ -887,8 +929,8 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
                 "dr_amount":0,
                 "cr_amount":0,
                 "net_amount":0,
-                "type":"Voucher",
-                "voucher":acc.vouchers.branch if acc.vouchers else "",
+                "type": acc.vouchers.voucher_type + " Voucher",
+                "voucher":acc.vouchers.id if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
                 "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
                 "narrations": acc.narration,
@@ -1012,8 +1054,8 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "dr_amount":0,
                 "cr_amount":0,
                 "net_amount":0,
-                "type":"Voucher",
-                "voucher":acc.vouchers.branch if acc.vouchers else "",
+                "type": acc.vouchers.voucher_type + " Voucher",
+                "voucher":acc.vouchers.id if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
                 "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
                 "narrations": acc.narration,
@@ -1047,8 +1089,8 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "dr_amount":0,
                 "cr_amount":0,
                 "net_amount":0,
-                "type":"Voucher",
-                "voucher":acc.vouchers.branch if acc.vouchers else "",
+                "type": acc.vouchers.voucher_type + " Voucher",
+                "voucher":acc.vouchers.id if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
                 "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
                 "narrations": acc.narration,
@@ -1167,8 +1209,8 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 "dr_amount":0,
                 "cr_amount":0,
                 "net_amount":0,
-                "type":"Voucher",
-                "voucher":acc.vouchers.branch if acc.vouchers else "",
+                "type": acc.vouchers.voucher_type + " Voucher",
+                "voucher":acc.vouchers.id if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
                 "job_no": job.job_number,
                 "narrations": acc.narration,
@@ -1202,8 +1244,8 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 "dr_amount":0,
                 "cr_amount":0,
                 "net_amount":0,
-                "type":"Voucher",
-                "voucher":acc.vouchers.branch if acc.vouchers else "",
+                "type": acc.vouchers.voucher_type + " Voucher",
+                "voucher":acc.vouchers.id if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
                 "job_no": job.job_number,
                 "narrations": acc.narration,
@@ -1319,7 +1361,8 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "account":invoice.client_name.name if invoice.client_name else "",
             "date":invoice.date,
             "currency":invoice.currency_sar,
-            "voucher_number":"Invoice",
+            "type":"Invoice",
+            "voucher_number":"",
             "invoice_number":invoice.supplier_inv_number,
             "net_amount":0,
             "cr_amount": 0,
@@ -1355,7 +1398,8 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "account": account.name if account else "",
             "date":voucher.date,
             "currency":voucher.currency,
-            "voucher_number":voucher.voucher_type,
+            "type": voucher.voucher_type + " Voucher",
+            "voucher_number":voucher.id,
             "invoice_number":"",
             "cr_amount":  0,
             "dr_amount": 0,
@@ -1391,7 +1435,8 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             "account": account.name if account else "",
             "date":voucher.date,
             "currency":voucher.currency,
-            "voucher_number":voucher.voucher_type,
+            "type": voucher.voucher_type + " Voucher",
+            "voucher_number":voucher.id,
             "invoice_number":"",
             "cr_amount":  0,
             "dr_amount": 0,
@@ -1436,7 +1481,8 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             "account":invoice.client_name.name if invoice.client_name else "",
             "date":invoice.date,
             "currency":invoice.currency_sar,
-            "voucher_number":"Invoice",
+            "type": "Invoice",
+            "voucher_number": "",
             "invoice_number":invoice.invoice_number,
             "cr_amount": 0,
             "dr_amount":0,
@@ -1476,7 +1522,8 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             "account": account.name if account else "",
             "date":voucher.date,
             "currency":voucher.currency,
-            "voucher_number":voucher.voucher_type,
+            "type": voucher.voucher_type + " Voucher",
+            "voucher_number": voucher.id,
             "invoice_number":"",
             "cr_amount":  0,
             "dr_amount": 0,
@@ -1513,7 +1560,8 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
             "account": account.name if account else "",
             "date":voucher.date,
             "currency":voucher.currency,
-            "voucher_number":voucher.voucher_type,
+            "type": voucher.voucher_type + " Voucher",
+            "voucher_number": voucher.id,
             "invoice_number":"",
             "cr_amount":  0,
             "dr_amount": 0,
