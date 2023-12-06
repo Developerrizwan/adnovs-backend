@@ -1574,7 +1574,7 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         end_date = request.query_params.get('end_date',None)
         payment = request.query_params.get('payment',None)
         
-        invoices = Invoices.objects.filter(consignee_name=organization_id,date__range=[start_date, end_date]).order_by('date')
+        invoices = Invoices.objects.filter(Q(consignee_name=organization_id) | Q(client_name=organization_id) | Q(party_account=organization_id),date__range=[start_date, end_date]).order_by('date')
         if payment is not None:
             invoices = invoices.filter(payment_status=payment)
         response =[]
