@@ -1421,7 +1421,11 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
     balance = 0
     results = []
     for res in response:
-        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        if res["voucher_number"] == "Invoice":
+            balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        else:
+            balance = float(balance) - float(float(res['dr_amount']) - float(res['cr_amount']))
+            
         res['net_amount'] = balance
         results.append(res)
         
@@ -1547,7 +1551,11 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
     balance = 0
     results = []
     for res in response:
-        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        if res["voucher_number"] == "Invoice":
+            balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        else:
+            balance = float(balance) - float(float(res['dr_amount']) - float(res['cr_amount']))
+            
         res['net_amount'] = balance
         results.append(res)
         
