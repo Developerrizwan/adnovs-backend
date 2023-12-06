@@ -1371,9 +1371,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             vat_amount = float((vat_percent * amount)/100)
             total_amt = float(amount  + vat_amount)
 
-            if acc.dr_cr == "Cr":
-                cr_amount = float(cr_amount) + total_amt
-            else:
+            if not acc.dr_cr == "Cr":
                 dr_amount = float(dr_amount) + total_amt
 
         total_amount = float(dr_amount) - float(cr_amount)
@@ -1409,9 +1407,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
             vat_amount = float((vat_percent * amount)/100)
             total_amt = float(amount  + vat_amount)
 
-            if acc.dr_cr == "Cr":
-                cr_amount = float(cr_amount) + total_amt
-            else:
+            if not acc.dr_cr == "Cr":
                 dr_amount = float(dr_amount) + total_amt
 
         total_amount = float(dr_amount) - float(cr_amount)
@@ -1499,8 +1495,8 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
 
             if acc.dr_cr == "Cr":
                 cr_amount = float(cr_amount) + total_amt
-            else:
-                dr_amount = float(dr_amount) + total_amt
+            # else:
+            #     dr_amount = float(dr_amount) + total_amt
 
         total_amount = float(dr_amount) - float(cr_amount)
         res_obj['dr_amount'] =dr_amount
@@ -1537,8 +1533,8 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date):
 
             if acc.dr_cr == "Cr":
                 cr_amount = float(cr_amount) + total_amt
-            else:
-                dr_amount = float(dr_amount) + total_amt
+            # else:
+            #     dr_amount = float(dr_amount) + total_amt
 
         total_amount = float(dr_amount) - float(cr_amount)
         res_obj['dr_amount'] =dr_amount

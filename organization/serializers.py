@@ -208,11 +208,11 @@ class VoucherGetSerializer(serializers.ModelSerializer):
         if not obj.party_account or not obj.party_account_type:
             return None
         
-        if obj.party_account_type == 'organization':
+        if obj.party_account_type == 'organization' and Organization.objects.filter(id=obj.party_account).exists():
             org = Organization.objects.get(id=obj.party_account)
             return OrganizationSerializer(org).data
         
-        if obj.party_account_type == 'coa':
+        if obj.party_account_type == 'coa' and Coa.objects.filter(id=obj.party_account).exists():
             coa = Coa.objects.get(id=obj.party_account)
             return CoaSerializer(coa).data
         
