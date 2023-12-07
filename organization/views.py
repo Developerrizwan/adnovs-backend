@@ -635,8 +635,8 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
     def list(self, request, *args, **kwargs):
         job = request.query_params.get('job', None)
-        start_date = request.query_params.get('start_date', None)
-        end_date = request.query_params.get('end_date',None)
+        start_date = request.query_params.get('start_time', None)
+        end_date = request.query_params.get('end_time',None)
         organization = request.query_params.get('organization', None)
         coa_type = request.query_params.get('type', None) 
         queryset = Coa.objects.filter(company__users__email=request.user.email)
@@ -673,7 +673,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 
                 voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=request.user.email)
                 coa_account_details = voucher_accounts.filter(ac_name='{0}'.format(coa.id), ac_name_type='coa')
-                acc_serializer = AccountDetailsSerializer(voucher_accounts, many=True)
+                # acc_serializer = AccountDetailsSerializer(coa_account_details, many=True)
                 for acc in coa_account_details:   
                     if acc.dr_cr == 'Cr':
                         fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
@@ -716,7 +716,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                     'company': company_serializer.data,
                     'remarks': coa.remarks,
                     'cost_entry': serializer.data,
-                    'account_details': acc_serializer.data,
+                    # 'account_details': acc_serializer.data,
                     'income_amount': income_amount,
                     'expenses_amount': expenses_amount
                 })
