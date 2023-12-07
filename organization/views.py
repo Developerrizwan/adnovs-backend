@@ -673,27 +673,8 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 
                 voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=request.user.email)
                 coa_account_details = voucher_accounts.filter(ac_name='{0}'.format(coa.id), ac_name_type='coa')
-                
-                for acc in coa_account_details:
-                    res_obj = {
-                                'coa_id': coa.id,
-                                'code': coa.code,
-                                'name': coa.name,
-                                'coa_type': coa.coa_type,
-                                'dr_cr': coa.dr_cr,
-                                'category': coa.category,
-                                'type': coa.type,
-                                'expense_type':coa.group.name if coa.group else None,
-                                'short_name': coa.short_name,
-                                'long_name': coa.long_name,
-                                'language_name': coa.language_name,
-                                'currency': coa.currency,
-                                'company': company_serializer.data,
-                                'remarks': coa.remarks,
-                                'cost_entry': [],
-                                'income_amount': 0,
-                                'expenses_amount': 0
-                            }     
+                acc_serializer = AccountDetailsSerializer(coa_account_details, many=True)
+                for acc in coa_account_details:   
                     if acc.dr_cr == 'Cr':
                         fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
                         amount=float(acc.amount_sar if acc.amount_sar else 0.0)
@@ -735,6 +716,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                     'company': company_serializer.data,
                     'remarks': coa.remarks,
                     'cost_entry': serializer.data,
+                    'account_details': acc_serializer.data,
                     'income_amount': income_amount,
                     'expenses_amount': expenses_amount
                 })
