@@ -737,6 +737,8 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                         vat_amount = float((vat_percent * amount)/100)
                         total_amount = float(amount  + vat_amount)
                         res_obj['expenses_amount'] = total_amount
+                    
+                    cost_entry_list.append(res_obj)
                 
             return Response(cost_entry_list)
         else:
