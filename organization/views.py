@@ -668,34 +668,6 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
                 serializer = CostEntrySerializer(cost_entry, many=True)
                 company_serializer = CompanySerializer(coa.company)
-                cost_entry_list.append({
-                    'coa_id': coa.id,
-                    'code': coa.code,
-                    'name': coa.name,
-                    # 'status': coa.status,
-                    # 'subledger_requried': coa.subledger_requried,
-                    # 'charge_required': coa.charge_required,
-                    # 'job_required': coa.job_required,
-                    # 'asset_required': coa.asset_required,
-                    'coa_type': coa.coa_type,
-                    # 'is_direct_indirect': coa.is_direct_indirect,
-                    'dr_cr': coa.dr_cr,
-                    'category': coa.category,
-                    # 'group': coa.group.code,
-                    # 'subgroup': coa.subgroup.code,
-                    'type': coa.type,
-                    'expense_type':coa.group.name if coa.group else None,
-                    'short_name': coa.short_name,
-                    'long_name': coa.long_name,
-                    'language_name': coa.language_name,
-                    'currency': coa.currency,
-                    # 'additional_reference_code': coa.additional_reference_code,
-                    'company': company_serializer.data,
-                    'remarks': coa.remarks,
-                    'cost_entry': serializer.data,
-                    'income_amount': income_amount,
-                    'expenses_amount': expenses_amount
-                })
                 
                 #including vouchers
                 
@@ -728,7 +700,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
                         vat_amount = float((vat_percent * amount)/100)
                         total_amount = float(amount  + vat_amount)
-                        res_obj['income_amount'] = total_amount
+                        income_amount += float(total_amount)
                     
                     if acc.dr_cr == 'Dr':
                         fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
@@ -736,9 +708,36 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
                         vat_amount = float((vat_percent * amount)/100)
                         total_amount = float(amount  + vat_amount)
-                        res_obj['expenses_amount'] = total_amount
-                    
-                    cost_entry_list.append(res_obj)
+                        expenses_amount += float(total_amount)
+                
+                cost_entry_list.append({
+                    'coa_id': coa.id,
+                    'code': coa.code,
+                    'name': coa.name,
+                    # 'status': coa.status,
+                    # 'subledger_requried': coa.subledger_requried,
+                    # 'charge_required': coa.charge_required,
+                    # 'job_required': coa.job_required,
+                    # 'asset_required': coa.asset_required,
+                    'coa_type': coa.coa_type,
+                    # 'is_direct_indirect': coa.is_direct_indirect,
+                    'dr_cr': coa.dr_cr,
+                    'category': coa.category,
+                    # 'group': coa.group.code,
+                    # 'subgroup': coa.subgroup.code,
+                    'type': coa.type,
+                    'expense_type':coa.group.name if coa.group else None,
+                    'short_name': coa.short_name,
+                    'long_name': coa.long_name,
+                    'language_name': coa.language_name,
+                    'currency': coa.currency,
+                    # 'additional_reference_code': coa.additional_reference_code,
+                    'company': company_serializer.data,
+                    'remarks': coa.remarks,
+                    'cost_entry': serializer.data,
+                    'income_amount': income_amount,
+                    'expenses_amount': expenses_amount
+                })
                 
             return Response(cost_entry_list)
         else:
