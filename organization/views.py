@@ -673,7 +673,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 
                 voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=request.user.email)
                 coa_account_details = voucher_accounts.filter(ac_name='{0}'.format(coa.id), ac_name_type='coa')
-                acc_serializer = AccountDetailsSerializer(coa_account_details, many=True)
+                acc_serializer = AccountDetailsSerializer(voucher_accounts, many=True)
                 for acc in coa_account_details:   
                     if acc.dr_cr == 'Cr':
                         fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
