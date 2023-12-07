@@ -722,8 +722,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                                 'income_amount': 0,
                                 'expenses_amount': 0
                             }     
-                    if (acc.vouchers.voucher_type == "Payment" or ((acc.vouchers.voucher_type == "DebitNote" or acc.vouchers.voucher_type == "CreditNote" ) and acc.vouchers.voucher_for == 'Vendor')) and acc.dr_cr == 'Cr':
-                        
+                    if acc.dr_cr == 'Cr':
                         fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
                         amount=float(acc.amount_sar if acc.amount_sar else 0.0)
                         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
@@ -731,7 +730,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                         total_amount = float(amount  + vat_amount)
                         res_obj['income_amount'] = total_amount
                     
-                    if (acc.vouchers.voucher_type == "Receipt" or ((acc.vouchers.voucher_type == "DebitNote" or acc.vouchers.voucher_type == "CreditNote" ) and acc.vouchers.voucher_for == 'Customer')) and acc.dr_cr == 'Dr':
+                    if acc.dr_cr == 'Dr':
                         fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
                         amount=float(acc.amount_sar if acc.amount_sar else 0.0)
                         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
