@@ -674,6 +674,10 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=request.user.email)
                 coa_account_details = voucher_accounts.filter(ac_name='{0}'.format(coa.id), ac_name_type='coa')
                 # acc_serializer = AccountDetailsSerializer(coa_account_details, many=True)
+                if job is not None and job.strip() :
+                    cost_entry = cost_entry.filter(job_no__id=job)
+                    coa_account_details = coa_account_details.filter(acc__vouchers__job__id=job)
+                    
                 for acc in coa_account_details:   
                     if acc.dr_cr == 'Cr':
                         fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
@@ -1279,9 +1283,18 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 response = get_vat_output_coa_response(coa, start_date, end_date, request.user)
             else:     
                 response = get_other_coa_response(coa, start_date, end_date, request.user)
+            
+            if job_id is not None and Job.objects.filter(id=job_id).exists():
+                job =  Job.objects.filter(id=job_id).first()
+                res_ = []
+                for res in response:
+                    if res['job_no'] == job.job_number:
+                        res_.append(res)
+                response = res_ 
+                               
             return Response(response)
         
-        if job_id is not None and Job.objects.filter(id=job_id).exists():
+        if coa_id is None and job_id is not None and Job.objects.filter(id=job_id).exists():
             job =  Job.objects.filter(id=job_id).first()
             response = get_job_ledger_statement_response(job, start_date, end_date, request.user)
             return Response(response)
