@@ -676,7 +676,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 # acc_serializer = AccountDetailsSerializer(coa_account_details, many=True)
                 if job is not None and job.strip() :
                     cost_entry = cost_entry.filter(job_no__id=job)
-                    coa_account_details = coa_account_details.filter(acc__vouchers__job__id=job)
+                    coa_account_details = coa_account_details.filter(vouchers__job__id=job)
                     
                 for acc in coa_account_details:   
                     if acc.dr_cr == 'Cr':
