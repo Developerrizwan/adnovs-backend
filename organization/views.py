@@ -1503,9 +1503,9 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date, pay
         response.append(res_obj)
     
     # try:
+    vouchers = Vouchers.objects.filter(party_account=org_id, party_account_type='organization', date__range=[start_date, end_date])
     
     if not payment_status == 'Unpaid':
-        vouchers = Vouchers.objects.filter(party_account=org_id, party_account_type='organization', date__range=[start_date, end_date])
         receipt_vouchers = vouchers.filter(voucher_type='Receipt')
         
         for voucher in receipt_vouchers:
