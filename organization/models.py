@@ -517,6 +517,7 @@ class AccountDetails(models.Model):
     ac_name = models.CharField(max_length=255, blank=False, null=True)
     ac_name_type = models.CharField(max_length=200,blank=True,null=True)
     vouchers = models.ForeignKey(Vouchers, on_delete=models.CASCADE, blank=False, null=True)
+    charge=models.ForeignKey(Charge, on_delete=models.CASCADE, blank=True, null=True)
     dr_cr = models.CharField(max_length=200,blank=True,null=True,choices=DR_CR_CHOICES)
     narration = models.CharField(max_length=200,blank=True,null=True)
     qty = models.CharField(max_length=200,blank=True,null=True)
