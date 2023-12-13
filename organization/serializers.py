@@ -249,6 +249,7 @@ class AccountDetailsGetSerializer(serializers.ModelSerializer):
         return None
     
     vouchers = VouchersSerializer()
+    charge = ChargeSerializer()
     class Meta:
         model = AccountDetails
         fields = '__all__' 
