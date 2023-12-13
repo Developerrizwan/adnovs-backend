@@ -971,6 +971,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                     "net_amount":0,
                     "type":"Invoice",
                     "voucher":"",
+                    "charge": cost_entry.charge.name if cost_entry.charge else '',
                     "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
                     "job_no":cost_entry.invoice.job.job_number if cost_entry.invoice and cost_entry.invoice.job else "",
                     "narrations":cost_entry.invoice.narration if cost_entry.invoice else "",
@@ -1012,7 +1013,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
     
 
     voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
-    coa_account_details = voucher_accounts.filter(ac_name='{0}'.format(coa.id), ac_name_type='coa')
+    coa_account_details = voucher_accounts.filter(Q(ac_name='{0}'.format(coa.id), ac_name_type='coa') | Q(charge__coa=coa))
     organizations = Organization.objects.filter(coa=coa, company__users__email=user.email).values_list('id')
     organizations = list(map(str, organizations))
     org_account_details = voucher_accounts.filter(ac_name__in=organizations, ac_name_type='organization')
@@ -1040,6 +1041,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "dr_amount":0,
                 "cr_amount":0,
                 "net_amount":0,
+                "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
                 "voucher":acc.vouchers.id if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
@@ -1075,6 +1077,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "dr_amount":0,
                 "cr_amount":0,
                 "net_amount":0,
+                "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
                 "voucher":acc.vouchers.id if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
@@ -1131,6 +1134,7 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                     "net_amount":0,
                     "type":"Invoice",
                     "voucher":"",
+                    "charge": cost_entry.charge.name if cost_entry.charge else '',
                     "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
                     "job_no": job.job_number,
                     "narrations":cost_entry.invoice.narration if cost_entry.invoice else "",
@@ -1195,6 +1199,7 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 "dr_amount":0,
                 "cr_amount":0,
                 "net_amount":0,
+                "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
                 "voucher":acc.vouchers.id if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
@@ -1230,6 +1235,7 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 "dr_amount":0,
                 "cr_amount":0,
                 "net_amount":0,
+                "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
                 "voucher":acc.vouchers.id if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
