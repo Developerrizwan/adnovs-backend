@@ -1390,7 +1390,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
     payment_vouchers = vouchers.filter(voucher_type='Payment')
     
     for voucher in payment_vouchers:
-        voucher_accounts = AccountDetails.objects.filter(vouchers=voucher)
+        voucher_accounts = AccountDetails.objects.filter(vouchers=voucher).exclude(ac_name='260', ac_name_type='coa')  # excluding bank charges
         account = Organization.objects.filter(id=voucher.party_account).first()
         total_amount = 0
         dr_amount = 0
