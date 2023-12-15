@@ -1390,7 +1390,7 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
     payment_vouchers = vouchers.filter(voucher_type='Payment')
     
     for voucher in payment_vouchers:
-        voucher_accounts = AccountDetails.objects.filter(vouchers=voucher).exclude(ac_name='260', ac_name_type='coa')  # excluding bank charges
+        voucher_accounts = AccountDetails.objects.filter(vouchers=voucher).exclude(ac_name='260', ac_name_type='coa').exclude(narration__contains="BANK CHARGES")  # excluding bank charges
         account = Organization.objects.filter(id=voucher.party_account).first()
         total_amount = 0
         dr_amount = 0
@@ -1717,12 +1717,12 @@ class JobInvoiceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     def list(self, request, *args, **kwargs):
         job = request.query_params.get('job', None)
         queryset = self.queryset.filter(job__id=job)
-        serializers = self.serializer_class(queryset, many=True)
+        # serializers = self.serializer_class(queryset, many=True)
         response = []
 
-        data = serializers.data
+        # data = serializers.data
 
-        for invoice in data:
+        for invoice in queryset:
             cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
             total_amount = 0
             fcy_amount = 0

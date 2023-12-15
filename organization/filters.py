@@ -267,8 +267,7 @@ class AccountFilter(filters.BaseFilterBackend):
                                     Q(sac_code__contains=search_lower) | Q(sac_code__contains=search_upper) | Q(sac_code__contains=search_capitalize) |
                                     Q(remarks__contains=search_lower) | Q(remarks__contains=search_upper) | Q(remarks__contains=search_capitalize) |
                                     Q(department__contains=search_lower) | Q(department__contains=search_upper) | Q(department__contains=search_capitalize) |
-                                    Q(vouchers__voucher_type__contains=search_lower) | Q(vouchers__voucher_type__contains=search_upper) | Q(vouchers__voucher_type__contains=search_capitalize) |
-                                    Q(ac_name__code__contains=search_lower) | Q(ac_name__code__contains=search_capitalize) | Q(ac_name__code__contains=search_upper))
+                                    Q(vouchers__voucher_type__contains=search_lower) | Q(vouchers__voucher_type__contains=search_upper) | Q(vouchers__voucher_type__contains=search_capitalize))
                                 
         voucher = request.query_params.get('voucher')
         if voucher:
