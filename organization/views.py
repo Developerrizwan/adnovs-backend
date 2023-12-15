@@ -1622,7 +1622,7 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             invoices= invoices.filter(invoice_type='Sales')
             response= get_account_receivable_statement(invoices, organization_id, start_date, end_date, payment)
         elif type =='pay':
-            invoices= invoices.filter(invoice_type='Purchase')
+            invoices= invoices.filter(invoice_type='Purchase', party_account=organization_id)
             response = get_account_payment_statement(invoices, organization_id, start_date, end_date)
         return Response(response)
 
