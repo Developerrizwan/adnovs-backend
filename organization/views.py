@@ -1803,7 +1803,14 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         response=[]
         for coa in queryset:
             amount=0
-            amounts = get_coa_sheet_response(coa, start_date, end_date, request.user)
+            amounts = []
+            if coa.id == 429: # For VAT INPUT
+                amounts = get_vat_input_coa_response(coa, start_date, end_date, request.user)
+            elif coa.id == 430: # For VAT OUTPUT
+                amounts = get_vat_output_coa_response(coa, start_date, end_date, request.user)
+            else:
+                amounts = get_coa_sheet_response(coa, start_date, end_date, request.user)
+            
             for amt in amounts:
                 amount += float(float(amt['dr_amount']) - float(amt['cr_amount']))
     
@@ -1834,7 +1841,14 @@ class TrialBalanceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             total_amount=0
             dr_amount = 0
             cr_amount =0
-            amount = get_coa_sheet_response(coa, start_date, end_date, request.user)
+            amount = []
+            if coa.id == 429: # For VAT INPUT
+                amount = get_vat_input_coa_response(coa, start_date, end_date, request.user)
+            elif coa.id == 430: # For VAT OUTPUT
+                amount = get_vat_output_coa_response(coa, start_date, end_date, request.user)
+            else:
+                amount = get_coa_sheet_response(coa, start_date, end_date, request.user)
+            
             for amt in amount:
                 dr_amount += amt['dr_amount']
                 cr_amount += amt['cr_amount']
