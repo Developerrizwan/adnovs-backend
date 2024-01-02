@@ -1650,7 +1650,7 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             amount=0
             amounts = get_other_coa_response(coa, start_date, end_date, request.user)
             for amt in amounts:
-                amount += amt['net_amount']
+                amount += float(float(amt['dr_amount']) - float(amt['cr_amount']))
             # amount += int(response['net_amount'])
             res_obj = {
                 "type": coa.type,
@@ -1682,7 +1682,7 @@ class TrialBalanceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             cr_amount =0
             amount = get_other_coa_response(coa, start_date, end_date, request.user)
             for amt in amount:
-                total_amount += amt['net_amount']
+                total_amount += float(float(amt['dr_amount']) - float(amt['cr_amount']))
                 dr_amount += amt['dr_amount']
                 cr_amount += amt['cr_amount']
             # amount += int(response['net_amount'])
