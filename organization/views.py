@@ -732,7 +732,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
 def get_vat_input_coa_response(coa, start_date, end_date, user):
 
-    invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Purchase', company__users__email=user.email).order_by('date')
+    invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Purchase', is_included=True, invoice__company__users__email=user.email).order_by('created_at')
     respone =[]
     res_obj={}
     for invoice in invoices:
@@ -765,7 +765,7 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount  + vat_amount)
+            total_amount = float(vat_amount)
 
             res_obj['vat_percent']= vat_percent
             res_obj['fcy_amount'] = fcy_amount
@@ -778,13 +778,14 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
                 respone.append(res_obj)
     
     try:
-        coa_account_details = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users__email=user.email)
-        organizations = Organization.objects.filter(company__users__email=user.email).values_list('id')
-        organizations = list(map(str, organizations))
-        org_account_details = AccountDetails.objects.filter(ac_name__in=organizations, ac_name_type='organization')
+        coa_account_details = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
+        # organizations = Organization.objects.filter(company__users__email=user.email).values_list('id')
+        # organizations = list(map(str, organizations))
+        # org_account_details = AccountDetails.objects.filter(ac_name__in=organizations, ac_name_type='organization')
 
-        account_details = coa_account_details.union(org_account_details)
-        account_details = account_details.filter(dr_cr='dr')
+        # account_details = coa_account_details.union(org_account_details)
+        account_details = coa_account_details
+        account_details = account_details.exclude(dr_cr='Cr')
 
         for acc in account_details:
             party_account = None
@@ -818,7 +819,7 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
             amount=float(acc.amount_sar if acc.amount_sar else 0.0)
             vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount  + vat_amount)
+            total_amount = float(vat_amount)
             res_obj['vat_percent']= vat_percent
             res_obj['fcy_amount'] = fcy_amount
             res_obj['amount'] = amount
@@ -843,7 +844,7 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
 
 def get_vat_output_coa_response(coa, start_date, end_date, user):
 
-    invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Sales', company__users__email=user.email).order_by('date')
+    invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Sales', is_included=True, invoice__company__users__email=user.email).order_by('created_at')
     respone =[]
     res_obj={}
     for invoice in invoices:
@@ -875,7 +876,7 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount  + vat_amount)
+            total_amount = float(vat_amount)
             res_obj['vat_percent']= vat_percent
             res_obj['fcy_amount'] = fcy_amount
             res_obj['amount'] = amount
@@ -887,13 +888,14 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
                 respone.append(res_obj)
 
     try:
-        coa_account_details = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], ac_name_type='coa', vouchers__company__users__email=user.email)
-        organizations = Organization.objects.filter(company__users__email=user.email).values_list('id')
-        organizations = list(map(str, organizations))
-        org_account_details = AccountDetails.objects.filter(ac_name__in=organizations, ac_name_type='organization')
+        coa_account_details = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
+        # organizations = Organization.objects.filter(company__users__email=user.email).values_list('id')
+        # organizations = list(map(str, organizations))
+        # org_account_details = AccountDetails.objects.filter(ac_name__in=organizations, ac_name_type='organization')
 
-        account_details = coa_account_details.union(org_account_details)
-        account_details = account_details.filter(dr_cr='cr')
+        # account_details = coa_account_details.union(org_account_details)
+        account_details = coa_account_details
+        account_details = account_details.filter(dr_cr='Cr')
 
         for acc in account_details:
             party_account = None
@@ -927,7 +929,7 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
             amount=float(acc.amount_sar if acc.amount_sar else 0.0)
             vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount  + vat_amount)
+            total_amount = float(vat_amount)
             res_obj['vat_percent']= vat_percent
             res_obj['fcy_amount'] = fcy_amount
             res_obj['amount'] = amount
