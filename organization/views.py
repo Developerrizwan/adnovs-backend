@@ -732,11 +732,11 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
 def get_vat_input_coa_response(coa, start_date, end_date, user):
 
-    invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Purchase', is_included=True, invoice__company__users__email=user.email).order_by('created_at')
+    invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Purchase', company__users__email=user.email).order_by('date')
     respone =[]
     res_obj={}
     for invoice in invoices:
-        cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
+        cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id, is_included=True)
         
         for cost_entry in cost_entrys:
 
@@ -844,11 +844,11 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
 
 def get_vat_output_coa_response(coa, start_date, end_date, user):
 
-    invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Sales', is_included=True, invoice__company__users__email=user.email).order_by('created_at')
+    invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Sales', company__users__email=user.email).order_by('date')
     respone =[]
     res_obj={}
     for invoice in invoices:
-        cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
+        cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id, is_included=True)
         
         for cost_entry in cost_entrys:
             res_obj = {
