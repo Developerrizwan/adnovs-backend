@@ -684,15 +684,14 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                         amount=float(acc.amount_sar if acc.amount_sar else 0.0)
                         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
                         vat_amount = float((vat_percent * amount)/100)
-                        total_amount = float(amount  + vat_amount)
+                        total_amount = float(amount)
                         income_amount += float(total_amount)
-                    
-                    if acc.dr_cr == 'Dr':
+                    else:
                         fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
                         amount=float(acc.amount_sar if acc.amount_sar else 0.0)
                         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
                         vat_amount = float((vat_percent * amount)/100)
-                        total_amount = float(amount  + vat_amount)
+                        total_amount = float(amount)
                         expenses_amount += float(total_amount)
                 
                 cost_entry_list.append({
@@ -1659,7 +1658,9 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 "group": coa.group.name,
                 "total_amount":amount
             }
-            response.append(res_obj)
+            
+            if abs(amount) > 0:
+                response.append(res_obj)
 
         return Response(response, status=status.HTTP_200_OK)
     
@@ -1685,14 +1686,17 @@ class TrialBalanceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 dr_amount += amt['dr_amount']
                 cr_amount += amt['cr_amount']
             # amount += int(response['net_amount'])
-                res_obj = {
-                    "type": coa.type,
-                    "account_name": coa.name,
-                    "group": coa.group.name,
-                    "total_dr_amount":dr_amount,
-                    "total_cr_amount":cr_amount,
-                    "total_amount":total_amount
-                }
+            
+            res_obj = {
+                "type": coa.type,
+                "account_name": coa.name,
+                "group": coa.group.name,
+                "total_dr_amount":dr_amount,
+                "total_cr_amount":cr_amount,
+                "total_amount":total_amount
+            }
+            
+            if abs(total_amount) > 0:
                 response.append(res_obj)
 
         return Response(response, status=status.HTTP_200_OK)
