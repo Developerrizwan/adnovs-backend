@@ -986,7 +986,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 amount=float(cost_entry.amount if cost_entry.amount else 0.0)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
                 vat_amount = float((vat_percent * amount)/100)
-                total_amount = float(amount  + vat_amount)
+                total_amount = float(amount)
                 res_obj['vat_percent']= vat_percent
                 res_obj['fcy_amount'] = fcy_amount
                 res_obj['amount'] = amount
@@ -1001,7 +1001,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 amount=float(cost_entry.amount if cost_entry.amount else 0.0)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
                 vat_amount = float((vat_percent * amount)/100)
-                total_amount = float(amount  + vat_amount)
+                total_amount = float(amount)
                 res_obj['vat_percent']= vat_percent
                 res_obj['fcy_amount'] = fcy_amount
                 res_obj['amount'] = amount
@@ -1055,7 +1055,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
             amount=float(acc.amount_sar if acc.amount_sar else 0.0)
             vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount  + vat_amount)
+            total_amount = float(amount)
             res_obj['vat_percent']= vat_percent
             res_obj['fcy_amount'] = fcy_amount
             res_obj['amount'] = amount
@@ -1091,7 +1091,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
             amount=float(acc.amount_sar if acc.amount_sar else 0.0)
             vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount  + vat_amount)
+            total_amount = float(amount)
             res_obj['vat_percent']= vat_percent
             res_obj['fcy_amount'] = fcy_amount
             res_obj['amount'] = amount
