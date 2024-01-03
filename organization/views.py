@@ -650,7 +650,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             for coa in queryset:
                 cost_entry = CostEntry.objects.filter(charge__coa=coa, is_included=True).exclude(invoice=None).filter(invoice__company__users__email=request.user.email)
                 if start_date and end_date:
-                    cost_entry = cost_entry.filter(created_at__range=(start_date, end_date))
+                    cost_entry = cost_entry.filter(invoice__date__range=(start_date, end_date))
 
                 if job is not None and job.strip() :
                     cost_entry = cost_entry.filter(job_no__id=job)
@@ -672,7 +672,12 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 #including vouchers
                 
                 voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=request.user.email)
-                coa_account_details = voucher_accounts.filter(ac_name='{0}'.format(coa.id), ac_name_type='coa')
+                coa_account_details = voucher_accounts.filter(Q(ac_name='{0}'.format(coa.id), ac_name_type='coa') | Q(charge__coa=coa))
+                organizations = Organization.objects.filter(coa=coa, company__users__email=user.email).values_list('id')
+                organizations = list(map(str, organizations))
+                org_account_details = voucher_accounts.filter(ac_name__in=organizations, ac_name_type='organization')
+
+                coa_account_details = coa_account_details.union(org_account_details)
                 # acc_serializer = AccountDetailsSerializer(coa_account_details, many=True)
                 if job is not None and job.strip() :
                     cost_entry = cost_entry.filter(job_no__id=job)
@@ -1632,7 +1637,7 @@ def get_coa_sheet_response(coa, start_date, end_date, user):
     respone =[]
     res_obj={}
 
-    cost_entrys = CostEntry.objects.filter(charge__coa=coa, invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users__email=user.email).order_by('created_at')
+    cost_entrys = CostEntry.objects.filter(charge__coa=coa, invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users__email=user.email).exclude(invoice=None).order_by('created_at')
     for cost_entry in cost_entrys:
         if cost_entry.invoice:
             res_obj = {
