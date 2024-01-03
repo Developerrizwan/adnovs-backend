@@ -1697,13 +1697,13 @@ def get_coa_sheet_response(coa, start_date, end_date, user):
 
     voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
     coa_account_details = voucher_accounts.filter(Q(ac_name='{0}'.format(coa.id), ac_name_type='coa') | Q(charge__coa=coa))
-    organizations = Organization.objects.filter(coa=coa, company__users__email=user.email).values_list('id')
-    organizations = list(map(str, organizations))
-    org_account_details = voucher_accounts.filter(ac_name__in=organizations, ac_name_type='organization')
+    organizations = Organization.objects.filter(coa=coa, company__users__email=user.email)
+    # organizations = list(map(str, organizations))
+    for org in organizations:
+        org_account_details = voucher_accounts.filter(ac_name='{0}'.format(org.id), ac_name_type='organization')
+        coa_account_details = coa_account_details.union(org_account_details)
 
-    account_details = coa_account_details.union(org_account_details)
-
-    for acc in account_details:
+    for acc in coa_account_details:
         party_account = None
         if acc.vouchers.party_account:
             if acc.vouchers.party_account_type == 'coa':
