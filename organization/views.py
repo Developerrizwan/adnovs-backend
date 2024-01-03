@@ -1808,6 +1808,8 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         response=[]
         for coa in queryset:
             amount=0
+            dr_amount = 0
+            cr_amount =0
             amounts = []
             if coa.id == 429: # For VAT INPUT
                 amounts = get_vat_input_coa_response(coa, start_date, end_date, request.user)
@@ -1817,12 +1819,16 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 amounts = get_coa_sheet_response(coa, start_date, end_date, request.user)
             
             for amt in amounts:
+                dr_amount += amt['dr_amount']
+                cr_amount += amt['cr_amount']
                 amount += float(float(amt['dr_amount']) - float(amt['cr_amount']))
     
             res_obj = {
                 "type": coa.type,
                 "account_name": coa.name,
                 "group": coa.group.name,
+                "total_dr_amount":dr_amount,
+                "total_cr_amount":cr_amount,
                 "total_amount":amount
             }
             
