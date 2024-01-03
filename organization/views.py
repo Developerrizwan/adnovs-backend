@@ -416,7 +416,7 @@ class GetcompanyViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 class GetjobViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     """Get all Jobs"""
 
-    pagination_class = CustomPagination
+    # pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Job.objects.all().order_by('-id')
     serializer_class = JobGetSerializer
@@ -426,7 +426,7 @@ class GetjobViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 class GetvoucherViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     """Get all Vouchers"""
 
-    pagination_class = CustomPagination
+    # pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Vouchers.objects.all().order_by('-id')
     serializer_class = VoucherGetSerializer
@@ -436,7 +436,7 @@ class GetvoucherViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 class GetinvoiceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     """Get all Invoices"""
 
-    pagination_class = CustomPagination
+    # pagination_class = CustomPagination
     permission_classes = (IsAuthenticated, )
     queryset = Invoices.objects.all().order_by('-id')
     serializer_class = InvoicesGetSerializer
