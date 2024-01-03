@@ -960,7 +960,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
     respone =[]
     res_obj={}
 
-    cost_entrys = CostEntry.objects.filter(charge__coa=coa, invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users__email=user.email).order_by('created_at')
+    cost_entrys = CostEntry.objects.filter(Q(charge__coa=coa) | Q(client_name__coa=coa) | Q(consignee_name__coa=coa) | Q(party_account__coa=coa), invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users__email=user.email).order_by('created_at')
     for cost_entry in cost_entrys:
         if cost_entry.invoice:
             res_obj = {
@@ -1637,7 +1637,7 @@ def get_coa_sheet_response(coa, start_date, end_date, user):
     respone =[]
     res_obj={}
 
-    cost_entrys = CostEntry.objects.filter(charge__coa=coa, invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users__email=user.email).exclude(invoice=None).order_by('created_at')
+    cost_entrys = CostEntry.objects.filter(Q(charge__coa=coa) | Q(client_name__coa=coa) | Q(consignee_name__coa=coa) | Q(party_account__coa=coa), invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users__email=user.email).exclude(invoice=None).order_by('created_at')
     for cost_entry in cost_entrys:
         if cost_entry.invoice:
             res_obj = {
