@@ -673,7 +673,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 
                 voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=request.user.email)
                 coa_account_details = voucher_accounts.filter(Q(ac_name='{0}'.format(coa.id), ac_name_type='coa') | Q(charge__coa=coa))
-                organizations = Organization.objects.filter(coa=coa, company__users__email=user.email).values_list('id')
+                organizations = Organization.objects.filter(coa=coa, company__users__email=request.user.email).values_list('id')
                 organizations = list(map(str, organizations))
                 org_account_details = voucher_accounts.filter(ac_name__in=organizations, ac_name_type='organization')
 
