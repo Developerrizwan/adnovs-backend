@@ -1902,23 +1902,23 @@ class JobInvoiceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         job = request.query_params.get('job', None)
         queryset = self.queryset.filter(job__id=job)
         serializers = self.serializer_class(queryset, many=True)
-        response = []
+        response = serializers.data
 
-        data = serializers.data
+        # data = serializers.data
 
-        for invoice in data:
-            cost_entrys = CostEntry.objects.filter(invoice__id=invoice['id'])
-            total_amount = 0
-            fcy_amount = 0
-            for cost_entry in cost_entrys:
-                fy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-                amount=float(cost_entry.amount if cost_entry.amount else 0.0)
-                vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
-                total_amount += (amount)+(float((vat_percent * amount)/100))
-                fcy_amount = fcy_amount + fy_amount
+        # for invoice in queryset:
+        #     cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
+        #     total_amount = 0
+        #     fcy_amount = 0
+        #     for cost_entry in cost_entrys:
+        #         fy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+        #         amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+        #         vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
+        #         total_amount += (amount)+(float((vat_percent * amount)/100))
+        #         fcy_amount = fcy_amount + fy_amount
             
-            invoice['amount_sar'] = total_amount
-            invoice['fc_amount'] = fcy_amount
-            response.append(invoice)
+        #     invoice['amount_sar'] = total_amount
+        #     invoice['fc_amount'] = fcy_amount
+        #     response.append(invoice)
 
         return Response(response, status=status.HTTP_200_OK)
