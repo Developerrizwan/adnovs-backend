@@ -1901,13 +1901,13 @@ class JobInvoiceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     def list(self, request, *args, **kwargs):
         job = request.query_params.get('job', None)
         queryset = self.queryset.filter(job__id=job)
-        # serializers = self.serializer_class(queryset, many=True)
+        serializers = self.serializer_class(queryset, many=True)
         response = []
 
-        # data = serializers.data
+        data = serializers.data
 
-        for invoice in queryset:
-            cost_entrys = CostEntry.objects.filter(invoice__id=invoice.id)
+        for invoice in data:
+            cost_entrys = CostEntry.objects.filter(invoice__id=invoice['id'])
             total_amount = 0
             fcy_amount = 0
             for cost_entry in cost_entrys:

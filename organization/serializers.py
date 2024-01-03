@@ -186,6 +186,25 @@ class InvoicesGetSerializer(serializers.ModelSerializer):
     client_name = OrganizationSerializer()
     party_account = OrganizationSerializer()
     coa = CoaSerializer()
+    
+    def get_amount_sar(self, obj):
+        cost_entrys = CostEntry.objects.filter(invoice__id=obj.id)
+        total_amount = 0
+        for cost_entry in cost_entrys:
+            amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+            vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
+            total_amount += (amount)+(float((vat_percent * amount)/100))
+        
+        return total_amount
+    
+    def get_fc_amount(self, obj):
+        cost_entrys = CostEntry.objects.filter(invoice__id=obj.id)
+        fcy_amount = 0
+        for cost_entry in cost_entrys:
+            fy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+            fcy_amount = fcy_amount + fy_amount
+        
+        return fcy_amount
     class Meta:
         model = Invoices
         fields = '__all__' 
