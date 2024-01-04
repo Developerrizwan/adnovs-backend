@@ -203,7 +203,7 @@ class InvoicesGetSerializer(serializers.ModelSerializer):
         cost_entrys = CostEntry.objects.filter(invoice__id=obj.id)
         fcy_amount = 0
         for cost_entry in cost_entrys:
-            fy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+            fy_amount = float(cost_entry.amount if cost_entry.amount else 0.0)
             fcy_amount = fcy_amount + fy_amount
         
         return fcy_amount
@@ -299,7 +299,7 @@ class InvoiceJobSerializer(serializers.ModelSerializer):
         cost_entrys = CostEntry.objects.filter(invoice__id=obj.id)
         fcy_amount = 0
         for cost_entry in cost_entrys:
-            fy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
+            fy_amount = float(cost_entry.amount if cost_entry.amount else 0.0)
             fcy_amount = fcy_amount + fy_amount
         
         return fcy_amount
