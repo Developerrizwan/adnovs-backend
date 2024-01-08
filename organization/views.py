@@ -789,8 +789,10 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
 
     # account_details = coa_account_details.union(org_account_details)
     account_details = coa_account_details
-    account_details = account_details.exclude(dr_cr='Cr').exclude(ac_name='430', ac_name_type='coa')
-
+    direct_input_details = account_details.filter(ac_name='429', ac_name_type='coa') 
+    account_details = account_details.exclude(dr_cr='Cr').exclude(ac_name='430', ac_name_type='coa').exclude(ac_name='429', ac_name_type='coa')
+    account_details = account_details.union(direct_input_details)
+    
     for acc in account_details:
         party_account = None
         if acc.vouchers.party_account:
@@ -902,8 +904,9 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
         # org_account_details = AccountDetails.objects.filter(ac_name__in=organizations, ac_name_type='organization')
 
         # account_details = coa_account_details.union(org_account_details)
-        account_details = coa_account_details
-        account_details = account_details.filter(dr_cr='Cr').exclude(ac_name='429', ac_name_type='coa')
+        direct_output_details = account_details.filter(ac_name='430', ac_name_type='coa') 
+        account_details = account_details.filter(dr_cr='Cr').exclude(ac_name='430', ac_name_type='coa').exclude(ac_name='429', ac_name_type='coa')
+        account_details = account_details.union(direct_output_details)
 
         for acc in account_details:
             party_account = None
@@ -939,7 +942,7 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
             vat_amount = float((vat_percent * amount)/100)
             total_amount = float(vat_amount)
             
-            if acc.ac_name == '429' and acc.ac_name_type == 'coa':
+            if acc.ac_name == '430' and acc.ac_name_type == 'coa':
                 total_amount = amount
             
             res_obj['vat_percent']= vat_percent
