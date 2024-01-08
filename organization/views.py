@@ -790,7 +790,7 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
     # account_details = coa_account_details.union(org_account_details)
     account_details = coa_account_details
     direct_input_details = account_details.filter(ac_name='429', ac_name_type='coa') 
-    account_details = account_details.exclude(dr_cr='Cr').exclude(ac_name='430', ac_name_type='coa').exclude(ac_name='429', ac_name_type='coa')
+    account_details = account_details.exclude(ac_name='430', ac_name_type='coa').exclude(ac_name='429', ac_name_type='coa')
     account_details = account_details.union(direct_input_details)
     
     for acc in account_details:
@@ -834,7 +834,12 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
         res_obj['fcy_amount'] = fcy_amount
         res_obj['amount'] = amount
         res_obj['vat_amount'] = vat_amount
-        res_obj['dr_amount']=total_amount
+        
+        if acc.dr_cr == 'Cr':
+            res_obj['cr_amount']=total_amount
+        else:
+            res_obj['dr_amount']=total_amount
+        
         res_obj['net_amount']=total_amount
 
         if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
@@ -905,7 +910,7 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
 
         # account_details = coa_account_details.union(org_account_details)
         direct_output_details = account_details.filter(ac_name='430', ac_name_type='coa') 
-        account_details = account_details.filter(dr_cr='Cr').exclude(ac_name='430', ac_name_type='coa').exclude(ac_name='429', ac_name_type='coa')
+        account_details = account_details.exclude(ac_name='430', ac_name_type='coa').exclude(ac_name='429', ac_name_type='coa')
         account_details = account_details.union(direct_output_details)
 
         for acc in account_details:
@@ -949,7 +954,12 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
             res_obj['fcy_amount'] = fcy_amount
             res_obj['amount'] = amount
             res_obj['vat_amount'] = vat_amount
-            res_obj['cr_amount']=total_amount
+            
+            if acc.dr_cr == 'Cr':
+                res_obj['cr_amount']=total_amount
+            else:
+                res_obj['dr_amount']=total_amount
+            
             res_obj['net_amount']=total_amount
             
             if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
