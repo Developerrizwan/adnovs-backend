@@ -911,10 +911,10 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
     # account_details = coa_account_details.union(org_account_details)
     account_details = coa_account_details
     direct_output_details = account_details.filter(ac_name='430', ac_name_type='coa') 
-    account_details = account_details.exclude(ac_name='430', ac_name_type='coa').exclude(ac_name='429', ac_name_type='coa')
-    account_details = account_details.union(direct_output_details)
+    # account_details = account_details.exclude(ac_name='430', ac_name_type='coa').exclude(ac_name='429', ac_name_type='coa')
+    # account_details = account_details.union(direct_output_details)
 
-    for acc in account_details:
+    for acc in direct_output_details:
         party_account = None
         if acc.vouchers.party_account:
             if acc.vouchers.party_account_type == 'coa':
