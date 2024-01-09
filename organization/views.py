@@ -650,7 +650,7 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             for coa in queryset:
                 cost_entry = CostEntry.objects.filter(Q(charge__coa=coa) | Q(invoice__party_account__coa=coa)).filter(is_included=True).exclude(invoice=None).filter(invoice__company__users__email=request.user.email)
                 if start_date and end_date:
-                    cost_entry = cost_entry.filter(invoice__date__range=(start_date, end_date))
+                    cost_entry = cost_entry.filter(invoice__date__range=[start_date, end_date])
 
                 if job is not None and job.strip() :
                     cost_entry = cost_entry.filter(job_no__id=job)
@@ -661,9 +661,9 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
                 for cost in cost_entry:
                      
-                    if cost.dr_cr=='Cr':
+                    if cost.invoice.invoice_type=='Sales':
                         income_amount += float(cost.amount if cost.amount else 0.0)
-                    elif cost.dr_cr=='Dr':
+                    else:
                         expenses_amount += float(cost.amount if cost.amount else 0.0)
 
                 serializer = CostEntrySerializer(cost_entry, many=True)
