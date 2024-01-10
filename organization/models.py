@@ -429,39 +429,39 @@ class Vouchers(models.Model):
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE, blank=True, null=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, blank=True, null=True)
 
-    def save(self, *args, **kwargs):
-        if self.company and self.job and self.voucher_type:
+    # def save(self, *args, **kwargs):
+    #     if self.company and self.job and self.voucher_type:
 
-            yymm_part = timezone.now().strftime("%y")
+    #         yymm_part = timezone.now().strftime("%y")
 
-            if self.voucher_type == 'Journal':
-                self.company.journal_count += 1
-                journal_count = self.company.journal_count
-                prefix = self.branch[0] if self.branch else ''
-                self.voucher_number = f"{prefix}J{yymm_part}V{journal_count}"
-            elif self.voucher_type == 'Payment':
-                self.company.payment_count += 1
-                payment_count = self.company.payment_count
-                prefix = self.branch[0] if self.branch else ''
-                self.voucher_number = f"{prefix}P{yymm_part}V{payment_count}"
-            elif self.voucher_type == 'Receipt':
-                self.company.receipt_count += 1
-                receipt_count = self.company.receipt_count
-                prefix = self.branch[0] if self.branch else ''
-                self.voucher_number = f"{prefix}R{yymm_part}V{receipt_count}"
-            elif self.voucher_type == 'CreditNote':
-                self.company.creditnote_count += 1
-                creditnote_count = self.company.creditnote_count
-                prefix = self.branch[0] if self.branch else ''
-                self.voucher_number = f"{prefix}C{yymm_part}V{creditnote_count}"
-            elif self.voucher_type == 'DebitNote':
-                self.company.debitnote_count += 1
-                debitnote_count = self.company.debitnote_count
-                prefix = self.branch[0] if self.branch else ''
-                self.voucher_number = f"{prefix}D{yymm_part}V{debitnote_count}"
+    #         if self.voucher_type == 'Journal':
+    #             self.company.journal_count += 1
+    #             journal_count = self.company.journal_count
+    #             prefix = self.branch[0] if self.branch else ''
+    #             self.voucher_number = f"{prefix}J{yymm_part}V{journal_count}"
+    #         elif self.voucher_type == 'Payment':
+    #             self.company.payment_count += 1
+    #             payment_count = self.company.payment_count
+    #             prefix = self.branch[0] if self.branch else ''
+    #             self.voucher_number = f"{prefix}P{yymm_part}V{payment_count}"
+    #         elif self.voucher_type == 'Receipt':
+    #             self.company.receipt_count += 1
+    #             receipt_count = self.company.receipt_count
+    #             prefix = self.branch[0] if self.branch else ''
+    #             self.voucher_number = f"{prefix}R{yymm_part}V{receipt_count}"
+    #         elif self.voucher_type == 'CreditNote':
+    #             self.company.creditnote_count += 1
+    #             creditnote_count = self.company.creditnote_count
+    #             prefix = self.branch[0] if self.branch else ''
+    #             self.voucher_number = f"{prefix}C{yymm_part}V{creditnote_count}"
+    #         elif self.voucher_type == 'DebitNote':
+    #             self.company.debitnote_count += 1
+    #             debitnote_count = self.company.debitnote_count
+    #             prefix = self.branch[0] if self.branch else ''
+    #             self.voucher_number = f"{prefix}D{yymm_part}V{debitnote_count}"
 
-            self.company.save()
-            super().save(*args, **kwargs)
+    #         self.company.save()
+    #         super().save(*args, **kwargs)
 
 
 class CoaCategory(models.Model):

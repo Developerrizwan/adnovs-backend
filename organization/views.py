@@ -330,6 +330,55 @@ class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
         if self.action == 'retrieve':
             return VoucherGetSerializer
         return VouchersSerializer
+    
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        voucher_type = serializer.validated_data['voucher_type']
+        branch = serializer.validated_data['branch']
+        company_id = serializer.validated_data['company']
+        job_id = serializer.validated_data['job']
+
+        yymm_part = timezone.now().strftime("%y")
+        prefix = branch[0] if branch else ''
+
+        if voucher_type == 'Journal':
+            company = Company.objects.get(id=company_id.id)
+            journal_count = company.journal_count
+            voucher_number = f"{prefix}J{yymm_part}V{journal_count+1}"
+            company.journal_count = journal_count+1
+            company.save()
+
+        if voucher_type == 'Payment':
+            company = Company.objects.get(id=company_id.id)
+            payment_count = company.payment_count
+            voucher_number = f"{prefix}P{yymm_part}V{payment_count+1}"
+            company.payment_count = payment_count+1
+            company.save()
+
+        if voucher_type == 'Receipt':
+            company = Company.objects.get(id=company_id.id)
+            receipt_count = company.receipt_count
+            voucher_number =  f"{prefix}R{yymm_part}V{receipt_count+1}"
+            company.receipt_count = receipt_count+1
+            company.save()
+
+        if voucher_type == 'CreditNote':
+            company = Company.objects.get(id=company_id.id)
+            creditnote_count = company.creditnote_count
+            voucher_number =f"{prefix}C{yymm_part}V{creditnote_count+1}"
+            company.creditnote_count = creditnote_count+1
+            company.save()
+        
+        if voucher_type == 'DebitNote':
+            company = Company.objects.get(id=company_id.id)
+            debitnote_count = company.debitnote_count
+            voucher_number = f"{prefix}D{yymm_part}V{debitnote_count+1}"
+            company.debitnote_count = debitnote_count+1
+            company.save()
+
+        serializer.save(voucher_number=voucher_number)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class InvoicesViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.RetrieveModelMixin):
