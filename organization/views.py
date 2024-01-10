@@ -345,35 +345,35 @@ class VouchersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Cre
         if voucher_type == 'Journal':
             company = Company.objects.get(id=company_id.id)
             journal_count = company.journal_count
-            voucher_number = f"{prefix}J{yymm_part}V{journal_count+1}"
+            voucher_number = f"{prefix}JV{yymm_part}{journal_count+1}"
             company.journal_count = journal_count+1
             company.save()
 
         if voucher_type == 'Payment':
             company = Company.objects.get(id=company_id.id)
             payment_count = company.payment_count
-            voucher_number = f"{prefix}P{yymm_part}V{payment_count+1}"
+            voucher_number = f"{prefix}PV{yymm_part}{payment_count+1}"
             company.payment_count = payment_count+1
             company.save()
 
         if voucher_type == 'Receipt':
             company = Company.objects.get(id=company_id.id)
             receipt_count = company.receipt_count
-            voucher_number =  f"{prefix}R{yymm_part}V{receipt_count+1}"
+            voucher_number =  f"{prefix}RV{yymm_part}{receipt_count+1}"
             company.receipt_count = receipt_count+1
             company.save()
 
         if voucher_type == 'CreditNote':
             company = Company.objects.get(id=company_id.id)
             creditnote_count = company.creditnote_count
-            voucher_number =f"{prefix}C{yymm_part}V{creditnote_count+1}"
+            voucher_number =f"{prefix}CV{yymm_part}{creditnote_count+1}"
             company.creditnote_count = creditnote_count+1
             company.save()
         
         if voucher_type == 'DebitNote':
             company = Company.objects.get(id=company_id.id)
             debitnote_count = company.debitnote_count
-            voucher_number = f"{prefix}D{yymm_part}V{debitnote_count+1}"
+            voucher_number = f"{prefix}DV{yymm_part}{debitnote_count+1}"
             company.debitnote_count = debitnote_count+1
             company.save()
 
