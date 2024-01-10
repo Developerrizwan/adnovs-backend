@@ -432,29 +432,29 @@ class Vouchers(models.Model):
     def save(self, *args, **kwargs):
         if not self.branch and self.job and self.voucher_type:
 
-            yymm_part = timezone.now().strftime("%y%m")
+            yymm_part = timezone.now().strftime("%y")
 
             if self.voucher_type=='Journal':
                 self.company.journal_count+=1
                 journal_count=self.company.journal_count
-                self.voucher_number = f"{0}{1}V{2}".format(self.branch[0], self.voucher_type[0], str(yymm_part), journal_count)
+                self.voucher_number = f"{0}{1}V{2}".format(self.branch[0], self.voucher_type[0], str(yymm_part[-2]), journal_count)
             if self.voucher_type=='Payment':
                 self.company.payment_count+=1
                 payment_count=self.company.payment_count
-                self.voucher_number = f"{0}{1}V{2}".format(self.branch[0], self.voucher_type[0], str(yymm_part), payment_count)
+                self.voucher_number = f"{0}{1}V{2}".format(self.branch[0], self.voucher_type[0], str(yymm_part[-2]), payment_count)
             if self.voucher_type=='Receipt':
                 self.company.receipt_count+=1
                 receipt_count=self.company.receipt_count
-                self.voucher_number = f"{0}{1}V{2}".format(self.branch[0], self.voucher_type[0], str(yymm_part), receipt_count)
+                self.voucher_number = f"{0}{1}V{2}".format(self.branch[0], self.voucher_type[0], str(yymm_part[-2]), receipt_count)
             if self.voucher_type=='CreditNote':
                 self.company.creditnote_count+=1
                 creditnote_count=self.company.creditnote_count
-                self.voucher_number = f"{0}{1}V{2}".format(self.branch[0], self.voucher_type[0], str(yymm_part), creditnote_count)
+                self.voucher_number = f"{0}{1}V{2}".format(self.branch[0], self.voucher_type[0], str(yymm_part[-2]), creditnote_count)
             if self.voucher_type=='DebitNote':
                 self.company.debitnote_count+=1
                 debitnote_count=self.company.debitnote_count
-                self.voucher_number = f"{0}{1}V{2}".format(self.branch[0], self.voucher_type[0], str(yymm_part), debitnote_count)
-
+                self.voucher_number = f"{0}{1}V{2}".format(self.branch[0], self.voucher_type[0], str(yymm_part[-2]), debitnote_count)
+            self.company.save()
             super().save(*args, **kwargs)
 
 
