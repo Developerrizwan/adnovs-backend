@@ -244,6 +244,7 @@ class SearchFilter(filters.BaseFilterBackend):
 
 class AccountFilter(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
+        queryset = queryset.filter(vouchers__company__users__email=request.user.email)
         search = request.query_params.get('search',None)
         if search:
             search_lower = search.lower()
