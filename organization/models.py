@@ -576,3 +576,6 @@ class AccountDetails(models.Model):
     department = models.CharField(max_length=200,blank=True,null=True)
     shipment_no = models.CharField(max_length=200,blank=True,null=True)
     job_no = models.ForeignKey(Job, on_delete=models.CASCADE, blank=True, null=True)  
+
+class Branch(models.Model):
+    name = models.CharField(max_length=200,blank=False,null=False,unique=True)

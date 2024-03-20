@@ -314,3 +314,8 @@ class VouchersJobSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vouchers
         fields = '__all__' 
+
+class BranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = '__all__'

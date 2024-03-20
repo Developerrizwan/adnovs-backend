@@ -1993,3 +1993,8 @@ class JobInvoiceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         #     response.append(invoice)
 
         return Response(response, status=status.HTTP_200_OK)
+    
+class BranchViewset(viewsets.GenericViewSet,mixins.ListModelMixin,mixins.CreateModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin):
+    permission_classes = (IsAuthenticated,)
+    queryset = Branch.objects.all()
+    serializer_class = BranchSerializer

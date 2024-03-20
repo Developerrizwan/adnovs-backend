@@ -113,6 +113,9 @@ job_voucher_router.register('job_voucher', JobVoucherViewset, basename='trial-ba
 job_invoice_router = routers.SimpleRouter() 
 job_invoice_router.register('job_invoice', JobInvoiceViewset, basename='trial-balance')
 
+branch_router = routers.SimpleRouter() 
+branch_router.register('master/branch', BranchViewset, basename='branch')
+
 
 urlpatterns = [
     path('',include(get_user_count_router.urls)),
@@ -149,6 +152,7 @@ urlpatterns = [
     path('',include(trial_balance_router.urls)),
     path('',include(job_voucher_router.urls)),
     path('',include(job_invoice_router.urls)),
+    path('',include(branch_router.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
     path('user-create/', UserCreateViewSet.as_view(), name='user-create'),
