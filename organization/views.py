@@ -1701,6 +1701,13 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         elif type =='pay':
             invoices= invoices.filter(invoice_type='Purchase', party_account=organization_id)
             response = get_account_payment_statement(invoices, organization_id, start_date, end_date)
+        elif type == 'both':
+            invoices_sales = invoices.filter(invoice_type='Sales')
+            invoices_purchases = invoices.filter(invoice_type='Purchase', party_account=organization_id)
+            response1 = get_account_receivable_statement(invoices_sales, organization_id, start_date, end_date, payment),
+            response2 = get_account_payment_statement(invoices_purchases, organization_id, start_date, end_date)
+            response += response1
+            response += response2       
         return Response(response)
 
 
