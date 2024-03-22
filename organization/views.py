@@ -1697,7 +1697,7 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         results = []
 
         for res in response:
-            balance = round(float(balance) + round(float(res['dr_amount']), 2) - round(float(res['cr_amount']), 2), 2)
+            balance = round(round(float( balance), 2) + round(float(res['dr_amount']), 2) - round(float(res['cr_amount']), 2), 2)
             res['net_amount'] = balance
             results.append(res)
 
