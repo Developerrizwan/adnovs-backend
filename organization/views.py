@@ -1540,15 +1540,8 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
         response.append(res_obj)
     # except:
     #     pass
-    response = sorted(response, key= lambda obj:obj['date'])
-    balance = 0
-    results = []
-    for res in response:
-        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
-        res['net_amount'] = balance
-        results.append(res)
         
-    return results
+    return response
 
 
 def get_account_receivable_statement(invoices, org_id, start_date, end_date, payment_status):   
@@ -1666,17 +1659,8 @@ def get_account_receivable_statement(invoices, org_id, start_date, end_date, pay
         res_obj['net_amount'] = total_amount
         response.append(res_obj)
     # except:
-    #     pass
-    response = sorted(response, key= lambda obj:obj['date'])
-    balance = 0
-    results = []
-    for res in response:
-        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
-        res['net_amount'] = balance
-        results.append(res)
-        
-    return results
-
+    #     pass       
+    return response
 
 class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     pagination_class = CustomPagination
@@ -1704,11 +1688,20 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         elif type == 'both':
             invoices_sales = invoices.filter(invoice_type='Sales')
             invoices_purchases = invoices.filter(invoice_type='Purchase', party_account=organization_id)
-            response1 = get_account_receivable_statement(invoices_sales, organization_id, start_date, end_date, payment),
+            response1 = get_account_receivable_statement(invoices_sales, organization_id, start_date, end_date, payment)
             response2 = get_account_payment_statement(invoices_purchases, organization_id, start_date, end_date)
-            response += response1
-            response += response2       
-        return Response(response)
+            response = response + response1 + response2
+            
+        response = sorted(response, key=lambda obj: obj['date']) 
+        balance = 0
+        results = []
+
+        for res in response:
+            balance = round(float(balance) + round(float(res['dr_amount']), 2) - round(float(res['cr_amount']), 2), 2)
+            res['net_amount'] = balance
+            results.append(res)
+
+        return Response(results)
 
 
 def get_coa_sheet_response(coa, start_date, end_date, user):
