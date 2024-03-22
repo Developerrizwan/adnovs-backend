@@ -18,6 +18,7 @@ from organization.pagination import CustomPagination
 from organization.filters import *
 from datetime import datetime
 from django.db.models import Q
+from decimal import Decimal, ROUND_HALF_UP
 # Create your views here.
 
 
@@ -1697,7 +1698,10 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         results = []
 
         for res in response:
-            balance = round(round(float( balance), 2) + round(float(res['dr_amount']), 2) - round(float(res['cr_amount']), 2), 2)
+            b = Decimal(balance)
+            da = Decimal(res['dr_amount'])
+            ca = Decimal(res['cr_amount'])
+            balance = (b + da - ca).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
             res['net_amount'] = balance
             results.append(res)
 
