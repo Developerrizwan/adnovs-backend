@@ -871,7 +871,16 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
                 "branch":acc.vouchers.branch if acc.vouchers else "",
                 "language_name":coa.language_name if coa.language_name else ""
                 }
-        fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+        # fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+        fcy_amount_str = acc.fcy_amount if acc.fcy_amount else "0.0"
+        # Check if the string contains a decimal point
+        if '.' in fcy_amount_str:
+            # If the string contains a decimal point, remove the extra decimal point and convert to float
+            fcy_amount_str_without_extra_decimal = fcy_amount_str.replace('.', '', 1)  # Remove the first occurrence of the decimal point
+            fcy_amount = float(fcy_amount_str_without_extra_decimal)
+        else:
+            # If the string does not contain a decimal point, convert to float directly
+            fcy_amount = float(fcy_amount_str)
         amount=float(acc.amount_sar if acc.amount_sar else 0.0)
         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
         vat_amount = float((vat_percent * amount)/100)
@@ -992,7 +1001,16 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
             "branch":acc.vouchers.branch if acc.vouchers else "",
             "language_name":coa.language_name if coa.language_name else ""
             }
-        fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+        # fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+        fcy_amount_str = acc.fcy_amount if acc.fcy_amount else "0.0"
+        # Check if the string contains a decimal point
+        if '.' in fcy_amount_str:
+            # If the string contains a decimal point, remove the extra decimal point and convert to float
+            fcy_amount_str_without_extra_decimal = fcy_amount_str.replace('.', '', 1)  # Remove the first occurrence of the decimal point
+            fcy_amount = float(fcy_amount_str_without_extra_decimal)
+        else:
+            # If the string does not contain a decimal point, convert to float directly
+            fcy_amount = float(fcy_amount_str)
         amount=float(acc.amount_sar if acc.amount_sar else 0.0)
         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
         vat_amount = float((vat_percent * amount)/100)
@@ -1128,7 +1146,16 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "branch":acc.vouchers.branch if acc.vouchers else "",
                 "language_name":coa.language_name if coa.language_name else ""
                 }
-            fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+            # fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+            fcy_amount_str = acc.fcy_amount if acc.fcy_amount else "0.0"
+            # Check if the string contains a decimal point
+            if '.' in fcy_amount_str:
+                # If the string contains a decimal point, remove the extra decimal point and convert to float
+                fcy_amount_str_without_extra_decimal = fcy_amount_str.replace('.', '', 1)  # Remove the first occurrence of the decimal point
+                fcy_amount = float(fcy_amount_str_without_extra_decimal)
+            else:
+                # If the string does not contain a decimal point, convert to float directly
+                fcy_amount = float(fcy_amount_str)
             amount=float(acc.amount_sar if acc.amount_sar else 0.0)
             vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
@@ -1164,7 +1191,16 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "branch":acc.vouchers.branch if acc.vouchers else "",
                 "language_name":coa.language_name if coa.language_name else ""
                 }
-            fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+            # fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+            fcy_amount_str = acc.fcy_amount if acc.fcy_amount else "0.0"
+            # Check if the string contains a decimal point
+            if '.' in fcy_amount_str:
+                # If the string contains a decimal point, remove the extra decimal point and convert to float
+                fcy_amount_str_without_extra_decimal = fcy_amount_str.replace('.', '', 1)  # Remove the first occurrence of the decimal point
+                fcy_amount = float(fcy_amount_str_without_extra_decimal)
+            else:
+                # If the string does not contain a decimal point, convert to float directly
+                fcy_amount = float(fcy_amount_str)
             amount=float(acc.amount_sar if acc.amount_sar else 0.0)
             vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
@@ -1433,7 +1469,7 @@ class GetCoaInvoicesViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             return Response([])
 
 
-def get_account_payment_statement(invoices, org_id, start_date, end_date):
+def get_account_payment_statement(invoices, org_id, start_date, end_date, payment_status):
     response =[]
     for invoice in invoices:
         res_obj = {
@@ -1467,42 +1503,43 @@ def get_account_payment_statement(invoices, org_id, start_date, end_date):
     vouchers = Vouchers.objects.filter(party_account=org_id, party_account_type='organization', date__range=[start_date, end_date])
     payment_vouchers = vouchers.filter(voucher_type='Payment')
     
-    for voucher in payment_vouchers:
-        voucher_accounts = AccountDetails.objects.filter(vouchers=voucher).exclude(ac_name='260', ac_name_type='coa').exclude(narration__contains="BANK CHARGES")  # excluding bank charges
-        account = Organization.objects.filter(id=voucher.party_account).first()
-        total_amount = 0
-        dr_amount = 0
-        cr_amount = 0
-        res_obj = {
-            "account": account.name if account else "",
-            "date":voucher.date,
-            "currency":voucher.currency,
-            "type": voucher.voucher_type + " Voucher",
-            "voucher_number":voucher.id,
-            "invoice_number":"",
-            "cr_amount":  0,
-            "dr_amount": 0,
-            "net_amount": 0,
-            "party_account":account.name if account else "",
-            "job_no": voucher.job.job_number if voucher.job else "",
-            "narrations":voucher.naration if voucher.naration else "",
-            "branch":voucher.branch if voucher.branch else "",
-        }
-        for acc in voucher_accounts:
-            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
-            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
-            vat_amount = float((vat_percent * amount)/100)
-            total_amt = float(amount  + vat_amount)
+    if not payment_status == 'Unpaid':
+        for voucher in payment_vouchers:
+            voucher_accounts = AccountDetails.objects.filter(vouchers=voucher).exclude(ac_name='260', ac_name_type='coa').exclude(narration__contains="BANK CHARGES")  # excluding bank charges
+            account = Organization.objects.filter(id=voucher.party_account).first()
+            total_amount = 0
+            dr_amount = 0
+            cr_amount = 0
+            res_obj = {
+                "account": account.name if account else "",
+                "date":voucher.date,
+                "currency":voucher.currency,
+                "type": voucher.voucher_type + " Voucher",
+                "voucher_number":voucher.id,
+                "invoice_number":"",
+                "cr_amount":  0,
+                "dr_amount": 0,
+                "net_amount": 0,
+                "party_account":account.name if account else "",
+                "job_no": voucher.job.job_number if voucher.job else "",
+                "narrations":voucher.naration if voucher.naration else "",
+                "branch":voucher.branch if voucher.branch else "",
+            }
+            for acc in voucher_accounts:
+                amount=float(acc.amount_sar if acc.amount_sar else 0.0)
+                vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+                vat_amount = float((vat_percent * amount)/100)
+                total_amt = float(amount  + vat_amount)
 
-            if acc.dr_cr == "Cr":
-                cr_amount = float(cr_amount) + total_amt
+                if acc.dr_cr == "Cr":
+                    cr_amount = float(cr_amount) + total_amt
 
-        total_amount = float(dr_amount) - float(cr_amount)
-        res_obj['dr_amount'] =dr_amount
-        res_obj['cr_amount'] = cr_amount
-        res_obj['net_amount'] = total_amount
-        response.append(res_obj)
-    
+            total_amount = float(dr_amount) - float(cr_amount)
+            res_obj['dr_amount'] =dr_amount
+            res_obj['cr_amount'] = cr_amount
+            res_obj['net_amount'] = total_amount
+            response.append(res_obj)
+        
     debit_credit_vouchers = vouchers.filter(Q(voucher_type='CreditNote') | Q(voucher_type='DebitNote'), voucher_for='Vendor')
     for voucher in debit_credit_vouchers:
         voucher_accounts = AccountDetails.objects.filter(vouchers=voucher)
@@ -1685,12 +1722,12 @@ class AccountStatementViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             response= get_account_receivable_statement(invoices, organization_id, start_date, end_date, payment)
         elif type =='pay':
             invoices= invoices.filter(invoice_type='Purchase', party_account=organization_id)
-            response = get_account_payment_statement(invoices, organization_id, start_date, end_date)
+            response = get_account_payment_statement(invoices, organization_id, start_date, end_date, payment)
         elif type == 'both':
             invoices_sales = invoices.filter(invoice_type='Sales')
             invoices_purchases = invoices.filter(invoice_type='Purchase', party_account=organization_id)
             response1 = get_account_receivable_statement(invoices_sales, organization_id, start_date, end_date, payment)
-            response2 = get_account_payment_statement(invoices_purchases, organization_id, start_date, end_date)
+            response2 = get_account_payment_statement(invoices_purchases, organization_id, start_date, end_date, payment)
             response = response + response1 + response2
             
         response = sorted(response, key=lambda obj: obj['date']) 
