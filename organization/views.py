@@ -1881,7 +1881,16 @@ def get_coa_sheet_response(coa, start_date, end_date, user):
                 "branch":acc.vouchers.branch if acc.vouchers else "",
                 "language_name":coa.language_name if coa.language_name else ""
                 }
-            fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+            # fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+            fcy_amount_str = acc.fcy_amount if acc.fcy_amount else "0.0"
+            # Check if the string contains a decimal point
+            if '.' in fcy_amount_str:
+                # If the string contains a decimal point, remove the extra decimal point and convert to float
+                fcy_amount_str_without_extra_decimal = fcy_amount_str.replace('.', '', 1)  # Remove the first occurrence of the decimal point
+                fcy_amount = float(fcy_amount_str_without_extra_decimal)
+            else:
+                # If the string does not contain a decimal point, convert to float directly
+                fcy_amount = float(fcy_amount_str)
             amount=float(acc.amount_sar if acc.amount_sar else 0.0)
             vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
