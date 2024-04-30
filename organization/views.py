@@ -1669,7 +1669,7 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                 response = get_vat_output_coa_response(coa, start_date, end_date, request.user)
             elif coa.name == 'SUNDRY CREDITORS': # For Sundry Creditors 405
                 response = get_sundry_creditors_coa_response(coa, start_date, end_date, request.user)
-            elif coa.id == 'SUNDRY DEBTORS': # For Sundry Debtors 406
+            elif coa.name == 'SUNDRY DEBTORS': # For Sundry Debtors 406
                 response = get_sundry_debtors_coa_response(coa, start_date, end_date, request.user)
             else:     
                 response = get_other_coa_response(coa, start_date, end_date, request.user)
