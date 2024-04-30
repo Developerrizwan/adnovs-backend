@@ -1663,13 +1663,13 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         
         if coa_id is not None and Coa.objects.filter(id=coa_id).exists():
             coa = Coa.objects.filter(id=coa_id).first()
-            if coa.id == 429: # For VAT INPUT
+            if coa.name == 'VAT INPUT': # For VAT INPUT 429
                 response = get_vat_input_coa_response(coa, start_date, end_date, request.user)
-            elif coa.id == 430: # For VAT OUTPUT
+            elif coa.name == 'VAT OUTPUT': # For VAT OUTPUT 430
                 response = get_vat_output_coa_response(coa, start_date, end_date, request.user)
-            elif coa.id == 405: # For Sundry Creditors
+            elif coa.name == 'SUNDRY CREDITORS': # For Sundry Creditors 405
                 response = get_sundry_creditors_coa_response(coa, start_date, end_date, request.user)
-            elif coa.id == 406: # For Sundry Debtors
+            elif coa.id == 'SUNDRY DEBTORS': # For Sundry Debtors 406
                 response = get_sundry_debtors_coa_response(coa, start_date, end_date, request.user)
             else:     
                 response = get_other_coa_response(coa, start_date, end_date, request.user)
