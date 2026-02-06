@@ -17,10 +17,11 @@ from organization.serializers import *
 from organization.pagination import CustomPagination
 from organization.filters import *
 from datetime import datetime
-from django.db.models import Q
+from django.db.models import Q, Sum, Value, DecimalField
 from decimal import Decimal, ROUND_HALF_UP
 # Create your views here.
-
+from django.db.models.functions import Coalesce
+from decimal import Decimal
 
 class UserSignUpViewSet(generics.GenericAPIView):
     serializer_class = UserSignUpSerializer
@@ -1045,76 +1046,161 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
         
     return results
 
+from django.db.models import Sum, Q, Value, FloatField
+from django.db.models.functions import Coalesce, Cast
+
+def calculate_opening_balance(coa, start_date, user, job=None):
+    if not start_date or not coa:
+        return 0.0
+
+    base_qs = AccountDetails.objects.filter(
+        vouchers__date__lt=start_date,
+        vouchers__company__users__email=user.email
+    )
+
+    if job:
+        base_qs = base_qs.filter(vouchers__job=job)
+
+    # Direct COA match (ac_name is string of coa.pk)
+    qs1 = base_qs.filter(
+        ac_name=str(coa.pk),
+        ac_name_type='coa'
+    )
+
+    # Via charge
+    qs2 = base_qs.filter(charge__coa_id=coa.pk)
+
+    # Via linked organization
+    orgs = Organization.objects.filter(
+        coa=coa,
+        company__users__email=user.email
+    )
+    org_ids = [str(org.pk) for org in orgs]
+
+    qs3 = AccountDetails.objects.none()
+    if org_ids:
+        qs3 = base_qs.filter(
+            ac_name__in=org_ids,
+            ac_name_type='organization'
+        )
+
+    # Combine all matching lines
+    qs = qs1 | qs2 | qs3
+
+    # Sum with proper casting (CharField → Float)
+    dr_total = qs.filter(dr_cr='Dr').aggregate(
+        total=Coalesce(
+            Sum(Cast('amount_sar', FloatField())),
+            Value(0.0)
+        )
+    )['total'] or 0.0
+
+    cr_total = qs.filter(dr_cr='Cr').aggregate(
+        total=Coalesce(
+            Sum(Cast('amount_sar', FloatField())),
+            Value(0.0)
+        )
+    )['total'] or 0.0
+
+    net = float(dr_total - cr_total)
+
+    # Flip sign if account is naturally credit-balanced
+    if coa.dr_cr == 'Cr':
+        net = -net
+
+    return round(net, 2)
+
+
 
 def get_other_coa_response(coa, start_date, end_date, user):
-    respone =[]
-    res_obj={}
+    respone = []
+    res_obj = {}
 
-    cost_entrys = CostEntry.objects.filter(Q(charge__coa=coa) | Q(invoice__party_account__coa=coa), invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users__email=user.email).order_by('created_at')
+    opening_balance = calculate_opening_balance(coa, start_date, user)
+
+    cost_entrys = CostEntry.objects.filter(
+        Q(charge__coa=coa) | Q(invoice__party_account__coa=coa),
+        invoice__date__range=[start_date, end_date],
+        is_included=True,
+        invoice__company__users__email=user.email
+    ).order_by('created_at')
+
     for cost_entry in cost_entrys:
         if cost_entry.invoice:
             res_obj = {
-                    "account":cost_entry.invoice.client_name.name if cost_entry.invoice and cost_entry.invoice.client_name else "",
-                    "date":cost_entry.invoice.date if cost_entry.invoice else cost_entry.created_at,
-                    "currency":cost_entry.invoice.currency_sar if cost_entry.invoice else cost_entry.currency,
-                    "invoice_number":cost_entry.invoice.invoice_number if cost_entry.invoice else '',
-                    "vat_percent":0,
-                    "fcy_amount":0,
-                    "vat_amount":0,
-                    "amount":0,
-                    "dr_amount":0,
-                    "cr_amount":0,
-                    "net_amount":0,
-                    "type":"Invoice",
-                    "voucher":"",
-                    "charge": cost_entry.charge.name if cost_entry.charge else '',
-                    "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
-                    "job_no":cost_entry.invoice.job.job_number if cost_entry.invoice and cost_entry.invoice.job else "",
-                    "narrations":cost_entry.invoice.narration if cost_entry.invoice else "",
-                    "branch":cost_entry.invoice.branch if cost_entry.invoice else "",
-                    "language_name":coa.language_name if coa.language_name else ""
-                    }
-            
+                "account": cost_entry.invoice.client_name.name if cost_entry.invoice and cost_entry.invoice.client_name else "",
+                "date": cost_entry.invoice.date if cost_entry.invoice else cost_entry.created_at,
+                "currency": cost_entry.invoice.currency_sar if cost_entry.invoice else cost_entry.currency,
+                "invoice_number": cost_entry.invoice.invoice_number if cost_entry.invoice else '',
+                "vat_percent": 0,
+                "fcy_amount": 0,
+                "vat_amount": 0,
+                "amount": 0,
+                "dr_amount": 0,
+                "cr_amount": 0,
+                "net_amount": 0,
+                "type": "Invoice",
+                "voucher": "",
+                "charge": cost_entry.charge.name if cost_entry.charge else '',
+                "party_account": cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
+                "job_no": cost_entry.invoice.job.job_number if cost_entry.invoice and cost_entry.invoice.job else "",
+                "narrations": cost_entry.invoice.narration if cost_entry.invoice else "",
+                "branch": cost_entry.invoice.branch if cost_entry.invoice else "",
+                "language_name": coa.language_name if coa.language_name else ""
+            }
 
-            if cost_entry.invoice.invoice_type=='Sales':
+            if cost_entry.invoice.invoice_type == 'Sales':
                 fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-                amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+                amount = float(cost_entry.amount if cost_entry.amount else 0.0)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
-                vat_amount = float((vat_percent * amount)/100)
+                vat_amount = float((vat_percent * amount) / 100)
                 total_amount = float(amount)
-                res_obj['vat_percent']= vat_percent
+                res_obj['vat_percent'] = vat_percent
                 res_obj['fcy_amount'] = fcy_amount
                 res_obj['amount'] = amount
                 res_obj['vat_amount'] = vat_amount
-                res_obj['cr_amount']=total_amount
-                res_obj['net_amount']=total_amount   
-                
-                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                res_obj['cr_amount'] = total_amount
+                res_obj['net_amount'] = total_amount
+
+                if not (res_obj["dr_amount"] == 0 and res_obj["cr_amount"] == 0):
                     respone.append(res_obj)
             else:
                 fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-                amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+                amount = float(cost_entry.amount if cost_entry.amount else 0.0)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
-                vat_amount = float((vat_percent * amount)/100)
+                vat_amount = float((vat_percent * amount) / 100)
                 total_amount = float(amount)
-                res_obj['vat_percent']= vat_percent
+                res_obj['vat_percent'] = vat_percent
                 res_obj['fcy_amount'] = fcy_amount
                 res_obj['amount'] = amount
                 res_obj['vat_amount'] = vat_amount
-                res_obj['dr_amount']=total_amount
-                res_obj['net_amount']=total_amount   
-                
-                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
-                    respone.append(res_obj)
-    
+                res_obj['dr_amount'] = total_amount
+                res_obj['net_amount'] = total_amount
 
-    voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
-    coa_account_details = voucher_accounts.filter(Q(ac_name='{0}'.format(coa.id), ac_name_type='coa') | Q(charge__coa=coa))
-    organizations = Organization.objects.filter(coa=coa, company__users__email=user.email)
-    
+                if not (res_obj["dr_amount"] == 0 and res_obj["cr_amount"] == 0):
+                    respone.append(res_obj)
+
+    voucher_accounts = AccountDetails.objects.filter(
+        vouchers__date__range=[start_date, end_date],
+        vouchers__company__users__email=user.email
+    )
+
+    coa_account_details = voucher_accounts.filter(
+        Q(ac_name=str(coa.id), ac_name_type='coa') | Q(charge__coa=coa)
+    )
+
+    organizations = Organization.objects.filter(
+        coa=coa,
+        company__users__email=user.email
+    )
+
+    # FIX: Use pipe operator (|) instead of union() to avoid mixed type errors
     for org in organizations:
-        org_account_details = voucher_accounts.filter(ac_name='{0}'.format(org.id), ac_name_type='organization')
-        coa_account_details = coa_account_details.union(org_account_details)
+        org_account_details = voucher_accounts.filter(
+            ac_name=str(org.id),
+            ac_name_type='organization'
+        )
+        coa_account_details = coa_account_details | org_account_details
 
     for acc in coa_account_details:
         party_account = None
@@ -1123,173 +1209,184 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
             else:
                 party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
-        
+
+        fcy_amount_str = acc.fcy_amount if acc.fcy_amount else "0.0"
+        if '.' in fcy_amount_str:
+            fcy_amount_str = fcy_amount_str.replace('.', '', 1)
+        fcy_amount = float(fcy_amount_str)
+
+        amount = float(acc.amount_sar if acc.amount_sar else 0.0)
+        vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+        vat_amount = float((vat_percent * amount) / 100)
+        total_amount = float(amount)
+
         if acc.dr_cr == 'Cr':
             res_obj = {
-                "account":coa.name,
-                "date":acc.vouchers.date if acc.vouchers.date else '',
-                "currency":acc.currency,
-                "invoice_number":"",
-                "vat_percent":0,
-                "fcy_amount":0,
-                "vat_amount":0,
-                "amount":0,
-                "dr_amount":0,
-                "cr_amount":0,
-                "net_amount":0,
+                "account": coa.name,
+                "date": acc.vouchers.date if acc.vouchers.date else '',
+                "currency": acc.currency,
+                "invoice_number": "",
+                "vat_percent": vat_percent,
+                "fcy_amount": fcy_amount,
+                "vat_amount": vat_amount,
+                "amount": amount,
+                "dr_amount": 0,
+                "cr_amount": total_amount,
+                "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
-                "voucher":acc.vouchers.voucher_number if acc.vouchers else "",
+                "voucher": acc.vouchers.voucher_number if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
                 "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
                 "narrations": acc.narration,
-                "branch":acc.vouchers.branch if acc.vouchers else "",
-                "language_name":coa.language_name if coa.language_name else ""
-                }
-            # fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-            fcy_amount_str = acc.fcy_amount if acc.fcy_amount else "0.0"
-            # Check if the string contains a decimal point
-            if '.' in fcy_amount_str:
-                # If the string contains a decimal point, remove the extra decimal point and convert to float
-                fcy_amount_str_without_extra_decimal = fcy_amount_str.replace('.', '', 1)  # Remove the first occurrence of the decimal point
-                fcy_amount = float(fcy_amount_str_without_extra_decimal)
-            else:
-                # If the string does not contain a decimal point, convert to float directly
-                fcy_amount = float(fcy_amount_str)
-            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
-            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
-            vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount)
-            res_obj['vat_percent']= vat_percent
-            res_obj['fcy_amount'] = fcy_amount
-            res_obj['amount'] = amount
-            res_obj['vat_amount'] = vat_amount
-            res_obj['cr_amount']=total_amount
-            res_obj['net_amount']=total_amount
-            
-            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
-                respone.append(res_obj)
+                "branch": acc.vouchers.branch if acc.vouchers else "",
+                "language_name": coa.language_name if coa.language_name else ""
+            }
         else:
             res_obj = {
-                "account":coa.name,
-                "date":acc.vouchers.date if acc.vouchers.date else '',
-                "currency":acc.currency,
-                "invoice_number":"",
-                "vat_percent":0,
-                "fcy_amount":0,
-                "vat_amount":0,
-                "amount":0,
-                "dr_amount":0,
-                "cr_amount":0,
-                "net_amount":0,
+                "account": coa.name,
+                "date": acc.vouchers.date if acc.vouchers.date else '',
+                "currency": acc.currency,
+                "invoice_number": "",
+                "vat_percent": vat_percent,
+                "fcy_amount": fcy_amount,
+                "vat_amount": vat_amount,
+                "amount": amount,
+                "dr_amount": total_amount,
+                "cr_amount": 0,
+                "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
-                "voucher":acc.vouchers.voucher_number if acc.vouchers else "",
+                "voucher": acc.vouchers.voucher_number if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
                 "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
                 "narrations": acc.narration,
-                "branch":acc.vouchers.branch if acc.vouchers else "",
-                "language_name":coa.language_name if coa.language_name else ""
-                }
-            # fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-            fcy_amount_str = acc.fcy_amount if acc.fcy_amount else "0.0"
-            # Check if the string contains a decimal point
-            if '.' in fcy_amount_str:
-                # If the string contains a decimal point, remove the extra decimal point and convert to float
-                fcy_amount_str_without_extra_decimal = fcy_amount_str.replace('.', '', 1)  # Remove the first occurrence of the decimal point
-                fcy_amount = float(fcy_amount_str_without_extra_decimal)
-            else:
-                # If the string does not contain a decimal point, convert to float directly
-                fcy_amount = float(fcy_amount_str)
-            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
-            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
-            vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount)
-            res_obj['vat_percent']= vat_percent
-            res_obj['fcy_amount'] = fcy_amount
-            res_obj['amount'] = amount
-            res_obj['vat_amount'] = vat_amount
-            res_obj['dr_amount']=total_amount
-            res_obj['net_amount']=total_amount
-            
-            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
-                respone.append(res_obj)
-    
-    respone = sorted(respone, key=lambda obj:obj['date'])
-    balance = 0
+                "branch": acc.vouchers.branch if acc.vouchers else "",
+                "language_name": coa.language_name if coa.language_name else ""
+            }
+
+        if not (res_obj["dr_amount"] == 0 and res_obj["cr_amount"] == 0):
+            respone.append(res_obj)
+
+    respone = sorted(respone, key=lambda obj: obj['date'])
+
+    opening_row = {
+        "account": coa.name,
+        "date": start_date,
+        "currency": coa.currency or "SAR",
+        "invoice_number": "",
+        "vat_percent": 0,
+        "fcy_amount": 0,
+        "vat_amount": 0,
+        "amount": 0,
+        "dr_amount": max(opening_balance, 0),
+        "cr_amount": max(-opening_balance, 0),
+        "net_amount": opening_balance,
+        "type": "Opening Balance",
+        "voucher": "",
+        "charge": "",
+        "party_account": "",
+        "job_no": "",
+        "narrations": "Opening balance brought forward",
+        "branch": "",
+        "language_name": coa.language_name or ""
+    }
+
+    respone.insert(0, opening_row)
+
+    balance = opening_balance
     results = []
+
     for res in respone:
-        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
-        res['net_amount'] = balance
-        results.append(res)
+        if res['type'] == "Opening Balance":
+            # Opening row already has correct dr/cr/net — just ensure it's set
+            res['net_amount'] = round(balance, 2)
+        else:
+            dr = float(res.get('dr_amount', 0))
+            cr = float(res.get('cr_amount', 0))
+            balance += (dr - cr)
+            res['net_amount'] = round(balance, 2)
         
+        results.append(res)
+
     return results
 
 
 def get_job_ledger_statement_response(job, start_date, end_date, user):
-    respone =[]
-    res_obj={}
+    respone = []
+    res_obj = {}
 
-    cost_entrys = CostEntry.objects.filter(invoice__date__range=[start_date, end_date], is_included=True, invoice__company__users__email=user.email).order_by('created_at')
+    # Calculate opening balance for this job before start_date
+    opening_balance = calculate_opening_balance(None, start_date, user, job=job)
+
+    cost_entrys = CostEntry.objects.filter(
+        invoice__date__range=[start_date, end_date],
+        is_included=True,
+        invoice__company__users__email=user.email
+    ).order_by('created_at')
+
     cost_entrys = cost_entrys.filter(invoice__job=job)
+
     for cost_entry in cost_entrys:
         if cost_entry.invoice:
             res_obj = {
-                    "account":cost_entry.invoice.client_name.name if cost_entry.invoice and cost_entry.invoice.client_name else "",
-                    "date":cost_entry.invoice.date if cost_entry.invoice else cost_entry.created_at,
-                    "currency":cost_entry.invoice.currency_sar if cost_entry.invoice else cost_entry.currency,
-                    "invoice_number":cost_entry.invoice.invoice_number if cost_entry.invoice else '',
-                    "vat_percent":0,
-                    "fcy_amount":0,
-                    "vat_amount":0,
-                    "amount":0,
-                    "dr_amount":0,
-                    "cr_amount":0,
-                    "net_amount":0,
-                    "type":"Invoice",
-                    "voucher":"",
-                    "charge": cost_entry.charge.name if cost_entry.charge else '',
-                    "party_account":cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
-                    "job_no": job.job_number,
-                    "narrations":cost_entry.invoice.narration if cost_entry.invoice else "",
-                    "branch":cost_entry.invoice.branch if cost_entry.invoice else "",
-                    "language_name": ""
-                    }
-            
+                "account": cost_entry.invoice.client_name.name if cost_entry.invoice and cost_entry.invoice.client_name else "",
+                "date": cost_entry.invoice.date if cost_entry.invoice else cost_entry.created_at,
+                "currency": cost_entry.invoice.currency_sar if cost_entry.invoice else cost_entry.currency,
+                "invoice_number": cost_entry.invoice.invoice_number if cost_entry.invoice else '',
+                "vat_percent": 0,
+                "fcy_amount": 0,
+                "vat_amount": 0,
+                "amount": 0,
+                "dr_amount": 0,
+                "cr_amount": 0,
+                "net_amount": 0,
+                "type": "Invoice",
+                "voucher": "",
+                "charge": cost_entry.charge.name if cost_entry.charge else '',
+                "party_account": cost_entry.invoice.party_account.name if cost_entry.invoice and cost_entry.invoice.party_account else '',
+                "job_no": job.job_number,
+                "narrations": cost_entry.invoice.narration if cost_entry.invoice else "",
+                "branch": cost_entry.invoice.branch if cost_entry.invoice else "",
+                "language_name": ""
+            }
 
-            if cost_entry.invoice.invoice_type=='Sales':
+            if cost_entry.invoice.invoice_type == 'Sales':
                 fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-                amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+                amount = float(cost_entry.amount if cost_entry.amount else 0.0)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
-                vat_amount = float((vat_percent * amount)/100)
-                total_amount = float(amount  + vat_amount)
-                res_obj['vat_percent']= vat_percent
+                vat_amount = float((vat_percent * amount) / 100)
+                total_amount = float(amount + vat_amount)
+                res_obj['vat_percent'] = vat_percent
                 res_obj['fcy_amount'] = fcy_amount
                 res_obj['amount'] = amount
                 res_obj['vat_amount'] = vat_amount
-                res_obj['cr_amount']=total_amount
-                res_obj['net_amount']=total_amount   
-                
-                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
+                res_obj['cr_amount'] = total_amount
+                res_obj['net_amount'] = total_amount
+
+                if not (res_obj["dr_amount"] == 0 and res_obj["cr_amount"] == 0):
                     respone.append(res_obj)
             else:
                 fcy_amount = float(cost_entry.fcy_amount if cost_entry.fcy_amount else 0.0)
-                amount=float(cost_entry.amount if cost_entry.amount else 0.0)
+                amount = float(cost_entry.amount if cost_entry.amount else 0.0)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
-                vat_amount = float((vat_percent * amount)/100)
-                total_amount = float(amount  + vat_amount)
-                res_obj['vat_percent']= vat_percent
+                vat_amount = float((vat_percent * amount) / 100)
+                total_amount = float(amount + vat_amount)
+                res_obj['vat_percent'] = vat_percent
                 res_obj['fcy_amount'] = fcy_amount
                 res_obj['amount'] = amount
                 res_obj['vat_amount'] = vat_amount
-                res_obj['dr_amount']=total_amount
-                res_obj['net_amount']=total_amount   
-                
-                if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
-                    respone.append(res_obj)
-    
+                res_obj['dr_amount'] = total_amount
+                res_obj['net_amount'] = total_amount
 
-    voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
+                if not (res_obj["dr_amount"] == 0 and res_obj["cr_amount"] == 0):
+                    respone.append(res_obj)
+
+    voucher_accounts = AccountDetails.objects.filter(
+        vouchers__date__range=[start_date, end_date],
+        vouchers__company__users__email=user.email
+    )
+
     account_details = voucher_accounts.filter(vouchers__job=job)
 
     for acc in account_details:
@@ -1299,88 +1396,104 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
             else:
                 party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
-        
+
+        fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
+        amount = float(acc.amount_sar if acc.amount_sar else 0.0)
+        vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+        vat_amount = float((vat_percent * amount) / 100)
+        total_amount = float(amount + vat_amount)
+
         if acc.dr_cr == 'Cr':
             res_obj = {
-                "account":job.client_name.name if job.client_name else '',
-                "date":acc.vouchers.date if acc.vouchers.date else '',
-                "currency":acc.currency,
-                "invoice_number":"",
-                "vat_percent":0,
-                "fcy_amount":0,
-                "vat_amount":0,
-                "amount":0,
-                "dr_amount":0,
-                "cr_amount":0,
-                "net_amount":0,
+                "account": job.client_name.name if job.client_name else '',
+                "date": acc.vouchers.date if acc.vouchers.date else '',
+                "currency": acc.currency,
+                "invoice_number": "",
+                "vat_percent": vat_percent,
+                "fcy_amount": fcy_amount,
+                "vat_amount": vat_amount,
+                "amount": amount,
+                "dr_amount": 0,
+                "cr_amount": total_amount,
+                "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
-                "voucher":acc.vouchers.voucher_number if acc.vouchers else "",
+                "voucher": acc.vouchers.voucher_number if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
                 "job_no": job.job_number,
                 "narrations": acc.narration,
-                "branch":acc.vouchers.branch if acc.vouchers else "",
+                "branch": acc.vouchers.branch if acc.vouchers else "",
                 "language_name": ""
-                }
-            fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
-            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
-            vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount  + vat_amount)
-            res_obj['vat_percent']= vat_percent
-            res_obj['fcy_amount'] = fcy_amount
-            res_obj['amount'] = amount
-            res_obj['vat_amount'] = vat_amount
-            res_obj['cr_amount']=total_amount
-            res_obj['net_amount']=total_amount
-            
-            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
-                respone.append(res_obj)
+            }
         else:
             res_obj = {
                 "account": job.client_name.name if job.client_name else '',
-                "date":acc.vouchers.date if acc.vouchers.date else '',
-                "currency":acc.currency,
-                "invoice_number":"",
-                "vat_percent":0,
-                "fcy_amount":0,
-                "vat_amount":0,
-                "amount":0,
-                "dr_amount":0,
-                "cr_amount":0,
-                "net_amount":0,
+                "date": acc.vouchers.date if acc.vouchers.date else '',
+                "currency": acc.currency,
+                "invoice_number": "",
+                "vat_percent": vat_percent,
+                "fcy_amount": fcy_amount,
+                "vat_amount": vat_amount,
+                "amount": amount,
+                "dr_amount": total_amount,
+                "cr_amount": 0,
+                "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
-                "voucher":acc.vouchers.voucher_number if acc.vouchers else "",
+                "voucher": acc.vouchers.voucher_number if acc.vouchers else "",
                 "party_account": party_account.name if party_account else '',
                 "job_no": job.job_number,
                 "narrations": acc.narration,
-                "branch":acc.vouchers.branch if acc.vouchers else "",
+                "branch": acc.vouchers.branch if acc.vouchers else "",
                 "language_name": ""
-                }
-            fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-            amount=float(acc.amount_sar if acc.amount_sar else 0.0)
-            vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
-            vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(amount  + vat_amount)
-            res_obj['vat_percent']= vat_percent
-            res_obj['fcy_amount'] = fcy_amount
-            res_obj['amount'] = amount
-            res_obj['vat_amount'] = vat_amount
-            res_obj['dr_amount']=total_amount
-            res_obj['net_amount']=total_amount
-            
-            if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
-                respone.append(res_obj)
-    
-    respone = sorted(respone, key=lambda obj:obj['date'])
-    balance = 0
+            }
+
+        if not (res_obj["dr_amount"] == 0 and res_obj["cr_amount"] == 0):
+            respone.append(res_obj)
+
+    respone = sorted(respone, key=lambda obj: obj['date'])
+
+    # Add opening balance row as the first entry
+    opening_row = {
+        "account": job.client_name.name if job.client_name else job.job_number,
+        "date": start_date,
+        "currency": "SAR",
+        "invoice_number": "",
+        "vat_percent": 0,
+        "fcy_amount": 0,
+        "vat_amount": 0,
+        "amount": 0,
+        "dr_amount": max(opening_balance, 0),
+        "cr_amount": max(-opening_balance, 0),
+        "net_amount": opening_balance,
+        "type": "Opening Balance",
+        "voucher": "",
+        "charge": "",
+        "party_account": "",
+        "job_no": job.job_number,
+        "narrations": "Opening balance brought forward",
+        "branch": "",
+        "language_name": ""
+    }
+
+    respone.insert(0, opening_row)
+
+    # Calculate running balance starting from opening balance
+    balance = opening_balance
     results = []
+
     for res in respone:
-        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
-        res['net_amount'] = balance
-        results.append(res)
+        if res['type'] == "Opening Balance":
+            # Opening row already has correct dr/cr/net — just ensure it's set
+            res['net_amount'] = round(balance, 2)
+        else:
+            dr = float(res.get('dr_amount', 0))
+            cr = float(res.get('cr_amount', 0))
+            balance += (dr - cr)
+            res['net_amount'] = round(balance, 2)
         
+        results.append(res)
+
     return results
 
 

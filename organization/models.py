@@ -31,7 +31,8 @@ class Company(models.Model):
     receipt_count = models.BigIntegerField(default=0)
     creditnote_count = models.BigIntegerField(default=0)
     debitnote_count = models.BigIntegerField(default=0)
-    invoice_template = models.CharField(default='INV1')
+    invoice_template = models.CharField(max_length=50, default="INV1")
+
 
 class CoaGroup(models.Model):
     Dr = 'Dr'
