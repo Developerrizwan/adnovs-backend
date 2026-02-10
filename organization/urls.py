@@ -100,6 +100,8 @@ coa_invoices_router.register('get_coa_invoices', GetCoaInvoicesViewset, basename
 account_statement_router = routers.SimpleRouter()
 account_statement_router.register('account/statement', AccountStatementViewset, basename='account-statement')
 
+receivable_router = routers.SimpleRouter()
+receivable_router.register('account/receivable', AccountsReceivableViewSet, basename='accounts-receivable')
 
 sheet_report_router = routers.SimpleRouter() 
 sheet_report_router.register('sheet_report', SheetReportViewset, basename='sheet-report')
@@ -153,6 +155,7 @@ urlpatterns = [
     path('',include(job_voucher_router.urls)),
     path('',include(job_invoice_router.urls)),
     path('',include(branch_router.urls)),
+    path('', include(receivable_router.urls)),
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
     path('user-create/', UserCreateViewSet.as_view(), name='user-create'),

@@ -2426,7 +2426,247 @@ class JobInvoiceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         #     response.append(invoice)
 
         return Response(response, status=status.HTTP_200_OK)
-    
+
+# from rest_framework.response import Response
+# from rest_framework.permissions import IsAuthenticated
+# from django.db.models import Sum, Q, Value, DecimalField
+# from django.db.models.functions import Coalesce, Cast
+
+class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    """
+    Accounts Receivable Statement focused ONLY on client_name (customer who owes)
+    URL: GET /api/account/receivable/?organization=ID&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+    """
+    permission_classes = (IsAuthenticated,)
+    queryset = Invoices.objects.none()
+
+    # ----------------------------
+    # Helpers
+    # ----------------------------
+    def _parse_date(self, date_str):
+        return datetime.strptime(date_str.split('T')[0], "%Y-%m-%d").date()
+
+    def _invoice_total_with_tax(self, inv):
+        """
+        Same logic you used:
+        Sum CostEntry amount + tax (tax_group_code as %)
+        Fallback to inv.amount_sar if CostEntry total = 0
+        """
+        cost_total = Decimal('0.00')
+
+        for ce in CostEntry.objects.filter(invoice=inv):
+            base = Decimal(str(ce.amount or '0.00'))
+            rate = Decimal(str(ce.tax_group_code or '0.00'))
+            tax = base * (rate / Decimal('100'))
+            cost_total += base + tax
+
+        if cost_total == 0:
+            cost_total = Decimal(str(inv.amount_sar or '0.00'))
+
+        return cost_total.quantize(Decimal('0.00'))
+
+    def _sum_customer_credit_lines_for_vouchers(self, vouchers_qs):
+        """
+        For Receipts / Credit Notes:
+        We want ONLY the credit lines posted to the customer (reduces receivable).
+        """
+        return (
+            AccountDetails.objects.filter(vouchers__in=vouchers_qs, dr_cr='Cr')
+            .aggregate(
+                total=Coalesce(
+                    Sum(Cast('amount_sar', DecimalField(max_digits=15, decimal_places=2))),
+                    Value(Decimal('0.00'))
+                )
+            )['total']
+            or Decimal('0.00')
+        ).quantize(Decimal('0.00'))
+
+    # ----------------------------
+    # Main List
+    # ----------------------------
+    def list(self, request, *args, **kwargs):
+        organization_id = request.query_params.get('organization')
+        start_date_str  = request.query_params.get('start_date')
+        end_date_str    = request.query_params.get('end_date')
+
+        if not organization_id:
+            return Response({"error": "organization parameter is required"}, status=400)
+
+        if not start_date_str or not end_date_str:
+            return Response({"error": "start_date and end_date are required"}, status=400)
+
+        try:
+            start_date = self._parse_date(start_date_str)
+            end_date   = self._parse_date(end_date_str)
+        except ValueError:
+            return Response({"error": "Invalid date format. Expected YYYY-MM-DD"}, status=400)
+
+        # ───────────────────────────────────────────────
+        # 1) Opening balance (before start_date)
+        # Opening = invoices_before - receipts_before - creditnotes_before
+        # ───────────────────────────────────────────────
+
+        # A) Sales invoices before start_date
+        opening_invoices = Invoices.objects.filter(
+            client_name_id=organization_id,
+            invoice_type='Sales',
+            date__date__lt=start_date,
+            company__users=request.user
+        ).select_related('client_name', 'job').order_by('date')
+
+        opening_invoice_total = Decimal('0.00')
+        for inv in opening_invoices:
+            opening_invoice_total += self._invoice_total_with_tax(inv)
+
+        # B) Receipts before start_date (only customer credit lines)
+        opening_receipts = Vouchers.objects.filter(
+            party_account=organization_id,
+            party_account_type='organization',
+            voucher_type='Receipt',
+            date__date__lt=start_date,
+            company__users=request.user
+        )
+
+        opening_receipt_total = self._sum_customer_credit_lines_for_vouchers(opening_receipts)
+
+        # C) Credit Notes before start_date (only customer credit lines)
+        opening_creditnotes = Vouchers.objects.filter(
+            party_account=organization_id,
+            party_account_type='organization',
+            voucher_type='CreditNote',
+            date__date__lt=start_date,
+            company__users=request.user
+        )
+
+        opening_creditnote_total = self._sum_customer_credit_lines_for_vouchers(opening_creditnotes)
+
+        opening_balance_dec = (opening_invoice_total - opening_receipt_total - opening_creditnote_total)
+        opening_balance = float(opening_balance_dec)
+
+        # ───────────────────────────────────────────────
+        # 2) Transactions within period
+        # ───────────────────────────────────────────────
+        rows = []
+
+        party_name = (
+            Organization.objects.filter(id=organization_id)
+            .values_list('name', flat=True)
+            .first()
+        ) or "Customer"
+
+        # A) Sales Invoices (period)
+        invoices = Invoices.objects.filter(
+            client_name_id=organization_id,
+            invoice_type='Sales',
+            date__date__range=[start_date, end_date],
+            company__users=request.user
+        ).select_related('client_name', 'job').order_by('date')
+
+        for inv in invoices:
+            total = self._invoice_total_with_tax(inv)
+
+            rows.append({
+                'date': inv.date.date().isoformat(),
+                'type': 'Invoice',
+                'inv_no': inv.invoice_number or inv.supplier_inv_number or '',
+                'job_no': inv.job.job_number if inv.job else '',
+                'party_name': inv.client_name.name if inv.client_name else party_name,
+                'debit': float(total),
+                'credit': 0.00,
+                'narration': inv.narration or f"Sales Invoice {inv.invoice_number or 'N/A'}",
+                'voucher_no': '',
+            })
+
+        # B) Receipts (period) - customer CREDIT lines only
+        receipts = Vouchers.objects.filter(
+            party_account=organization_id,
+            party_account_type='organization',
+            voucher_type='Receipt',
+            date__date__range=[start_date, end_date],
+            company__users=request.user
+        ).select_related('job').order_by('date')
+
+        for rec in receipts:
+            customer_amount = self._sum_customer_credit_lines_for_vouchers(Vouchers.objects.filter(id=rec.id))
+
+            # fallback if somehow ledger lines are missing
+            if customer_amount == Decimal('0.00'):
+                customer_amount = Decimal(str(rec.amount_sar or '0.00')).quantize(Decimal('0.00'))
+
+            rows.append({
+                'date': rec.date.date().isoformat(),
+                'type': 'Receipt',
+                'inv_no': '',
+                'voucher_no': rec.voucher_number or 'N/A',
+                'job_no': rec.job.job_number if rec.job else '',
+                'party_name': party_name,
+                'debit': 0.00,
+                'credit': float(customer_amount),
+                'narration': rec.naration or f"Receipt {rec.voucher_number or 'N/A'}",
+            })
+
+        # C) Credit Notes (period) - customer CREDIT lines only (IMPORTANT FIX)
+        credit_notes = Vouchers.objects.filter(
+            party_account=organization_id,
+            party_account_type='organization',
+            voucher_type='CreditNote',
+            date__date__range=[start_date, end_date],
+            company__users=request.user
+        ).select_related('job').order_by('date')
+
+        for cn in credit_notes:
+            cn_amount = self._sum_customer_credit_lines_for_vouchers(Vouchers.objects.filter(id=cn.id))
+
+            # fallback if ledger missing
+            if cn_amount == Decimal('0.00'):
+                cn_amount = Decimal(str(cn.amount_sar or '0.00')).quantize(Decimal('0.00'))
+
+            rows.append({
+                'date': cn.date.date().isoformat(),
+                'type': 'Credit Note',
+                'inv_no': '',
+                'job_no': cn.job.job_number if cn.job else '',
+                'party_name': party_name,
+                'debit': 0.00,
+                'credit': float(cn_amount),
+                'narration': cn.naration or f"Credit Note {cn.voucher_number or 'N/A'}",
+                'voucher_no': cn.voucher_number or '',
+            })
+
+        # Sort by date (string ISO works)
+        rows.sort(key=lambda x: x['date'])
+
+        # ───────────────────────────────────────────────
+        # 3) Running balance + response
+        # ───────────────────────────────────────────────
+        balance = Decimal(str(opening_balance)).quantize(Decimal('0.00'))
+
+        final_rows = [{
+            'date': start_date.isoformat(),
+            'type': 'Opening Balance',
+            'inv_no': '',
+            'job_no': '',
+            'party_name': party_name,
+            'debit': 0.00,
+            'credit': 0.00,
+            'balance': float(balance),
+            'narration': 'Opening balance brought forward',
+            'voucher_no': '',
+        }]
+
+        for row in rows:
+            debit = Decimal(str(row['debit'] or 0)).quantize(Decimal('0.00'))
+            credit = Decimal(str(row['credit'] or 0)).quantize(Decimal('0.00'))
+            balance = (balance + debit - credit).quantize(Decimal('0.00'))
+            row['balance'] = float(balance)
+            final_rows.append(row)
+
+        return Response({
+            'opening_balance': float(opening_balance_dec.quantize(Decimal('0.00'))),
+            'rows': final_rows,
+            'closing_balance': float(balance),
+            'currency': 'SAR',
+        })  
 class BranchViewset(viewsets.GenericViewSet,mixins.ListModelMixin,mixins.CreateModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin):
     permission_classes = (IsAuthenticated,)
     queryset = Branch.objects.all()
