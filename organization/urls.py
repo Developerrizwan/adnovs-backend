@@ -103,6 +103,9 @@ account_statement_router.register('account/statement', AccountStatementViewset, 
 receivable_router = routers.SimpleRouter()
 receivable_router.register('account/receivable', AccountsReceivableViewSet, basename='accounts-receivable')
 
+payable_router = routers.SimpleRouter()
+payable_router.register('account/payable', AccountsPayableViewSet, basename='accounts-payable')
+
 sheet_report_router = routers.SimpleRouter() 
 sheet_report_router.register('sheet_report', SheetReportViewset, basename='sheet-report')
 
@@ -156,6 +159,8 @@ urlpatterns = [
     path('',include(job_invoice_router.urls)),
     path('',include(branch_router.urls)),
     path('', include(receivable_router.urls)),
+    path('', include(payable_router.urls)),
+
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),
     path('user-create/', UserCreateViewSet.as_view(), name='user-create'),

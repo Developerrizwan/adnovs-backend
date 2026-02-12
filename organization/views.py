@@ -2667,6 +2667,222 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             'closing_balance': float(balance),
             'currency': 'SAR',
         })  
+
+class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    """
+    Accounts Payable Statement focused ONLY on vendor (party_account for Purchase invoices)
+    Opposite of A/R: Purchases increase payable (CREDIT), Payments/Debit Notes reduce payable (DEBIT)
+    URL: GET /api/account/payable/?organization=ID&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+    """
+    permission_classes = (IsAuthenticated,)
+    queryset = Invoices.objects.none()
+
+    def _parse_date(self, date_str):
+        return datetime.strptime(date_str.split('T')[0], "%Y-%m-%d").date()
+
+    def _invoice_total_with_tax(self, inv):
+        cost_total = Decimal('0.00')
+        for ce in CostEntry.objects.filter(invoice=inv):
+            base = Decimal(str(ce.amount or '0.00'))
+            rate = Decimal(str(ce.tax_group_code or '0.00'))
+            tax = base * (rate / Decimal('100'))
+            cost_total += base + tax
+        if cost_total == 0:
+            cost_total = Decimal(str(inv.amount_sar or '0.00'))
+        return cost_total.quantize(Decimal('0.00'))
+
+    def _sum_vendor_debit_lines(self, vouchers_qs):
+        """
+        For Payments / Debit Notes:
+        We want ONLY the DEBIT lines posted to the vendor (reduces payable).
+        """
+        return (
+            AccountDetails.objects.filter(vouchers__in=vouchers_qs, dr_cr='Dr')
+            .aggregate(
+                total=Coalesce(
+                    Sum(Cast('amount_sar', DecimalField(max_digits=15, decimal_places=2))),
+                    Value(Decimal('0.00'))
+                )
+            )['total']
+            or Decimal('0.00')
+        ).quantize(Decimal('0.00'))
+
+    def list(self, request, *args, **kwargs):
+        organization_id = request.query_params.get('organization')
+        start_date_str  = request.query_params.get('start_date')
+        end_date_str    = request.query_params.get('end_date')
+
+        if not organization_id:
+            return Response({"error": "organization parameter is required"}, status=400)
+
+        if not start_date_str or not end_date_str:
+            return Response({"error": "start_date and end_date are required"}, status=400)
+
+        try:
+            start_date = self._parse_date(start_date_str)
+            end_date   = self._parse_date(end_date_str)
+        except ValueError:
+            return Response({"error": "Invalid date format. Expected YYYY-MM-DD"}, status=400)
+
+        vendor_name = (
+            Organization.objects.filter(id=organization_id)
+            .values_list('name', flat=True)
+            .first()
+        ) or "Vendor"
+
+        # ───────────────────────────────────────────────
+        # 1. Opening balance (before start_date)
+        # Payable opening = purchases before - payments before - debit notes before
+        # ───────────────────────────────────────────────
+
+        opening_purchases = Invoices.objects.filter(
+            party_account_id=organization_id,
+            invoice_type='Purchase',
+            date__date__lt=start_date,
+            company__users=request.user
+        )
+
+        opening_purchase_total = Decimal('0.00')
+        for inv in opening_purchases:
+            opening_purchase_total += self._invoice_total_with_tax(inv)
+
+        opening_payments = Vouchers.objects.filter(
+            party_account=organization_id,
+            party_account_type='organization',
+            voucher_type='Payment',
+            date__date__lt=start_date,
+            company__users=request.user
+        )
+        opening_payment_total = self._sum_vendor_debit_lines(opening_payments)
+
+        opening_debitnotes = Vouchers.objects.filter(
+            party_account=organization_id,
+            party_account_type='organization',
+            voucher_type='DebitNote',
+            date__date__lt=start_date,
+            company__users=request.user
+        )
+        opening_debitnote_total = self._sum_vendor_debit_lines(opening_debitnotes)
+
+        # Opening payable (positive = we owe vendor)
+        opening_balance_dec = opening_purchase_total - opening_payment_total - opening_debitnote_total
+        opening_balance = float(opening_balance_dec)
+
+        # ───────────────────────────────────────────────
+        # 2. Current period transactions
+        # ───────────────────────────────────────────────
+        rows = []
+
+        # A. Purchase Invoices (increases payable → credit)
+        purchases = Invoices.objects.filter(
+            party_account_id=organization_id,
+            invoice_type='Purchase',
+            date__date__range=[start_date, end_date],
+            company__users=request.user
+        ).select_related('party_account', 'job').order_by('date')
+
+        for inv in purchases:
+            total = self._invoice_total_with_tax(inv)
+            inv_no = inv.invoice_number or 'N/A'
+            rows.append({
+                'date': inv.date.date().isoformat(),
+                'type': 'Purchase Invoice',
+                'inv_no': inv_no,
+                'voucher_no': '',
+                'job_no': inv.job.job_number if inv.job else '',
+                'party_name': inv.party_account.name if inv.party_account else vendor_name,
+                'debit': 0.00,
+                'credit': float(total),
+                'narration': inv.narration or f"Purchase Invoice {inv_no}",
+                'due_date': inv.due_date.date().isoformat() if inv.due_date else None,  # Added for aging
+            })
+
+        # B. Payments (reduces payable → debit)
+        payments = Vouchers.objects.filter(
+            party_account=organization_id,
+            party_account_type='organization',
+            voucher_type='Payment',
+            date__date__range=[start_date, end_date],
+            company__users=request.user
+        ).select_related('job').order_by('date')
+
+        for pay in payments:
+            amount = self._sum_vendor_debit_lines(Vouchers.objects.filter(id=pay.id))
+            if amount == Decimal('0.00'):
+                amount = Decimal(str(pay.amount_sar or '0.00'))
+            rows.append({
+                'date': pay.date.date().isoformat(),
+                'type': 'Payment',
+                'inv_no': '',
+                'voucher_no': pay.voucher_number or 'N/A',
+                'job_no': pay.job.job_number if pay.job else '',
+                'party_name': vendor_name,
+                'debit': float(amount),
+                'credit': 0.00,
+                'narration': pay.naration or f"Payment {pay.voucher_number or 'N/A'}",
+                'due_date': None,  # No due date for payments
+            })
+
+        # C. Debit Notes (reduces payable → debit)
+        debit_notes = Vouchers.objects.filter(
+            party_account=organization_id,
+            party_account_type='organization',
+            voucher_type='DebitNote',
+            date__date__range=[start_date, end_date],
+            company__users=request.user
+        ).select_related('job').order_by('date')
+
+        for dn in debit_notes:
+            amount = self._sum_vendor_debit_lines(Vouchers.objects.filter(id=dn.id))
+            if amount == Decimal('0.00'):
+                amount = Decimal(str(dn.amount_sar or '0.00'))
+            rows.append({
+                'date': dn.date.date().isoformat(),
+                'type': 'Debit Note',
+                'inv_no': '',
+                'voucher_no': dn.voucher_number or 'N/A',
+                'job_no': dn.job.job_number if dn.job else '',
+                'party_name': vendor_name,
+                'debit': float(amount),
+                'credit': 0.00,
+                'narration': dn.naration or f"Debit Note {dn.voucher_number or 'N/A'}",
+                'due_date': None,  # No due date for debit notes
+            })
+
+        rows.sort(key=lambda x: x['date'])
+
+        # ───────────────────────────────────────────────
+        # 3. Running balance: balance += credit - debit
+        # (credit increases payable, debit decreases payable)
+        # ───────────────────────────────────────────────
+        balance = opening_balance_dec.quantize(Decimal('0.00'))
+        final_rows = [{
+            'date': start_date.isoformat(),
+            'type': 'Opening Balance',
+            'inv_no': '',
+            'voucher_no': '',
+            'job_no': '',
+            'party_name': vendor_name,
+            'debit': 0.00,
+            'credit': 0.00,
+            'balance': float(balance),
+            'narration': 'Opening balance brought forward',
+            'due_date': None,
+        }]
+
+        for row in rows:
+            debit = Decimal(str(row['debit'] or 0)).quantize(Decimal('0.00'))
+            credit = Decimal(str(row['credit'] or 0)).quantize(Decimal('0.00'))
+            balance = (balance + credit - debit).quantize(Decimal('0.00'))
+            row['balance'] = float(balance)
+            final_rows.append(row)
+
+        return Response({
+            'opening_balance': float(opening_balance_dec.quantize(Decimal('0.00'))),
+            'rows': final_rows,
+            'closing_balance': float(balance),
+            'currency': 'SAR',
+        })
 class BranchViewset(viewsets.GenericViewSet,mixins.ListModelMixin,mixins.CreateModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin):
     permission_classes = (IsAuthenticated,)
     queryset = Branch.objects.all()
