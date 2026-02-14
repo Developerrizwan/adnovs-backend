@@ -2434,8 +2434,11 @@ class JobInvoiceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
 class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     """
-    Accounts Receivable Statement focused ONLY on client_name (customer who owes)
-    URL: GET /api/account/receivable/?organization=ID&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+    Accounts Receivable Statement
+    URL: GET /api/account/receivable/?organization=ID_or_'all'&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+    
+    For single customer: organization=51
+    For all customers: organization=all
     """
     permission_classes = (IsAuthenticated,)
     queryset = Invoices.objects.none()
@@ -2447,14 +2450,9 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
         return datetime.strptime(date_str.split('T')[0], "%Y-%m-%d").date()
 
     def _invoice_total_with_tax(self, inv):
-        """
-        Same logic you used:
-        Sum CostEntry amount + tax (tax_group_code as %)
-        Fallback to inv.amount_sar if CostEntry total = 0
-        """
         cost_total = Decimal('0.00')
 
-        for ce in CostEntry.objects.filter(invoice=inv):
+        for ce in inv.costentry_set.all():  # assuming related_name is default
             base = Decimal(str(ce.amount or '0.00'))
             rate = Decimal(str(ce.tax_group_code or '0.00'))
             tax = base * (rate / Decimal('100'))
@@ -2466,15 +2464,11 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
         return cost_total.quantize(Decimal('0.00'))
 
     def _sum_customer_credit_lines_for_vouchers(self, vouchers_qs):
-        """
-        For Receipts / Credit Notes:
-        We want ONLY the credit lines posted to the customer (reduces receivable).
-        """
         return (
             AccountDetails.objects.filter(vouchers__in=vouchers_qs, dr_cr='Cr')
             .aggregate(
                 total=Coalesce(
-                    Sum(Cast('amount_sar', DecimalField(max_digits=15, decimal_places=2))),
+                    Sum(Cast('amount_sar', output_field=models.DecimalField(max_digits=15, decimal_places=2))),
                     Value(Decimal('0.00'))
                 )
             )['total']
@@ -2486,193 +2480,282 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     # ----------------------------
     def list(self, request, *args, **kwargs):
         organization_id = request.query_params.get('organization')
-        start_date_str  = request.query_params.get('start_date')
-        end_date_str    = request.query_params.get('end_date')
-
-        if not organization_id:
-            return Response({"error": "organization parameter is required"}, status=400)
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
 
         if not start_date_str or not end_date_str:
             return Response({"error": "start_date and end_date are required"}, status=400)
 
         try:
             start_date = self._parse_date(start_date_str)
-            end_date   = self._parse_date(end_date_str)
+            end_date = self._parse_date(end_date_str)
         except ValueError:
             return Response({"error": "Invalid date format. Expected YYYY-MM-DD"}, status=400)
 
-        # ───────────────────────────────────────────────
-        # 1) Opening balance (before start_date)
-        # Opening = invoices_before - receipts_before - creditnotes_before
-        # ───────────────────────────────────────────────
+        company_filter = Q(company__users=request.user)
 
-        # A) Sales invoices before start_date
-        opening_invoices = Invoices.objects.filter(
-            client_name_id=organization_id,
-            invoice_type='Sales',
-            date__date__lt=start_date,
-            company__users=request.user
-        ).select_related('client_name', 'job').order_by('date')
+        if organization_id == 'all':
+            # ───────────────────────────────────────────────
+            # Summary for ALL customers (clients)
+            # ───────────────────────────────────────────────
+            customers = Organization.objects.filter(
+                type__contains=['Client'],              # FIXED: correct lookup for ArrayField
+                company__users=request.user
+            ).distinct().order_by('name')
 
-        opening_invoice_total = Decimal('0.00')
-        for inv in opening_invoices:
-            opening_invoice_total += self._invoice_total_with_tax(inv)
+            summary_rows = []
+            total_inv_amount = Decimal('0.00')
+            total_received_amount = Decimal('0.00')
+            total_balance = Decimal('0.00')
 
-        # B) Receipts before start_date (only customer credit lines)
-        opening_receipts = Vouchers.objects.filter(
-            party_account=organization_id,
-            party_account_type='organization',
-            voucher_type='Receipt',
-            date__date__lt=start_date,
-            company__users=request.user
-        )
+            for cust in customers:
+                # Opening balance (before start_date)
+                opening_invoices_qs = Invoices.objects.filter(
+                    client_name=cust,
+                    invoice_type='Sales',
+                    date__date__lt=start_date
+                ).filter(company_filter)
 
-        opening_receipt_total = self._sum_customer_credit_lines_for_vouchers(opening_receipts)
+                opening_invoice_total = sum(self._invoice_total_with_tax(inv) for inv in opening_invoices_qs)
 
-        # C) Credit Notes before start_date (only customer credit lines)
-        opening_creditnotes = Vouchers.objects.filter(
-            party_account=organization_id,
-            party_account_type='organization',
-            voucher_type='CreditNote',
-            date__date__lt=start_date,
-            company__users=request.user
-        )
+                opening_receipts_qs = Vouchers.objects.filter(
+                    party_account=str(cust.id),  # assuming party_account is CharField storing str(id)
+                    party_account_type='organization',
+                    voucher_type='Receipt',
+                    date__date__lt=start_date
+                ).filter(company_filter)
 
-        opening_creditnote_total = self._sum_customer_credit_lines_for_vouchers(opening_creditnotes)
+                opening_receipt_total = self._sum_customer_credit_lines_for_vouchers(opening_receipts_qs)
 
-        opening_balance_dec = (opening_invoice_total - opening_receipt_total - opening_creditnote_total)
-        opening_balance = float(opening_balance_dec)
+                opening_creditnotes_qs = Vouchers.objects.filter(
+                    party_account=str(cust.id),
+                    party_account_type='organization',
+                    voucher_type='CreditNote',
+                    date__date__lt=start_date
+                ).filter(company_filter)
 
-        # ───────────────────────────────────────────────
-        # 2) Transactions within period
-        # ───────────────────────────────────────────────
-        rows = []
+                opening_creditnote_total = self._sum_customer_credit_lines_for_vouchers(opening_creditnotes_qs)
 
-        party_name = (
-            Organization.objects.filter(id=organization_id)
-            .values_list('name', flat=True)
-            .first()
-        ) or "Customer"
+                opening = opening_invoice_total - opening_receipt_total - opening_creditnote_total
 
-        # A) Sales Invoices (period)
-        invoices = Invoices.objects.filter(
-            client_name_id=organization_id,
-            invoice_type='Sales',
-            date__date__range=[start_date, end_date],
-            company__users=request.user
-        ).select_related('client_name', 'job').order_by('date')
+                # Period transactions
+                period_invoices_qs = Invoices.objects.filter(
+                    client_name=cust,
+                    invoice_type='Sales',
+                    date__date__range=[start_date, end_date]
+                ).filter(company_filter)
 
-        for inv in invoices:
-            total = self._invoice_total_with_tax(inv)
+                total_debit = sum(self._invoice_total_with_tax(inv) for inv in period_invoices_qs)
 
-            rows.append({
-                'date': inv.date.date().isoformat(),
-                'type': 'Invoice',
-                'inv_no': inv.invoice_number or inv.supplier_inv_number or '',
-                'job_no': inv.job.job_number if inv.job else '',
-                'party_name': inv.client_name.name if inv.client_name else party_name,
-                'debit': float(total),
+                period_receipts_qs = Vouchers.objects.filter(
+                    party_account=str(cust.id),
+                    party_account_type='organization',
+                    voucher_type='Receipt',
+                    date__date__range=[start_date, end_date]
+                ).filter(company_filter)
+
+                total_receipt = self._sum_customer_credit_lines_for_vouchers(period_receipts_qs)
+
+                period_cns_qs = Vouchers.objects.filter(
+                    party_account=str(cust.id),
+                    party_account_type='organization',
+                    voucher_type='CreditNote',
+                    date__date__range=[start_date, end_date]
+                ).filter(company_filter)
+
+                total_cn = self._sum_customer_credit_lines_for_vouchers(period_cns_qs)
+
+                total_credit = total_receipt + total_cn
+
+                closing = opening + total_debit - total_credit
+
+                # Only include if there's activity or balance
+                if opening != 0 or total_debit != 0 or total_credit != 0 or closing != 0:
+                    summary_rows.append({
+                        'si_no': 0,  # will be set later
+                        'customer_name': cust.name or "Unnamed",
+                        'inv_amount': float(total_debit),
+                        'received_amount': float(total_credit),
+                        'balance': float(closing),
+                    })
+
+                    total_inv_amount += total_debit
+                    total_received_amount += total_credit
+                    total_balance += closing
+
+            # Sort alphabetically by customer name
+            summary_rows.sort(key=lambda x: x['customer_name'].lower())
+
+            # Assign proper SI.NO
+            for i, row in enumerate(summary_rows, 1):
+                row['si_no'] = i
+
+            return Response({
+                'is_summary': True,
+                'rows': summary_rows,
+                'totals': {
+                    'inv_amount': float(total_inv_amount),
+                    'received_amount': float(total_received_amount),
+                    'balance': float(total_balance),
+                },
+                'currency': 'SAR',
+            })
+
+        else:
+            # ───────────────────────────────────────────────
+            # Detailed statement for SINGLE customer
+            # ───────────────────────────────────────────────
+            if not organization_id:
+                return Response({"error": "organization parameter is required"}, status=400)
+
+            try:
+                organization_id = int(organization_id)
+            except ValueError:
+                return Response({"error": "Invalid organization ID"}, status=400)
+
+            try:
+                org = Organization.objects.get(id=organization_id)
+                party_name = org.name or "Customer"
+            except Organization.DoesNotExist:
+                return Response({"error": "Organization not found"}, status=404)
+
+            # Opening balance
+            opening_invoices = Invoices.objects.filter(
+                client_name_id=organization_id,
+                invoice_type='Sales',
+                date__date__lt=start_date
+            ).filter(company_filter).select_related('client_name', 'job')
+
+            opening_invoice_total = Decimal('0.00')
+            for inv in opening_invoices:
+                opening_invoice_total += self._invoice_total_with_tax(inv)
+
+            opening_receipts = Vouchers.objects.filter(
+                party_account=str(organization_id),
+                party_account_type='organization',
+                voucher_type='Receipt',
+                date__date__lt=start_date
+            ).filter(company_filter)
+
+            opening_receipt_total = self._sum_customer_credit_lines_for_vouchers(opening_receipts)
+
+            opening_creditnotes = Vouchers.objects.filter(
+                party_account=str(organization_id),
+                party_account_type='organization',
+                voucher_type='CreditNote',
+                date__date__lt=start_date
+            ).filter(company_filter)
+
+            opening_creditnote_total = self._sum_customer_credit_lines_for_vouchers(opening_creditnotes)
+
+            opening_balance_dec = opening_invoice_total - opening_receipt_total - opening_creditnote_total
+            opening_balance = float(opening_balance_dec)
+
+            # Period transactions
+            rows = []
+
+            # Sales Invoices
+            invoices = Invoices.objects.filter(
+                client_name_id=organization_id,
+                invoice_type='Sales',
+                date__date__range=[start_date, end_date]
+            ).filter(company_filter).select_related('client_name', 'job').order_by('date')
+
+            for inv in invoices:
+                total = self._invoice_total_with_tax(inv)
+                rows.append({
+                    'date': inv.date.date().isoformat(),
+                    'inv_no': inv.invoice_number or inv.supplier_inv_number or '',
+                    'job_no': inv.job.job_number if inv.job else '',
+                    'party_name': party_name,
+                    'debit': float(total),
+                    'credit': 0.00,
+                    'narration': inv.narration or f"Sales Invoice {inv.invoice_number or 'N/A'}",
+                    'voucher_no': '',
+                })
+
+            # Receipts
+            receipts = Vouchers.objects.filter(
+                party_account=str(organization_id),
+                party_account_type='organization',
+                voucher_type='Receipt',
+                date__date__range=[start_date, end_date]
+            ).filter(company_filter).select_related('job').order_by('date')
+
+            for rec in receipts:
+                amount = self._sum_customer_credit_lines_for_vouchers(Vouchers.objects.filter(id=rec.id))
+                if amount == Decimal('0.00'):
+                    amount = Decimal(str(rec.amount_sar or '0.00'))
+                rows.append({
+                    'date': rec.date.date().isoformat(),
+                    'inv_no': '',
+                    'voucher_no': rec.voucher_number or 'N/A',
+                    'job_no': rec.job.job_number if rec.job else '',
+                    'party_name': party_name,
+                    'debit': 0.00,
+                    'credit': float(amount),
+                    'narration': rec.naration or f"Receipt {rec.voucher_number or 'N/A'}",
+                })
+
+            # Credit Notes
+            credit_notes = Vouchers.objects.filter(
+                party_account=str(organization_id),
+                party_account_type='organization',
+                voucher_type='CreditNote',
+                date__date__range=[start_date, end_date]
+            ).filter(company_filter).select_related('job').order_by('date')
+
+            for cn in credit_notes:
+                amount = self._sum_customer_credit_lines_for_vouchers(Vouchers.objects.filter(id=cn.id))
+                if amount == Decimal('0.00'):
+                    amount = Decimal(str(cn.amount_sar or '0.00'))
+                rows.append({
+                    'date': cn.date.date().isoformat(),
+                    'inv_no': '',
+                    'voucher_no': cn.voucher_number or '',
+                    'job_no': cn.job.job_number if cn.job else '',
+                    'party_name': party_name,
+                    'debit': 0.00,
+                    'credit': float(amount),
+                    'narration': cn.naration or f"Credit Note {cn.voucher_number or 'N/A'}",
+                })
+
+            rows.sort(key=lambda x: x['date'])
+
+            # Running balance
+            balance = opening_balance_dec.quantize(Decimal('0.00'))
+            final_rows = [{
+                'date': start_date.isoformat(),
+                'type': 'Opening Balance',
+                'inv_no': '',
+                'job_no': '',
+                'party_name': party_name,
+                'debit': 0.00,
                 'credit': 0.00,
-                'narration': inv.narration or f"Sales Invoice {inv.invoice_number or 'N/A'}",
+                'balance': float(balance),
+                'narration': 'Opening balance brought forward',
                 'voucher_no': '',
-            })
+            }]
 
-        # B) Receipts (period) - customer CREDIT lines only
-        receipts = Vouchers.objects.filter(
-            party_account=organization_id,
-            party_account_type='organization',
-            voucher_type='Receipt',
-            date__date__range=[start_date, end_date],
-            company__users=request.user
-        ).select_related('job').order_by('date')
+            for row in rows:
+                debit = Decimal(str(row.get('debit', 0))).quantize(Decimal('0.00'))
+                credit = Decimal(str(row.get('credit', 0))).quantize(Decimal('0.00'))
+                balance = (balance + debit - credit).quantize(Decimal('0.00'))
+                row['balance'] = float(balance)
+                final_rows.append(row)
 
-        for rec in receipts:
-            customer_amount = self._sum_customer_credit_lines_for_vouchers(Vouchers.objects.filter(id=rec.id))
-
-            # fallback if somehow ledger lines are missing
-            if customer_amount == Decimal('0.00'):
-                customer_amount = Decimal(str(rec.amount_sar or '0.00')).quantize(Decimal('0.00'))
-
-            rows.append({
-                'date': rec.date.date().isoformat(),
-                'type': 'Receipt',
-                'inv_no': '',
-                'voucher_no': rec.voucher_number or 'N/A',
-                'job_no': rec.job.job_number if rec.job else '',
-                'party_name': party_name,
-                'debit': 0.00,
-                'credit': float(customer_amount),
-                'narration': rec.naration or f"Receipt {rec.voucher_number or 'N/A'}",
-            })
-
-        # C) Credit Notes (period) - customer CREDIT lines only (IMPORTANT FIX)
-        credit_notes = Vouchers.objects.filter(
-            party_account=organization_id,
-            party_account_type='organization',
-            voucher_type='CreditNote',
-            date__date__range=[start_date, end_date],
-            company__users=request.user
-        ).select_related('job').order_by('date')
-
-        for cn in credit_notes:
-            cn_amount = self._sum_customer_credit_lines_for_vouchers(Vouchers.objects.filter(id=cn.id))
-
-            # fallback if ledger missing
-            if cn_amount == Decimal('0.00'):
-                cn_amount = Decimal(str(cn.amount_sar or '0.00')).quantize(Decimal('0.00'))
-
-            rows.append({
-                'date': cn.date.date().isoformat(),
-                'type': 'Credit Note',
-                'inv_no': '',
-                'job_no': cn.job.job_number if cn.job else '',
-                'party_name': party_name,
-                'debit': 0.00,
-                'credit': float(cn_amount),
-                'narration': cn.naration or f"Credit Note {cn.voucher_number or 'N/A'}",
-                'voucher_no': cn.voucher_number or '',
-            })
-
-        # Sort by date (string ISO works)
-        rows.sort(key=lambda x: x['date'])
-
-        # ───────────────────────────────────────────────
-        # 3) Running balance + response
-        # ───────────────────────────────────────────────
-        balance = Decimal(str(opening_balance)).quantize(Decimal('0.00'))
-
-        final_rows = [{
-            'date': start_date.isoformat(),
-            'type': 'Opening Balance',
-            'inv_no': '',
-            'job_no': '',
-            'party_name': party_name,
-            'debit': 0.00,
-            'credit': 0.00,
-            'balance': float(balance),
-            'narration': 'Opening balance brought forward',
-            'voucher_no': '',
-        }]
-
-        for row in rows:
-            debit = Decimal(str(row['debit'] or 0)).quantize(Decimal('0.00'))
-            credit = Decimal(str(row['credit'] or 0)).quantize(Decimal('0.00'))
-            balance = (balance + debit - credit).quantize(Decimal('0.00'))
-            row['balance'] = float(balance)
-            final_rows.append(row)
-
-        return Response({
-            'opening_balance': float(opening_balance_dec.quantize(Decimal('0.00'))),
-            'rows': final_rows,
-            'closing_balance': float(balance),
-            'currency': 'SAR',
-        })  
+            return Response({
+                'is_summary': False,
+                'opening_balance': float(opening_balance_dec.quantize(Decimal('0.00'))),
+                'rows': final_rows,
+                'closing_balance': float(balance),
+                'currency': 'SAR',
+            })  
 
 class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     """
-    Accounts Payable Statement focused ONLY on vendor (party_account for Purchase invoices)
-    Opposite of A/R: Purchases increase payable (CREDIT), Payments/Debit Notes reduce payable (DEBIT)
-    URL: GET /api/account/payable/?organization=ID&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+    Accounts Payable Statement
+    URL: GET /api/account/payable/?organization=ID_or_'all'&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
     """
     permission_classes = (IsAuthenticated,)
     queryset = Invoices.objects.none()
@@ -2682,7 +2765,7 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
     def _invoice_total_with_tax(self, inv):
         cost_total = Decimal('0.00')
-        for ce in CostEntry.objects.filter(invoice=inv):
+        for ce in inv.costentry_set.all():
             base = Decimal(str(ce.amount or '0.00'))
             rate = Decimal(str(ce.tax_group_code or '0.00'))
             tax = base * (rate / Decimal('100'))
@@ -2692,197 +2775,286 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
         return cost_total.quantize(Decimal('0.00'))
 
     def _sum_vendor_debit_lines(self, vouchers_qs):
-        """
-        For Payments / Debit Notes:
-        We want ONLY the DEBIT lines posted to the vendor (reduces payable).
-        """
         return (
             AccountDetails.objects.filter(vouchers__in=vouchers_qs, dr_cr='Dr')
+            .exclude(amount_sar='')  # skip completely empty
             .aggregate(
                 total=Coalesce(
                     Sum(Cast('amount_sar', DecimalField(max_digits=15, decimal_places=2))),
                     Value(Decimal('0.00'))
                 )
             )['total']
-            or Decimal('0.00')
-        ).quantize(Decimal('0.00'))
+            .quantize(Decimal('0.00'))
+        )
 
     def list(self, request, *args, **kwargs):
         organization_id = request.query_params.get('organization')
-        start_date_str  = request.query_params.get('start_date')
-        end_date_str    = request.query_params.get('end_date')
-
-        if not organization_id:
-            return Response({"error": "organization parameter is required"}, status=400)
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
 
         if not start_date_str or not end_date_str:
             return Response({"error": "start_date and end_date are required"}, status=400)
 
         try:
             start_date = self._parse_date(start_date_str)
-            end_date   = self._parse_date(end_date_str)
+            end_date = self._parse_date(end_date_str)
         except ValueError:
             return Response({"error": "Invalid date format. Expected YYYY-MM-DD"}, status=400)
 
-        vendor_name = (
-            Organization.objects.filter(id=organization_id)
-            .values_list('name', flat=True)
-            .first()
-        ) or "Vendor"
+        company_filter = Q(company__users=request.user)
 
-        # ───────────────────────────────────────────────
-        # 1. Opening balance (before start_date)
-        # Payable opening = purchases before - payments before - debit notes before
-        # ───────────────────────────────────────────────
+        if organization_id == 'all':
+            # ───────────────────────────────────────────────
+            # Summary for ALL suppliers
+            # ───────────────────────────────────────────────
+            suppliers = Organization.objects.filter(
+                type__contains=['Supplier'],  # ArrayField lookup
+                company__users=request.user
+            ).distinct().order_by('name')
 
-        opening_purchases = Invoices.objects.filter(
-            party_account_id=organization_id,
-            invoice_type='Purchase',
-            date__date__lt=start_date,
-            company__users=request.user
-        )
+            summary_rows = []
+            total_purchase_amount = Decimal('0.00')
+            total_paid_amount = Decimal('0.00')
+            total_balance = Decimal('0.00')
 
-        opening_purchase_total = Decimal('0.00')
-        for inv in opening_purchases:
-            opening_purchase_total += self._invoice_total_with_tax(inv)
+            for supp in suppliers:
+                # Opening balance
+                opening_purchases_qs = Invoices.objects.filter(
+                    party_account=supp,
+                    invoice_type='Purchase',
+                    date__date__lt=start_date
+                ).filter(company_filter)
 
-        opening_payments = Vouchers.objects.filter(
-            party_account=organization_id,
-            party_account_type='organization',
-            voucher_type='Payment',
-            date__date__lt=start_date,
-            company__users=request.user
-        )
-        opening_payment_total = self._sum_vendor_debit_lines(opening_payments)
+                opening_purchase_total = sum(self._invoice_total_with_tax(inv) for inv in opening_purchases_qs)
 
-        opening_debitnotes = Vouchers.objects.filter(
-            party_account=organization_id,
-            party_account_type='organization',
-            voucher_type='DebitNote',
-            date__date__lt=start_date,
-            company__users=request.user
-        )
-        opening_debitnote_total = self._sum_vendor_debit_lines(opening_debitnotes)
+                opening_payments_qs = Vouchers.objects.filter(
+                    party_account=str(supp.id),
+                    party_account_type='organization',
+                    voucher_type='Payment',
+                    date__date__lt=start_date
+                ).filter(company_filter)
 
-        # Opening payable (positive = we owe vendor)
-        opening_balance_dec = opening_purchase_total - opening_payment_total - opening_debitnote_total
-        opening_balance = float(opening_balance_dec)
+                opening_payment_total = self._sum_vendor_debit_lines(opening_payments_qs)
 
-        # ───────────────────────────────────────────────
-        # 2. Current period transactions
-        # ───────────────────────────────────────────────
-        rows = []
+                opening_debitnotes_qs = Vouchers.objects.filter(
+                    party_account=str(supp.id),
+                    party_account_type='organization',
+                    voucher_type='DebitNote',
+                    date__date__lt=start_date
+                ).filter(company_filter)
 
-        # A. Purchase Invoices (increases payable → credit)
-        purchases = Invoices.objects.filter(
-            party_account_id=organization_id,
-            invoice_type='Purchase',
-            date__date__range=[start_date, end_date],
-            company__users=request.user
-        ).select_related('party_account', 'job').order_by('date')
+                opening_debitnote_total = self._sum_vendor_debit_lines(opening_debitnotes_qs)
 
-        for inv in purchases:
-            total = self._invoice_total_with_tax(inv)
-            inv_no = inv.invoice_number or 'N/A'
-            rows.append({
-                'date': inv.date.date().isoformat(),
-                'type': 'Purchase Invoice',
-                'inv_no': inv_no,
+                opening = opening_purchase_total - opening_payment_total - opening_debitnote_total
+
+                # Period
+                period_purchases_qs = Invoices.objects.filter(
+                    party_account=supp,
+                    invoice_type='Purchase',
+                    date__date__range=[start_date, end_date]
+                ).filter(company_filter)
+
+                total_credit = sum(self._invoice_total_with_tax(inv) for inv in period_purchases_qs)
+
+                period_payments_qs = Vouchers.objects.filter(
+                    party_account=str(supp.id),
+                    party_account_type='organization',
+                    voucher_type='Payment',
+                    date__date__range=[start_date, end_date]
+                ).filter(company_filter)
+
+                total_debit_payment = self._sum_vendor_debit_lines(period_payments_qs)
+
+                period_debitnotes_qs = Vouchers.objects.filter(
+                    party_account=str(supp.id),
+                    party_account_type='organization',
+                    voucher_type='DebitNote',
+                    date__date__range=[start_date, end_date]
+                ).filter(company_filter)
+
+                total_debit_dn = self._sum_vendor_debit_lines(period_debitnotes_qs)
+
+                total_debit = total_debit_payment + total_debit_dn
+
+                closing = opening + total_credit - total_debit
+
+                if opening != 0 or total_credit != 0 or total_debit != 0 or closing != 0:
+                    summary_rows.append({
+                        'si_no': 0,  # set later
+                        'supplier_name': supp.name or "Unnamed",
+                        'purchase_amount': float(total_credit),
+                        'paid_amount': float(total_debit),
+                        'balance': float(closing),
+                    })
+
+                    total_purchase_amount += total_credit
+                    total_paid_amount += total_debit
+                    total_balance += closing
+
+            summary_rows.sort(key=lambda x: x['supplier_name'].lower())
+            for i, row in enumerate(summary_rows, 1):
+                row['si_no'] = i
+
+            return Response({
+                'is_summary': True,
+                'rows': summary_rows,
+                'totals': {
+                    'purchase_amount': float(total_purchase_amount),
+                    'paid_amount': float(total_paid_amount),
+                    'balance': float(total_balance),
+                },
+                'currency': 'SAR',
+            })
+
+        else:
+            # ───────────────────────────────────────────────
+            # Single supplier - detailed (your original logic, cleaned up)
+            # ───────────────────────────────────────────────
+            if not organization_id:
+                return Response({"error": "organization parameter is required"}, status=400)
+
+            try:
+                organization_id = int(organization_id)
+            except ValueError:
+                return Response({"error": "Invalid organization ID"}, status=400)
+
+            try:
+                org = Organization.objects.get(id=organization_id)
+                vendor_name = org.name or "Vendor"
+            except Organization.DoesNotExist:
+                return Response({"error": "Organization not found"}, status=404)
+
+            # Opening balance (same as before)
+            opening_purchases = Invoices.objects.filter(
+                party_account_id=organization_id,
+                invoice_type='Purchase',
+                date__date__lt=start_date
+            ).filter(company_filter)
+
+            opening_purchase_total = Decimal('0.00')
+            for inv in opening_purchases:
+                opening_purchase_total += self._invoice_total_with_tax(inv)
+
+            opening_payments = Vouchers.objects.filter(
+                party_account=str(organization_id),
+                party_account_type='organization',
+                voucher_type='Payment',
+                date__date__lt=start_date
+            ).filter(company_filter)
+
+            opening_payment_total = self._sum_vendor_debit_lines(opening_payments)
+
+            opening_debitnotes = Vouchers.objects.filter(
+                party_account=str(organization_id),
+                party_account_type='organization',
+                voucher_type='DebitNote',
+                date__date__lt=start_date
+            ).filter(company_filter)
+
+            opening_debitnote_total = self._sum_vendor_debit_lines(opening_debitnotes)
+
+            opening_balance_dec = opening_purchase_total - opening_payment_total - opening_debitnote_total
+            opening_balance = float(opening_balance_dec)
+
+            # Period rows (your original code, kept similar)
+            rows = []
+
+            purchases = Invoices.objects.filter(
+                party_account_id=organization_id,
+                invoice_type='Purchase',
+                date__date__range=[start_date, end_date]
+            ).filter(company_filter).select_related('party_account', 'job').order_by('date')
+
+            for inv in purchases:
+                total = self._invoice_total_with_tax(inv)
+                rows.append({
+                    'date': inv.date.date().isoformat(),
+                    'type': 'Purchase Invoice',
+                    'inv_no': inv.invoice_number or 'N/A',
+                    'voucher_no': '',
+                    'job_no': inv.job.job_number if inv.job else '',
+                    'party_name': vendor_name,
+                    'debit': 0.00,
+                    'credit': float(total),
+                    'narration': inv.narration or f"Purchase Invoice {inv.invoice_number or 'N/A'}",
+                })
+
+            payments = Vouchers.objects.filter(
+                party_account=str(organization_id),
+                party_account_type='organization',
+                voucher_type='Payment',
+                date__date__range=[start_date, end_date]
+            ).filter(company_filter).select_related('job').order_by('date')
+
+            for pay in payments:
+                amount = self._sum_vendor_debit_lines(Vouchers.objects.filter(id=pay.id))
+                if amount == Decimal('0.00'):
+                    amount = Decimal(str(pay.amount_sar or '0.00').strip() or '0.00')
+                rows.append({
+                    'date': pay.date.date().isoformat(),
+                    'type': 'Payment',
+                    'inv_no': '',
+                    'voucher_no': pay.voucher_number or 'N/A',
+                    'job_no': pay.job.job_number if pay.job else '',
+                    'party_name': vendor_name,
+                    'debit': float(amount),
+                    'credit': 0.00,
+                    'narration': pay.naration or f"Payment {pay.voucher_number or 'N/A'}",
+                })
+
+            debit_notes = Vouchers.objects.filter(
+                party_account=str(organization_id),
+                party_account_type='organization',
+                voucher_type='DebitNote',
+                date__date__range=[start_date, end_date]
+            ).filter(company_filter).select_related('job').order_by('date')
+
+            for dn in debit_notes:
+                amount = self._sum_vendor_debit_lines(Vouchers.objects.filter(id=dn.id))
+                if amount == Decimal('0.00'):
+                    amount = Decimal(str(dn.amount_sar or '0.00').strip() or '0.00')
+                rows.append({
+                    'date': dn.date.date().isoformat(),
+                    'type': 'Debit Note',
+                    'inv_no': '',
+                    'voucher_no': dn.voucher_number or 'N/A',
+                    'job_no': dn.job.job_number if dn.job else '',
+                    'party_name': vendor_name,
+                    'debit': float(amount),
+                    'credit': 0.00,
+                    'narration': dn.naration or f"Debit Note {dn.voucher_number or 'N/A'}",
+                })
+
+            rows.sort(key=lambda x: x['date'])
+
+            balance = opening_balance_dec.quantize(Decimal('0.00'))
+            final_rows = [{
+                'date': start_date.isoformat(),
+                'type': 'Opening Balance',
+                'inv_no': '',
                 'voucher_no': '',
-                'job_no': inv.job.job_number if inv.job else '',
-                'party_name': inv.party_account.name if inv.party_account else vendor_name,
+                'job_no': '',
+                'party_name': vendor_name,
                 'debit': 0.00,
-                'credit': float(total),
-                'narration': inv.narration or f"Purchase Invoice {inv_no}",
-                'due_date': inv.due_date.date().isoformat() if inv.due_date else None,  # Added for aging
-            })
-
-        # B. Payments (reduces payable → debit)
-        payments = Vouchers.objects.filter(
-            party_account=organization_id,
-            party_account_type='organization',
-            voucher_type='Payment',
-            date__date__range=[start_date, end_date],
-            company__users=request.user
-        ).select_related('job').order_by('date')
-
-        for pay in payments:
-            amount = self._sum_vendor_debit_lines(Vouchers.objects.filter(id=pay.id))
-            if amount == Decimal('0.00'):
-                amount = Decimal(str(pay.amount_sar or '0.00'))
-            rows.append({
-                'date': pay.date.date().isoformat(),
-                'type': 'Payment',
-                'inv_no': '',
-                'voucher_no': pay.voucher_number or 'N/A',
-                'job_no': pay.job.job_number if pay.job else '',
-                'party_name': vendor_name,
-                'debit': float(amount),
                 'credit': 0.00,
-                'narration': pay.naration or f"Payment {pay.voucher_number or 'N/A'}",
-                'due_date': None,  # No due date for payments
+                'balance': float(balance),
+                'narration': 'Opening balance brought forward',
+            }]
+
+            for row in rows:
+                debit = Decimal(str(row.get('debit', 0))).quantize(Decimal('0.00'))
+                credit = Decimal(str(row.get('credit', 0))).quantize(Decimal('0.00'))
+                balance = (balance + credit - debit).quantize(Decimal('0.00'))
+                row['balance'] = float(balance)
+                final_rows.append(row)
+
+            return Response({
+                'is_summary': False,
+                'opening_balance': float(opening_balance_dec.quantize(Decimal('0.00'))),
+                'rows': final_rows,
+                'closing_balance': float(balance),
+                'currency': 'SAR',
             })
-
-        # C. Debit Notes (reduces payable → debit)
-        debit_notes = Vouchers.objects.filter(
-            party_account=organization_id,
-            party_account_type='organization',
-            voucher_type='DebitNote',
-            date__date__range=[start_date, end_date],
-            company__users=request.user
-        ).select_related('job').order_by('date')
-
-        for dn in debit_notes:
-            amount = self._sum_vendor_debit_lines(Vouchers.objects.filter(id=dn.id))
-            if amount == Decimal('0.00'):
-                amount = Decimal(str(dn.amount_sar or '0.00'))
-            rows.append({
-                'date': dn.date.date().isoformat(),
-                'type': 'Debit Note',
-                'inv_no': '',
-                'voucher_no': dn.voucher_number or 'N/A',
-                'job_no': dn.job.job_number if dn.job else '',
-                'party_name': vendor_name,
-                'debit': float(amount),
-                'credit': 0.00,
-                'narration': dn.naration or f"Debit Note {dn.voucher_number or 'N/A'}",
-                'due_date': None,  # No due date for debit notes
-            })
-
-        rows.sort(key=lambda x: x['date'])
-
-        # ───────────────────────────────────────────────
-        # 3. Running balance: balance += credit - debit
-        # (credit increases payable, debit decreases payable)
-        # ───────────────────────────────────────────────
-        balance = opening_balance_dec.quantize(Decimal('0.00'))
-        final_rows = [{
-            'date': start_date.isoformat(),
-            'type': 'Opening Balance',
-            'inv_no': '',
-            'voucher_no': '',
-            'job_no': '',
-            'party_name': vendor_name,
-            'debit': 0.00,
-            'credit': 0.00,
-            'balance': float(balance),
-            'narration': 'Opening balance brought forward',
-            'due_date': None,
-        }]
-
-        for row in rows:
-            debit = Decimal(str(row['debit'] or 0)).quantize(Decimal('0.00'))
-            credit = Decimal(str(row['credit'] or 0)).quantize(Decimal('0.00'))
-            balance = (balance + credit - debit).quantize(Decimal('0.00'))
-            row['balance'] = float(balance)
-            final_rows.append(row)
-
-        return Response({
-            'opening_balance': float(opening_balance_dec.quantize(Decimal('0.00'))),
-            'rows': final_rows,
-            'closing_balance': float(balance),
-            'currency': 'SAR',
-        })
 class BranchViewset(viewsets.GenericViewSet,mixins.ListModelMixin,mixins.CreateModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin):
     permission_classes = (IsAuthenticated,)
     queryset = Branch.objects.all()
