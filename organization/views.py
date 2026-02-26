@@ -1040,7 +1040,7 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
     balance = 0
     results = []
     for res in respone:
-        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        balance = float(balance) + float(float(res['cr_amount']) - float(res['dr_amount']))
         res['net_amount'] = balance
         results.append(res)
         
@@ -1304,7 +1304,15 @@ def get_other_coa_response(coa, start_date, end_date, user):
         else:
             dr = float(res.get('dr_amount', 0))
             cr = float(res.get('cr_amount', 0))
-            balance += (dr - cr)
+            
+            # Adjust for account natural balance (Dr vs Cr accounts)
+            if coa.dr_cr == 'Dr':
+                # Debit accounts: Dr increases balance, Cr decreases it
+                balance += (dr - cr)
+            else:
+                # Credit accounts: Cr increases balance, Dr decreases it
+                balance += (cr - dr)
+            
             res['net_amount'] = round(balance, 2)
         
         results.append(res)
@@ -1490,6 +1498,7 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
             dr = float(res.get('dr_amount', 0))
             cr = float(res.get('cr_amount', 0))
             balance += (dr - cr)
+            
             res['net_amount'] = round(balance, 2)
         
         results.append(res)
@@ -1532,13 +1541,13 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(vat_amount)
+            total_amount = float(vat_amount + amount)
 
             res_obj['vat_percent']= vat_percent
             res_obj['fcy_amount'] = fcy_amount
             res_obj['amount'] = amount
             res_obj['vat_amount'] = vat_amount
-            res_obj['dr_amount']=total_amount
+            res_obj['cr_amount']=total_amount
             res_obj['net_amount']=total_amount
 
             if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
@@ -1624,7 +1633,7 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
     balance = 0
     results = []
     for res in respone:
-        balance = float(balance) + float(float(res['dr_amount']) - float(res['cr_amount']))
+        balance = float(balance) + float(float(res['cr_amount']) - float(res['dr_amount']))
         res['net_amount'] = balance
         results.append(res)
         
@@ -1665,12 +1674,12 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(vat_amount)
+            total_amount = float(vat_amount + amount)
             res_obj['vat_percent']= vat_percent
             res_obj['fcy_amount'] = fcy_amount
             res_obj['amount'] = amount
             res_obj['vat_amount'] = vat_amount
-            res_obj['cr_amount']=total_amount
+            res_obj['dr_amount']=total_amount
             res_obj['net_amount']=total_amount   
 
             if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
@@ -2339,6 +2348,126 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             response.append(res_obj)
 
         return Response(response, status=status.HTTP_200_OK)
+
+def get_trial_balance_coa_response(coa, start_date, end_date, user):
+    """
+    Like get_coa_sheet_response but uses | instead of .union()
+    to avoid Django ORM type mismatch errors that silently drop rows.
+    """
+    response = []
+
+    # --- Invoice / CostEntry entries ---
+    cost_entries = CostEntry.objects.filter(
+        Q(charge__coa=coa) | Q(invoice__party_account__coa=coa),
+        invoice__date__range=[start_date, end_date],
+        is_included=True,
+        invoice__company__users__email=user.email
+    ).exclude(invoice=None).order_by('created_at')
+
+    for cost_entry in cost_entries:
+        invoice = cost_entry.invoice
+        if not invoice:
+            continue
+
+        amount = float(cost_entry.amount or 0.0)
+        fcy_amount = float(cost_entry.fcy_amount or 0.0)
+        vat_percent = float(cost_entry.tax_group_code or 0.0)
+        vat_amount = (vat_percent * amount) / 100
+        total_amount = amount  # no VAT added here (matches get_coa_sheet_response)
+
+        is_sales = invoice.invoice_type == 'Sales'
+        res_obj = {
+            "account": invoice.client_name.name if invoice.client_name else "",
+            "date": invoice.date,
+            "currency": invoice.currency_sar,
+            "invoice_number": invoice.invoice_number,
+            "vat_percent": vat_percent,
+            "fcy_amount": fcy_amount,
+            "vat_amount": vat_amount,
+            "amount": amount,
+            "dr_amount": 0.0 if is_sales else total_amount,
+            "cr_amount": total_amount if is_sales else 0.0,
+            "net_amount": total_amount,
+            "type": "Invoice",
+            "voucher": "",
+            "charge": cost_entry.charge.name if cost_entry.charge else '',
+            "party_account": invoice.party_account.name if invoice.party_account else '',
+            "job_no": invoice.job.job_number if invoice.job else "",
+            "narrations": invoice.narration or "",
+            "branch": invoice.branch or "",
+            "language_name": coa.language_name or ""
+        }
+
+        if res_obj["dr_amount"] != 0 or res_obj["cr_amount"] != 0:
+            response.append(res_obj)
+
+    # --- Voucher / AccountDetails entries ---
+    voucher_accounts = AccountDetails.objects.filter(
+        vouchers__date__range=[start_date, end_date],
+        vouchers__company__users__email=user.email
+    )
+
+    # FIX: Use | (pipe) not .union() to avoid type mismatch silently dropping rows
+    coa_account_details = voucher_accounts.filter(
+        Q(ac_name=str(coa.id), ac_name_type='coa') | Q(charge__coa=coa)
+    )
+
+    organizations = Organization.objects.filter(
+        coa=coa,
+        company__users__email=user.email
+    )
+    for org in organizations:
+        org_details = voucher_accounts.filter(
+            ac_name=str(org.id),
+            ac_name_type='organization'
+        )
+        coa_account_details = coa_account_details | org_details  # FIX: was .union()
+
+    for acc in coa_account_details:
+        party_account = None
+        if acc.vouchers.party_account:
+            if acc.vouchers.party_account_type == 'coa':
+                party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
+            else:
+                party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
+
+        # FIX: handle fcy_amount that may be a string with extra decimal points
+        fcy_amount_str = acc.fcy_amount or "0.0"
+        if fcy_amount_str.count('.') > 1:
+            fcy_amount_str = fcy_amount_str.replace('.', '', 1)
+        fcy_amount = float(fcy_amount_str)
+
+        amount = float(acc.amount_sar or 0.0)
+        vat_percent = float(acc.tax_group_code or 0.0)
+        vat_amount = (vat_percent * amount) / 100
+        total_amount = amount
+
+        res_obj = {
+            "account": coa.name,
+            "date": acc.vouchers.date or '',
+            "currency": acc.currency,
+            "invoice_number": "",
+            "vat_percent": vat_percent,
+            "fcy_amount": fcy_amount,
+            "vat_amount": vat_amount,
+            "amount": amount,
+            "dr_amount": 0.0 if acc.dr_cr == 'Cr' else total_amount,
+            "cr_amount": total_amount if acc.dr_cr == 'Cr' else 0.0,
+            "net_amount": total_amount,
+            "charge": acc.charge.name if acc.charge else '',
+            "type": acc.vouchers.voucher_type + " Voucher",
+            "voucher": acc.vouchers.voucher_number or "",
+            "party_account": party_account.name if party_account else '',
+            "job_no": acc.vouchers.job.job_number if acc.vouchers.job else "",
+            "narrations": acc.narration,
+            "branch": acc.vouchers.branch or "",
+            "language_name": coa.language_name or ""
+        }
+
+        if res_obj["dr_amount"] != 0 or res_obj["cr_amount"] != 0:
+            response.append(res_obj)
+
+    return response
     
 class TrialBalanceViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     pagination_class = CustomPagination
@@ -2754,7 +2883,7 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
 class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     """
-    Accounts Payable Statement
+    Accounts Payable Statement – now includes Supplier, Broker and Counterpart
     URL: GET /api/account/payable/?organization=ID_or_'all'&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
     """
     permission_classes = (IsAuthenticated,)
@@ -2775,9 +2904,14 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
         return cost_total.quantize(Decimal('0.00'))
 
     def _sum_vendor_debit_lines(self, vouchers_qs):
+        """Sum debit (Dr) lines in AccountDetails for given vouchers"""
         return (
-            AccountDetails.objects.filter(vouchers__in=vouchers_qs, dr_cr='Dr')
-            .exclude(amount_sar='')  # skip completely empty
+            AccountDetails.objects.filter(
+                vouchers__in=vouchers_qs,
+                dr_cr='Dr'
+            )
+            .exclude(amount_sar='')           # skip empty strings
+            .exclude(amount_sar__isnull=True)
             .aggregate(
                 total=Coalesce(
                     Sum(Cast('amount_sar', DecimalField(max_digits=15, decimal_places=2))),
@@ -2797,18 +2931,20 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         try:
             start_date = self._parse_date(start_date_str)
-            end_date = self._parse_date(end_date_str)
+            end_date   = self._parse_date(end_date_str)
         except ValueError:
             return Response({"error": "Invalid date format. Expected YYYY-MM-DD"}, status=400)
 
         company_filter = Q(company__users=request.user)
 
+        PAYABLE_TYPES = ['Supplier', 'Broker', 'Counterpart']
+
         if organization_id == 'all':
             # ───────────────────────────────────────────────
-            # Summary for ALL suppliers
+            # Summary for ALL payable parties (Supplier + Broker + Counterpart)
             # ───────────────────────────────────────────────
-            suppliers = Organization.objects.filter(
-                type__contains=['Supplier'],  # ArrayField lookup
+            parties = Organization.objects.filter(
+                type__overlap=PAYABLE_TYPES,     # ← changed: uses overlap instead of contains
                 company__users=request.user
             ).distinct().order_by('name')
 
@@ -2817,18 +2953,22 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             total_paid_amount = Decimal('0.00')
             total_balance = Decimal('0.00')
 
-            for supp in suppliers:
-                # Opening balance
+            for party in parties:
+                party_id_str = str(party.id)
+
+                # Opening balance ────────────────
                 opening_purchases_qs = Invoices.objects.filter(
-                    party_account=supp,
+                    party_account=party,
                     invoice_type='Purchase',
                     date__date__lt=start_date
                 ).filter(company_filter)
 
-                opening_purchase_total = sum(self._invoice_total_with_tax(inv) for inv in opening_purchases_qs)
+                opening_purchase_total = sum(
+                    self._invoice_total_with_tax(inv) for inv in opening_purchases_qs
+                )
 
                 opening_payments_qs = Vouchers.objects.filter(
-                    party_account=str(supp.id),
+                    party_account=party_id_str,
                     party_account_type='organization',
                     voucher_type='Payment',
                     date__date__lt=start_date
@@ -2837,7 +2977,7 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                 opening_payment_total = self._sum_vendor_debit_lines(opening_payments_qs)
 
                 opening_debitnotes_qs = Vouchers.objects.filter(
-                    party_account=str(supp.id),
+                    party_account=party_id_str,
                     party_account_type='organization',
                     voucher_type='DebitNote',
                     date__date__lt=start_date
@@ -2847,51 +2987,54 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
                 opening = opening_purchase_total - opening_payment_total - opening_debitnote_total
 
-                # Period
+                # Current period ─────────────────
                 period_purchases_qs = Invoices.objects.filter(
-                    party_account=supp,
+                    party_account=party,
                     invoice_type='Purchase',
                     date__date__range=[start_date, end_date]
                 ).filter(company_filter)
 
-                total_credit = sum(self._invoice_total_with_tax(inv) for inv in period_purchases_qs)
+                period_credit = sum(
+                    self._invoice_total_with_tax(inv) for inv in period_purchases_qs
+                )
 
                 period_payments_qs = Vouchers.objects.filter(
-                    party_account=str(supp.id),
+                    party_account=party_id_str,
                     party_account_type='organization',
                     voucher_type='Payment',
                     date__date__range=[start_date, end_date]
                 ).filter(company_filter)
 
-                total_debit_payment = self._sum_vendor_debit_lines(period_payments_qs)
+                period_debit_payment = self._sum_vendor_debit_lines(period_payments_qs)
 
                 period_debitnotes_qs = Vouchers.objects.filter(
-                    party_account=str(supp.id),
+                    party_account=party_id_str,
                     party_account_type='organization',
                     voucher_type='DebitNote',
                     date__date__range=[start_date, end_date]
                 ).filter(company_filter)
 
-                total_debit_dn = self._sum_vendor_debit_lines(period_debitnotes_qs)
+                period_debit_dn = self._sum_vendor_debit_lines(period_debitnotes_qs)
 
-                total_debit = total_debit_payment + total_debit_dn
+                period_debit = period_debit_payment + period_debit_dn
 
-                closing = opening + total_credit - total_debit
+                closing = opening + period_credit - period_debit
 
-                if opening != 0 or total_credit != 0 or total_debit != 0 or closing != 0:
+                if opening != 0 or period_credit != 0 or period_debit != 0 or closing != 0:
                     summary_rows.append({
                         'si_no': 0,  # set later
-                        'supplier_name': supp.name or "Unnamed",
-                        'purchase_amount': float(total_credit),
-                        'paid_amount': float(total_debit),
+                        'party_name': party.name or "Unnamed",
+                        'party_type': ", ".join(party.type),  # optional – shows types
+                        'purchase_amount': float(period_credit),
+                        'paid_amount': float(period_debit),
                         'balance': float(closing),
                     })
 
-                    total_purchase_amount += total_credit
-                    total_paid_amount += total_debit
+                    total_purchase_amount += period_credit
+                    total_paid_amount += period_debit
                     total_balance += closing
 
-            summary_rows.sort(key=lambda x: x['supplier_name'].lower())
+            summary_rows.sort(key=lambda x: x['party_name'].lower())
             for i, row in enumerate(summary_rows, 1):
                 row['si_no'] = i
 
@@ -3055,6 +3198,99 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                 'closing_balance': float(balance),
                 'currency': 'SAR',
             })
+        
+from decimal import Decimal
+from datetime import datetime
+from django.db.models import Q
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import Coa, AccountDetails, CostEntry, Organization
+
+
+class TrialBalancesViewSet(viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        start_date = request.query_params.get('start_date', None)
+        end_date = request.query_params.get('end_date', None)
+        queryset = Coa.objects.filter(
+            company__users__email=request.user.email
+        ).select_related('group')
+
+        response = []
+        for coa in queryset:
+            raw_dr = 0.0
+            raw_cr = 0.0
+            entries = []
+
+            if coa.name == 'VAT INPUT':
+                entries = get_vat_input_coa_response(coa, start_date, end_date, request.user)
+            elif coa.name == 'VAT OUTPUT':
+                entries = get_vat_output_coa_response(coa, start_date, end_date, request.user)
+            elif coa.name == 'SUNDRY CREDITORS':
+                entries = get_sundry_creditors_coa_response(coa, start_date, end_date, request.user)
+            elif coa.name == 'SUNDRY DEBTORS':
+                entries = get_sundry_debtors_coa_response(coa, start_date, end_date, request.user)
+            else:
+                entries = get_trial_balance_coa_response(coa, start_date, end_date, request.user)
+
+            for amt in entries:
+                raw_dr += float(amt.get('dr_amount', 0))
+                raw_cr += float(amt.get('cr_amount', 0))
+
+            if raw_dr == 0 and raw_cr == 0:
+                continue
+
+            # ─────────────────────────────────────────────────────
+            # KEY FIX: Compute NET balance based on account nature
+            # For DR accounts (Asset/Expense): net = Dr - Cr
+            #   positive net → show on Dr side
+            #   negative net → abnormal, show absolute on Cr side
+            #
+            # For CR accounts (Liability/Equity/Income): net = Cr - Dr  
+            #   positive net → show on Cr side
+            #   negative net → abnormal, show absolute on Dr side
+            # ─────────────────────────────────────────────────────
+            
+            if coa.dr_cr == 'Dr':
+                # Asset / Expense accounts — naturally debit
+                net = raw_dr - raw_cr
+                if net >= 0:
+                    display_dr = round(net, 2)
+                    display_cr = 0.0
+                else:
+                    # Abnormal credit balance (e.g. overpaid petty cash)
+                    display_dr = 0.0
+                    display_cr = round(abs(net), 2)
+            else:
+                # Liability / Equity / Income accounts — naturally credit
+                net = raw_cr - raw_dr
+                if net >= 0:
+                    display_dr = 0.0
+                    display_cr = round(net, 2)
+                else:
+                    # Abnormal debit balance
+                    display_dr = round(abs(net), 2)
+                    display_cr = 0.0
+
+            if display_dr == 0 and display_cr == 0:
+                continue
+
+            res_obj = {
+                "type": coa.type,
+                "account_name": coa.name,
+                "group": coa.group.name if coa.group else "",
+                "total_dr_amount": display_dr,
+                "total_cr_amount": display_cr,
+                # Signed net: positive = Dr balance, negative = Cr balance
+                "total_amount": round(raw_dr - raw_cr, 2),
+                # Extra info for debugging / frontend flexibility
+                "nature": coa.dr_cr,
+            }
+            response.append(res_obj)
+
+        return Response(response, status=status.HTTP_200_OK)
 class BranchViewset(viewsets.GenericViewSet,mixins.ListModelMixin,mixins.CreateModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin):
     permission_classes = (IsAuthenticated,)
     queryset = Branch.objects.all()
