@@ -1623,7 +1623,7 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
         vouchers__date__range=[start_date, end_date],
         vouchers__company__users__email=user.email,
         ac_name_type='organization',
-        vouchers__voucher_type='Payment'
+        vouchers__voucher_type__in=['Payment', 'DebitNote']  # ← add DebitNote
     )
 
     for acc in payment_details:
@@ -1648,7 +1648,7 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
             "dr_amount": 0,
             "cr_amount": 0,
             "net_amount": 0,
-            "type": "Payment Voucher",
+            "type": acc.vouchers.voucher_type + " Voucher",  # ← dynamic type
             "voucher": acc.vouchers.voucher_number if acc.vouchers else "",
             "party_account": party_account.name if party_account else '',
             "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
@@ -1661,9 +1661,9 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
         res_obj['amount'] = amount
 
         if acc.dr_cr == 'Dr':
-            res_obj['dr_amount'] = amount  # we paid supplier = debit creditor
+            res_obj['dr_amount'] = amount  # Payment/DebitNote = debit creditor (we paid / supplier owes us more)
         else:
-            res_obj['cr_amount'] = amount
+            res_obj['cr_amount'] = amount  # supplier owes us
 
         res_obj['net_amount'] = amount
 
@@ -1790,9 +1790,10 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
             respone.append(res_obj)
 
     # ── NEW: Receipt vouchers on Organization (customer) account ─────────────
+    # ── NEW: Receipt & CreditNote vouchers on Organization (customer) account ────
     receipt_details = account_details.filter(
         ac_name_type='organization',
-        vouchers__voucher_type='Receipt'
+        vouchers__voucher_type__in=['Receipt', 'CreditNote']  # ← add CreditNote
     )
 
     for acc in receipt_details:
@@ -1817,7 +1818,7 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
             "dr_amount": 0,
             "cr_amount": 0,
             "net_amount": 0,
-            "type": "Receipt Voucher",
+            "type": acc.vouchers.voucher_type + " Voucher",  # ← dynamic type
             "voucher": acc.vouchers.voucher_number if acc.vouchers else "",
             "party_account": party_account.name if party_account else '',
             "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
@@ -1830,7 +1831,7 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
         res_obj['amount'] = amount
 
         if acc.dr_cr == 'Cr':
-            res_obj['cr_amount'] = amount  # customer paid = credit debtor
+            res_obj['cr_amount'] = amount  # Receipt/CreditNote = credit debtor
         else:
             res_obj['dr_amount'] = amount
 
@@ -1838,6 +1839,7 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
 
         if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:
             respone.append(res_obj)
+# ── END NEW ──────────────────────────────────────────────────────────────
     # ── END NEW ──────────────────────────────────────────────────────────────
 
     balance = 0
