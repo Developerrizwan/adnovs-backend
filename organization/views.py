@@ -1553,13 +1553,7 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
             if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
                 respone.append(res_obj)
     
-    # try:
     coa_account_details = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
-    # organizations = Organization.objects.filter(company__users__email=user.email).values_list('id')
-    # organizations = list(map(str, organizations))
-    # org_account_details = AccountDetails.objects.filter(ac_name__in=organizations, ac_name_type='organization')
-
-    # account_details = coa_account_details.union(org_account_details)
     account_details = coa_account_details.exclude(vouchers__voucher_type="Receipt").exclude(vouchers__voucher_type="CreditNote")
     direct_input_details = account_details.filter(ac_name='429', ac_name_type='coa') 
     account_details = account_details.exclude(ac_name='430', ac_name_type='coa').exclude(ac_name='429', ac_name_type='coa')
@@ -1593,23 +1587,19 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
                 "branch":acc.vouchers.branch if acc.vouchers else "",
                 "language_name":coa.language_name if coa.language_name else ""
                 }
-        # fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
         fcy_amount_str = acc.fcy_amount if acc.fcy_amount else "0.0"
-        # Check if the string contains a decimal point
         if '.' in fcy_amount_str:
-            # If the string contains a decimal point, remove the extra decimal point and convert to float
-            fcy_amount_str_without_extra_decimal = fcy_amount_str.replace('.', '', 1)  # Remove the first occurrence of the decimal point
+            fcy_amount_str_without_extra_decimal = fcy_amount_str.replace('.', '', 1)
             fcy_amount = float(fcy_amount_str_without_extra_decimal)
         else:
-            # If the string does not contain a decimal point, convert to float directly
             fcy_amount = float(fcy_amount_str)
         amount=float(acc.amount_sar if acc.amount_sar else 0.0)
         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
         vat_amount = float((vat_percent * amount)/100)
         total_amount = float(vat_amount)
         
-        if acc.ac_name == '429' and acc.ac_name_type == 'coa':
-            total_amount = amount
+        # if acc.ac_name == '429' and acc.ac_name_type == 'coa':
+        #     total_amount = amount
         
         res_obj['vat_percent']= vat_percent
         res_obj['fcy_amount'] = fcy_amount
@@ -1627,9 +1617,60 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
 
         if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
             respone.append(res_obj)
-    # except:
-    #     pass
-    
+
+    # ── NEW: Payment vouchers on Organization (supplier) account ─────────────
+    payment_details = AccountDetails.objects.filter(
+        vouchers__date__range=[start_date, end_date],
+        vouchers__company__users__email=user.email,
+        ac_name_type='organization',
+        vouchers__voucher_type='Payment'
+    )
+
+    for acc in payment_details:
+        party_account = None
+        if acc.vouchers.party_account:
+            if acc.vouchers.party_account_type == 'coa':
+                party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
+            else:
+                party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
+
+        org = Organization.objects.filter(id=acc.ac_name).first()
+
+        res_obj = {
+            "account": org.name if org else acc.ac_name,
+            "date": acc.vouchers.date if acc.vouchers.date else '',
+            "currency": acc.currency,
+            "invoice_number": "",
+            "vat_percent": 0,
+            "fcy_amount": 0,
+            "vat_amount": 0,
+            "amount": 0,
+            "dr_amount": 0,
+            "cr_amount": 0,
+            "net_amount": 0,
+            "type": "Payment Voucher",
+            "voucher": acc.vouchers.voucher_number if acc.vouchers else "",
+            "party_account": party_account.name if party_account else '',
+            "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
+            "narrations": acc.narration,
+            "branch": acc.vouchers.branch if acc.vouchers else "",
+            "language_name": coa.language_name if coa.language_name else ""
+        }
+
+        amount = float(acc.amount_sar if acc.amount_sar else 0.0)
+        res_obj['amount'] = amount
+
+        if acc.dr_cr == 'Dr':
+            res_obj['dr_amount'] = amount  # we paid supplier = debit creditor
+        else:
+            res_obj['cr_amount'] = amount
+
+        res_obj['net_amount'] = amount
+
+        if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:
+            respone.append(res_obj)
+    # ── END NEW ──────────────────────────────────────────────────────────────
+
     balance = 0
     results = []
     for res in respone:
@@ -1685,17 +1726,9 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
             if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
                 respone.append(res_obj)
 
-    # try:
     coa_account_details = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
-    # organizations = Organization.objects.filter(company__users__email=user.email).values_list('id')
-    # organizations = list(map(str, organizations))
-    # org_account_details = AccountDetails.objects.filter(ac_name__in=organizations, ac_name_type='organization')
-
-    # account_details = coa_account_details.union(org_account_details)
     account_details = coa_account_details
     direct_output_details = account_details.filter(ac_name='430', ac_name_type='coa').exclude(vouchers__voucher_type="Payment").exclude(vouchers__voucher_type="DebitNote")
-    # account_details = account_details.exclude(ac_name='430', ac_name_type='coa').exclude(ac_name='429', ac_name_type='coa')
-    # account_details = account_details.union(direct_output_details)
 
     for acc in direct_output_details:
         party_account = None
@@ -1725,23 +1758,19 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
             "branch":acc.vouchers.branch if acc.vouchers else "",
             "language_name":coa.language_name if coa.language_name else ""
             }
-        # fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
         fcy_amount_str = acc.fcy_amount if acc.fcy_amount else "0.0"
-        # Check if the string contains a decimal point
         if '.' in fcy_amount_str:
-            # If the string contains a decimal point, remove the extra decimal point and convert to float
-            fcy_amount_str_without_extra_decimal = fcy_amount_str.replace('.', '', 1)  # Remove the first occurrence of the decimal point
+            fcy_amount_str_without_extra_decimal = fcy_amount_str.replace('.', '', 1)
             fcy_amount = float(fcy_amount_str_without_extra_decimal)
         else:
-            # If the string does not contain a decimal point, convert to float directly
             fcy_amount = float(fcy_amount_str)
         amount=float(acc.amount_sar if acc.amount_sar else 0.0)
         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
         vat_amount = float((vat_percent * amount)/100)
         total_amount = float(vat_amount)
         
-        if acc.ac_name == '430' and acc.ac_name_type == 'coa':
-            total_amount = amount
+        # if acc.ac_name == '430' and acc.ac_name_type == 'coa':
+        #     total_amount = amount
         
         res_obj['vat_percent']= vat_percent
         res_obj['fcy_amount'] = fcy_amount
@@ -1759,9 +1788,58 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
         
         if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:   
             respone.append(res_obj)
-    # except:
-    #     pass
-    
+
+    # ── NEW: Receipt vouchers on Organization (customer) account ─────────────
+    receipt_details = account_details.filter(
+        ac_name_type='organization',
+        vouchers__voucher_type='Receipt'
+    )
+
+    for acc in receipt_details:
+        party_account = None
+        if acc.vouchers.party_account:
+            if acc.vouchers.party_account_type == 'coa':
+                party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
+            else:
+                party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
+
+        org = Organization.objects.filter(id=acc.ac_name).first()
+
+        res_obj = {
+            "account": org.name if org else acc.ac_name,
+            "date": acc.vouchers.date if acc.vouchers.date else '',
+            "currency": acc.currency,
+            "invoice_number": "",
+            "vat_percent": 0,
+            "fcy_amount": 0,
+            "vat_amount": 0,
+            "amount": 0,
+            "dr_amount": 0,
+            "cr_amount": 0,
+            "net_amount": 0,
+            "type": "Receipt Voucher",
+            "voucher": acc.vouchers.voucher_number if acc.vouchers else "",
+            "party_account": party_account.name if party_account else '',
+            "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
+            "narrations": acc.narration,
+            "branch": acc.vouchers.branch if acc.vouchers else "",
+            "language_name": coa.language_name if coa.language_name else ""
+        }
+
+        amount = float(acc.amount_sar if acc.amount_sar else 0.0)
+        res_obj['amount'] = amount
+
+        if acc.dr_cr == 'Cr':
+            res_obj['cr_amount'] = amount  # customer paid = credit debtor
+        else:
+            res_obj['dr_amount'] = amount
+
+        res_obj['net_amount'] = amount
+
+        if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:
+            respone.append(res_obj)
+    # ── END NEW ──────────────────────────────────────────────────────────────
+
     balance = 0
     results = []
     for res in respone:
