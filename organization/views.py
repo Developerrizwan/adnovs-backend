@@ -2675,6 +2675,8 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     def _sum_customer_credit_lines_for_vouchers(self, vouchers_qs):
         return (
             AccountDetails.objects.filter(vouchers__in=vouchers_qs, dr_cr='Cr')
+            .exclude(amount_sar__isnull=True)
+            .exclude(amount_sar='')  # ← exclude empty strings before Cast
             .aggregate(
                 total=Coalesce(
                     Sum(Cast('amount_sar', output_field=models.DecimalField(max_digits=15, decimal_places=2))),
