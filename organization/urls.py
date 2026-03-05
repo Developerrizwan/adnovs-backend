@@ -109,6 +109,11 @@ payable_router.register('account/payable', AccountsPayableViewSet, basename='acc
 trial_balances_router = routers.SimpleRouter() 
 trial_balances_router.register('trial-balances', TrialBalancesViewSet, basename='trial-balances')
 
+# ── Reports ──────────────────────────────────────────────────────────────
+
+reports_router = routers.SimpleRouter()
+reports_router.register('daybook', DayBookReportViewSet, basename='daybook-report')
+
 sheet_report_router = routers.SimpleRouter() 
 sheet_report_router.register('sheet_report', SheetReportViewset, basename='sheet-report')
 
@@ -164,6 +169,7 @@ urlpatterns = [
     path('', include(receivable_router.urls)),
     path('', include(payable_router.urls)),
     path('', include(trial_balances_router.urls)),
+    path('', include(reports_router.urls)),
 
     path('signup/', UserSignUpViewSet.as_view(), name='create-user'),
     path('signin/', UserSignInViewset.as_view(), name='signin-user'),

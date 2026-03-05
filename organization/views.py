@@ -3373,6 +3373,223 @@ class TrialBalancesViewSet(viewsets.GenericViewSet):
             response.append(res_obj)
 
         return Response(response, status=status.HTTP_200_OK)
+
+class DayBookReportViewSet(viewsets.GenericViewSet):
+    """
+    Day Book Report – chronological journal of all accounting entries.
+
+    Running Balance rule (same as a cash book / general journal):
+        running_balance += Debit - Credit
+        positive result → Dr balance
+        negative result → Cr balance
+
+    GET /api/daybook/?date=2025-03-15
+    GET /api/daybook/?start_date=2025-03-01&end_date=2025-03-31
+    GET /api/daybook/?start_date=2025-03-01&end_date=2025-03-31&type=Receipt
+    GET /api/daybook/?start_date=2025-03-01&end_date=2025-03-31&branch=JEDDAH
+    """
+    permission_classes = [IsAuthenticated]
+    pagination_class   = None
+
+    def list(self, request, *args, **kwargs):
+        user = request.user
+
+        # ── Date filtering ────────────────────────────────────────────────────
+        single_date_str = request.query_params.get('date')
+        start_str       = request.query_params.get('start_date')
+        end_str         = request.query_params.get('end_date')
+        branch          = request.query_params.get('branch')
+        type_filter     = request.query_params.get('type')   # Journal / Payment / Receipt / etc.
+
+        if single_date_str:
+            try:
+                target_date = datetime.strptime(single_date_str, "%Y-%m-%d").date()
+                date_filter = Q(date__date=target_date)
+                date_title  = target_date.strftime("%d-%b-%Y")
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
+
+        elif start_str and end_str:
+            try:
+                start = datetime.strptime(start_str, "%Y-%m-%d").date()
+                end   = datetime.strptime(end_str,   "%Y-%m-%d").date()
+                date_filter = Q(date__date__range=[start, end])
+                date_title  = f"{start.strftime('%d-%b-%Y')} to {end.strftime('%d-%b-%Y')}"
+            except ValueError:
+                return Response({"error": "Invalid date range format"}, status=400)
+        else:
+            return Response(
+                {"error": "Provide ?date=YYYY-MM-DD or ?start_date=...&end_date=..."},
+                status=400,
+            )
+
+        # ── Base filters (shared) ─────────────────────────────────────────────
+        base_filter = Q(company__users=user)
+        if branch:
+            base_filter &= Q(branch__iexact=branch)
+
+        # ─────────────────────────────────────────────────────────────────────
+        #  1. VOUCHERS  (Journal / Payment / Receipt / CreditNote / DebitNote)
+        #     Each AccountDetails line = one Dr or Cr row in the day book.
+        # ─────────────────────────────────────────────────────────────────────
+        voucher_filter = base_filter
+        if type_filter:
+            voucher_filter &= Q(voucher_type=type_filter)   # ← only on Vouchers
+
+        vouchers = (
+            Vouchers.objects
+            .filter(date_filter, voucher_filter)
+            .select_related('job', 'company')
+            .order_by('date', 'voucher_number')
+        )
+
+        voucher_entries = []
+        for v in vouchers:
+            lines = AccountDetails.objects.filter(vouchers=v).order_by('line_no')
+            for line in lines:
+                amount = Decimal(line.amount_sar or "0.00")
+                is_dr  = line.dr_cr == "Dr"
+                voucher_entries.append({
+                    "date":         v.date.strftime("%Y-%m-%d"),
+                    "voucher_type": v.voucher_type,
+                    "voucher_no":   v.voucher_number or "—",
+                    "narration":    line.narration or v.naration or "",
+                    "account":      self._get_account_display(line),
+                    "debit":        float(amount) if is_dr  else 0.0,
+                    "credit":       float(amount) if not is_dr else 0.0,
+                    "job_no":       v.job.job_number if v.job else "",
+                    "branch":       v.branch or "",
+                    "source":       "Voucher",
+                })
+
+        # ─────────────────────────────────────────────────────────────────────
+        #  2. INVOICES  (Sales / Purchase)
+        #     Each CostEntry line = one row; fallback to invoice total.
+        #     Skip entirely when filtering by a voucher-only type.
+        # ─────────────────────────────────────────────────────────────────────
+        VOUCHER_ONLY_TYPES = {"Journal", "Payment", "Receipt", "CreditNote", "DebitNote"}
+        invoice_entries = []
+
+        if not type_filter or type_filter not in VOUCHER_ONLY_TYPES:
+            inv_filter = base_filter
+            if type_filter:
+                inv_filter &= Q(invoice_type=type_filter)   # e.g. Sales / Purchase
+
+            invoices = (
+                Invoices.objects
+                .filter(date_filter, inv_filter)
+                .select_related('job', 'client_name', 'consignee_name', 'party_account')
+            )
+
+            for inv in invoices:
+                is_purchase  = inv.invoice_type == "Purchase"
+                cost_entries = CostEntry.objects.filter(invoice=inv, is_included=True)
+
+                if cost_entries.exists():
+                    for ce in cost_entries:
+                        base       = Decimal(str(ce.amount        or "0"))
+                        tax_rate   = Decimal(str(ce.tax_group_code or "0"))
+                        line_total = base + base * (tax_rate / Decimal("100"))
+                        invoice_entries.append({
+                            "date":         inv.date.strftime("%Y-%m-%d"),
+                            "voucher_type": inv.invoice_type,
+                            "voucher_no":   inv.invoice_number,
+                            "narration":    ce.description or inv.narration or f"{inv.invoice_type} Invoice",
+                            "account":      self._get_party_display(inv),
+                            "debit":        float(line_total) if is_purchase else 0.0,
+                            "credit":       float(line_total) if not is_purchase else 0.0,
+                            "job_no":       inv.job.job_number if inv.job else "",
+                            "branch":       inv.branch or "",
+                            "source":       "Invoice",
+                        })
+                else:
+                    # Fallback – single line from invoice header amount
+                    total = Decimal(str(inv.amount_sar or "0"))
+                    invoice_entries.append({
+                        "date":         inv.date.strftime("%Y-%m-%d"),
+                        "voucher_type": inv.invoice_type,
+                        "voucher_no":   inv.invoice_number,
+                        "narration":    inv.narration or f"{inv.invoice_type} Invoice",
+                        "account":      self._get_party_display(inv),
+                        "debit":        float(total) if is_purchase else 0.0,
+                        "credit":       float(total) if not is_purchase else 0.0,
+                        "job_no":       inv.job.job_number if inv.job else "",
+                        "branch":       inv.branch or "",
+                        "source":       "Invoice",
+                    })
+
+        # ── Combine & sort chronologically ───────────────────────────────────
+        all_entries = voucher_entries + invoice_entries
+        all_entries.sort(key=lambda x: (x["date"], x["voucher_no"] or "ZZZ"))
+
+        # ── Running Balance ──────────────────────────────────────────────────
+        #
+        #  Day Book rule (standard bookkeeping):
+        #
+        #      running_balance  +=  Debit  −  Credit
+        #
+        #  Positive  →  Dr  (debits exceed credits so far)
+        #  Negative  →  Cr  (credits exceed debits so far)
+        #
+        #  This is identical to a Cash Book or General Journal cumulative total.
+        #  It does NOT depend on account type; that distinction belongs to the
+        #  individual Ledger accounts, not the Day Book.
+        #
+        running_balance = Decimal("0.00")
+        total_debit     = Decimal("0.00")
+        total_credit    = Decimal("0.00")
+
+        for e in all_entries:
+            dr = Decimal(str(e["debit"]))
+            cr = Decimal(str(e["credit"]))
+
+            total_debit   += dr
+            total_credit  += cr
+            running_balance += dr - cr          # ← the one and only rule
+
+            balance_value = float(abs(running_balance))
+            balance_side  = "Dr" if running_balance >= 0 else "Cr"
+
+            e["running_balance"]      = float(running_balance)   # signed, for sorting/calc
+            e["running_balance_abs"]  = balance_value            # absolute value for display
+            e["running_balance_side"] = balance_side             # "Dr" or "Cr" label
+
+        return Response({
+            "report_title": f"Day Book – {date_title}",
+            "branch":       branch or "All Branches",
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "entries":      all_entries,
+            "summary": {
+                "total_debit":        float(total_debit),
+                "total_credit":       float(total_credit),
+                "difference":         float(total_debit - total_credit),
+                "closing_balance":    float(abs(running_balance)),
+                "closing_balance_side": "Dr" if running_balance >= 0 else "Cr",
+            },
+        })
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _get_account_display(self, line: AccountDetails):
+        if line.ac_name_type == "coa":
+            try:
+                coa = Coa.objects.get(id=line.ac_name)
+                return f"{coa.code or ''} {coa.name or line.ac_name}".strip()
+            except Exception:
+                return f"COA {line.ac_name}"
+        elif line.ac_name_type == "organization":
+            try:
+                org = Organization.objects.get(id=line.ac_name)
+                return org.name or f"Party {line.ac_name}"
+            except Exception:
+                return f"Party {line.ac_name}"
+        return line.ac_name or "—"
+
+    def _get_party_display(self, invoice: Invoices):
+        if invoice.invoice_type == "Sales":
+            return invoice.client_name.name if invoice.client_name else "Customer"
+        return invoice.party_account.name if invoice.party_account else "Supplier"
+
 class BranchViewset(viewsets.GenericViewSet,mixins.ListModelMixin,mixins.CreateModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin):
     permission_classes = (IsAuthenticated,)
     queryset = Branch.objects.all()
