@@ -3447,19 +3447,30 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
         for v in vouchers:
             lines = AccountDetails.objects.filter(vouchers=v).order_by('line_no')
             for line in lines:
-                amount = Decimal(line.amount_sar or "0.00")
-                is_dr  = line.dr_cr == "Dr"
+                taxable = Decimal(line.taxable_amount or "0.00")
+                tax_amt = Decimal(line.tax_amount     or "0.00")
+                base    = Decimal(line.amount_sar     or "0.00")
+
+                # Add parentheses to be 100% explicit — fixes operator precedence ambiguity
+                total_amount = (taxable + tax_amt) if taxable else base
+
+                print(f"DEBUG voucher={v.voucher_number} ac={line.ac_name} taxable={taxable} tax={tax_amt} base={base} TOTAL={total_amount}")
+
+                is_dr = line.dr_cr == "Dr"
                 voucher_entries.append({
-                    "date":         v.date.strftime("%Y-%m-%d"),
-                    "voucher_type": v.voucher_type,
-                    "voucher_no":   v.voucher_number or "—",
-                    "narration":    line.narration or v.naration or "",
-                    "account":      self._get_account_display(line),
-                    "debit":        float(amount) if is_dr  else 0.0,
-                    "credit":       float(amount) if not is_dr else 0.0,
-                    "job_no":       v.job.job_number if v.job else "",
-                    "branch":       v.branch or "",
-                    "source":       "Voucher",
+                    "date":           v.date.strftime("%Y-%m-%d"),
+                    "voucher_type":   v.voucher_type,
+                    "voucher_no":     v.voucher_number or "—",
+                    "narration":      line.narration or v.naration or "",
+                    "account":        self._get_account_display(line),
+                    "debit":          float(total_amount) if is_dr     else 0.0,
+                    "credit":         float(total_amount) if not is_dr else 0.0,
+                    "taxable_amount": float(taxable),
+                    "tax_amount":     float(tax_amt),
+                    "tax_group_code": line.tax_group_code or "",
+                    "job_no":         v.job.job_number if v.job else "",
+                    "branch":         v.branch or "",
+                    "source":         "Voucher",
                 })
 
         # ─────────────────────────────────────────────────────────────────────
