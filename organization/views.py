@@ -3493,13 +3493,34 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
         #     Each CostEntry line = one row; fallback to invoice total.
         #     Skip entirely when filtering by a voucher-only type.
         # ─────────────────────────────────────────────────────────────────────
+        # ─────────────────────────────────────────────────────────────────────
+        #  2. INVOICES  (Sales / Purchase) — Full Double Entry
+        # ─────────────────────────────────────────────────────────────────────
         VOUCHER_ONLY_TYPES = {"Journal", "Payment", "Receipt", "CreditNote", "DebitNote"}
         invoice_entries = []
+
+        # Pre-fetch SUNDRY DEBTORS (406) and SUNDRY CREDITORS (405) COA names
+        # Also pre-fetch VAT INPUT (429) and VAT OUTPUT (430)
+        try:
+            sundry_debtors  = Coa.objects.filter(company__users=user, name__iexact="SUNDRY DEBTORS").first()
+            sundry_creditors = Coa.objects.filter(company__users=user, name__iexact="SUNDRY CREDITORS").first()
+            vat_input        = Coa.objects.filter(company__users=user, name__iexact="VAT INPUT").first()
+            vat_output       = Coa.objects.filter(company__users=user, name__iexact="VAT OUTPUT").first()
+
+            sundry_debtors_name   = f"{sundry_debtors.code or ''} {sundry_debtors.name}".strip()   if sundry_debtors   else "SUNDRY DEBTORS"
+            sundry_creditors_name = f"{sundry_creditors.code or ''} {sundry_creditors.name}".strip() if sundry_creditors else "SUNDRY CREDITORS"
+            vat_input_name        = f"{vat_input.code or ''} {vat_input.name}".strip()               if vat_input        else "VAT INPUT"
+            vat_output_name       = f"{vat_output.code or ''} {vat_output.name}".strip()             if vat_output       else "VAT OUTPUT"
+        except Exception:
+            sundry_debtors_name   = "SUNDRY DEBTORS"
+            sundry_creditors_name = "SUNDRY CREDITORS"
+            vat_input_name        = "VAT INPUT"
+            vat_output_name       = "VAT OUTPUT"
 
         if not type_filter or type_filter not in VOUCHER_ONLY_TYPES:
             inv_filter = base_filter
             if type_filter:
-                inv_filter &= Q(invoice_type=type_filter)   # e.g. Sales / Purchase
+                inv_filter &= Q(invoice_type=type_filter)
 
             invoices = (
                 Invoices.objects
@@ -3508,39 +3529,109 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
             )
 
             for inv in invoices:
-                is_purchase  = inv.invoice_type == "Purchase"
-                cost_entries = CostEntry.objects.filter(invoice=inv, is_included=True)
+                is_sales    = inv.invoice_type == "Sales"
+                is_purchase = not is_sales
+
+                # Try included entries first, fall back to all entries
+                cost_entries = CostEntry.objects.filter(invoice=inv, is_included=True).select_related('charge', 'charge__coa')
+                if not cost_entries.exists():
+                    cost_entries = CostEntry.objects.filter(invoice=inv).select_related('charge', 'charge__coa')
+
+                date_str   = inv.date.strftime("%Y-%m-%d")
+                job_no     = inv.job.job_number if inv.job else ""
+                inv_branch = inv.branch or ""
+                inv_no     = inv.invoice_number
+                narration  = inv.narration or f"{inv.invoice_type} Invoice"
 
                 if cost_entries.exists():
+                    # ── Calculate grand total for party line ─────────────────────────
+                    grand_total = Decimal("0.00")
                     for ce in cost_entries:
-                        base       = Decimal(str(ce.amount        or "0"))
-                        tax_rate   = Decimal(str(ce.tax_group_code or "0"))
-                        line_total = base + base * (tax_rate / Decimal("100"))
+                        base     = Decimal(str(ce.amount or "0"))
+                        tax_rate = Decimal(str(ce.tax_group_code or "0"))
+                        grand_total += base + base * (tax_rate / Decimal("100"))
+
+                    party_name = self._get_party_display(inv)
+
+                    # LINE 1: Party line (Sundry Debtors / Sundry Creditors)
+                    invoice_entries.append({
+                        "date":         date_str,
+                        "voucher_type": inv.invoice_type,
+                        "voucher_no":   inv_no,
+                        "narration":    narration,
+                        "account":      sundry_debtors_name   if is_sales    else sundry_creditors_name,
+                        "debit":        float(grand_total)    if is_sales    else 0.0,
+                        "credit":       float(grand_total)    if is_purchase else 0.0,
+                        "job_no":       job_no,
+                        "branch":       inv_branch,
+                        "source":       "Invoice",
+                    })
+
+                    # LINES 2+: One charge line + optional VAT line per CostEntry
+                    for ce in cost_entries:
+                        base     = Decimal(str(ce.amount or "0"))
+                        tax_rate = Decimal(str(ce.tax_group_code or "0"))
+                        vat_amt  = base * (tax_rate / Decimal("100"))
+
+                        if base == Decimal("0.00"):
+                            continue
+
+                        # Resolve charge COA account name
+                        if ce.charge and ce.charge.coa:
+                            coa_obj        = ce.charge.coa
+                            charge_account = f"{coa_obj.code or ''} {coa_obj.name}".strip()
+                        elif ce.charge:
+                            charge_account = ce.charge.name
+                        else:
+                            charge_account = "Income/Expense"
+
+                        ce_narration = ce.description or narration
+
+                        # Charge line
                         invoice_entries.append({
-                            "date":         inv.date.strftime("%Y-%m-%d"),
+                            "date":         date_str,
                             "voucher_type": inv.invoice_type,
-                            "voucher_no":   inv.invoice_number,
-                            "narration":    ce.description or inv.narration or f"{inv.invoice_type} Invoice",
-                            "account":      self._get_party_display(inv),
-                            "debit":        float(line_total) if is_purchase else 0.0,
-                            "credit":       float(line_total) if not is_purchase else 0.0,
-                            "job_no":       inv.job.job_number if inv.job else "",
-                            "branch":       inv.branch or "",
+                            "voucher_no":   inv_no,
+                            "narration":    ce_narration,
+                            "account":      charge_account,
+                            "debit":        float(base) if is_purchase else 0.0,
+                            "credit":       float(base) if is_sales    else 0.0,
+                            "job_no":       job_no,
+                            "branch":       inv_branch,
                             "source":       "Invoice",
                         })
+
+                        # VAT line
+                        if vat_amt > Decimal("0.00"):
+                            invoice_entries.append({
+                                "date":         date_str,
+                                "voucher_type": inv.invoice_type,
+                                "voucher_no":   inv_no,
+                                "narration":    ce_narration,
+                                "account":      vat_input_name  if is_purchase else vat_output_name,
+                                "debit":        float(vat_amt)  if is_purchase else 0.0,
+                                "credit":       float(vat_amt)  if is_sales    else 0.0,
+                                "job_no":       job_no,
+                                "branch":       inv_branch,
+                                "source":       "Invoice",
+                            })
+
                 else:
-                    # Fallback – single line from invoice header amount
+                    # ── Absolute fallback: no cost entries at all, use invoice header ─
                     total = Decimal(str(inv.amount_sar or "0"))
+                    if total == Decimal("0.00"):
+                        continue
+
                     invoice_entries.append({
-                        "date":         inv.date.strftime("%Y-%m-%d"),
+                        "date":         date_str,
                         "voucher_type": inv.invoice_type,
-                        "voucher_no":   inv.invoice_number,
-                        "narration":    inv.narration or f"{inv.invoice_type} Invoice",
-                        "account":      self._get_party_display(inv),
-                        "debit":        float(total) if is_purchase else 0.0,
-                        "credit":       float(total) if not is_purchase else 0.0,
-                        "job_no":       inv.job.job_number if inv.job else "",
-                        "branch":       inv.branch or "",
+                        "voucher_no":   inv_no,
+                        "narration":    narration,
+                        "account":      sundry_debtors_name   if is_sales    else sundry_creditors_name,
+                        "debit":        float(total)          if is_sales    else 0.0,
+                        "credit":       float(total)          if is_purchase else 0.0,
+                        "job_no":       job_no,
+                        "branch":       inv_branch,
                         "source":       "Invoice",
                     })
 
