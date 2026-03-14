@@ -1154,7 +1154,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 amount = float(cost_entry.amount if cost_entry.amount else 0.0)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
                 vat_amount = float((vat_percent * amount) / 100)
-                total_amount = float(amount + vat_amount)
+                total_amount = float(amount)
                 res_obj['vat_percent'] = vat_percent
                 res_obj['fcy_amount'] = fcy_amount
                 res_obj['amount'] = amount
@@ -1169,7 +1169,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 amount = float(cost_entry.amount if cost_entry.amount else 0.0)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
                 vat_amount = float((vat_percent * amount) / 100)
-                total_amount = float(amount + vat_amount)
+                total_amount = float(amount)
                 res_obj['vat_percent'] = vat_percent
                 res_obj['fcy_amount'] = fcy_amount
                 res_obj['amount'] = amount
@@ -1215,17 +1215,10 @@ def get_other_coa_response(coa, start_date, end_date, user):
             fcy_amount_str = fcy_amount_str.replace('.', '', 1)
         fcy_amount = float(fcy_amount_str)
 
-        # ── FIXED: use taxable_amount + tax_amount (same as Day Book fix) ──
-        taxable    = Decimal(acc.taxable_amount or "0.00")
-        tax_amt    = Decimal(acc.tax_amount     or "0.00")
-        base       = Decimal(acc.amount_sar     or "0.00")
-        total_dec  = (taxable + tax_amt) if taxable else base
-        total_amount = float(total_dec)
-
+        amount = float(acc.amount_sar if acc.amount_sar else 0.0)
         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
-        vat_amount  = float(tax_amt)
-        amount      = float(taxable if taxable else base)
-        # ────────────────────────────────────────────────────────────────────
+        vat_amount = float((vat_percent * amount) / 100)
+        total_amount = float(amount)
 
         if acc.dr_cr == 'Cr':
             res_obj = {
@@ -1238,7 +1231,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "vat_amount": vat_amount,
                 "amount": amount,
                 "dr_amount": 0,
-                "cr_amount": total_amount,   # ← now includes VAT
+                "cr_amount": total_amount,
                 "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
@@ -1259,7 +1252,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "fcy_amount": fcy_amount,
                 "vat_amount": vat_amount,
                 "amount": amount,
-                "dr_amount": total_amount,   # ← now includes VAT
+                "dr_amount": total_amount,
                 "cr_amount": 0,
                 "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
@@ -1413,18 +1406,10 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
 
         fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-
-        # ── FIXED: use taxable_amount + tax_amount ──
-        taxable      = Decimal(acc.taxable_amount or "0.00")
-        tax_amt      = Decimal(acc.tax_amount     or "0.00")
-        base         = Decimal(acc.amount_sar     or "0.00")
-        total_dec    = (taxable + tax_amt) if taxable else base
-        total_amount = float(total_dec)
-
-        vat_percent  = float(acc.tax_group_code if acc.tax_group_code else 0.0)
-        vat_amount   = float(tax_amt)
-        amount       = float(taxable if taxable else base)
-        # ────────────────────────────────────────────
+        amount = float(acc.amount_sar if acc.amount_sar else 0.0)
+        vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+        vat_amount = float((vat_percent * amount) / 100)
+        total_amount = float(amount + vat_amount)
 
         if acc.dr_cr == 'Cr':
             res_obj = {
@@ -1437,7 +1422,7 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 "vat_amount": vat_amount,
                 "amount": amount,
                 "dr_amount": 0,
-                "cr_amount": total_amount,   # ← now includes VAT
+                "cr_amount": total_amount,
                 "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
@@ -1458,7 +1443,7 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 "fcy_amount": fcy_amount,
                 "vat_amount": vat_amount,
                 "amount": amount,
-                "dr_amount": total_amount,   # ← now includes VAT
+                "dr_amount": total_amount,
                 "cr_amount": 0,
                 "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
@@ -1556,7 +1541,7 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(vat_amount + amount)
+            total_amount = float(amount)
 
             res_obj['vat_percent']= vat_percent
             res_obj['fcy_amount'] = fcy_amount
@@ -1730,7 +1715,7 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
             amount=float(cost_entry.amount if cost_entry.amount else 0.0)
             vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
             vat_amount = float((vat_percent * amount)/100)
-            total_amount = float(vat_amount + amount)
+            total_amount = float(amount)
             res_obj['vat_percent']= vat_percent
             res_obj['fcy_amount'] = fcy_amount
             res_obj['amount'] = amount
@@ -2468,7 +2453,7 @@ def get_trial_balance_coa_response(coa, start_date, end_date, user):
         fcy_amount = float(cost_entry.fcy_amount or 0.0)
         vat_percent = float(cost_entry.tax_group_code or 0.0)
         vat_amount = (vat_percent * amount) / 100
-        total_amount = amount + vat_amount  # VAT added here (matches get_coa_sheet_response)
+        total_amount = amount  # VAT added here (matches get_coa_sheet_response)
 
         is_sales = invoice.invoice_type == 'Sales'
         res_obj = {
@@ -2535,7 +2520,7 @@ def get_trial_balance_coa_response(coa, start_date, end_date, user):
         amount = float(acc.amount_sar or 0.0)
         vat_percent = float(acc.tax_group_code or 0.0)
         vat_amount = (vat_percent * amount) / 100
-        total_amount = amount + vat_amount  # VAT added here to match get_coa_sheet_response
+        total_amount = amount  # VAT added here to match get_coa_sheet_response
 
         res_obj = {
             "account": coa.name,
