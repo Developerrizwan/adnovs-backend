@@ -1154,7 +1154,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 amount = float(cost_entry.amount if cost_entry.amount else 0.0)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
                 vat_amount = float((vat_percent * amount) / 100)
-                total_amount = float(amount)
+                total_amount = float(amount + vat_amount)
                 res_obj['vat_percent'] = vat_percent
                 res_obj['fcy_amount'] = fcy_amount
                 res_obj['amount'] = amount
@@ -1169,7 +1169,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 amount = float(cost_entry.amount if cost_entry.amount else 0.0)
                 vat_percent = float(cost_entry.tax_group_code if cost_entry.tax_group_code else 0.0)
                 vat_amount = float((vat_percent * amount) / 100)
-                total_amount = float(amount)
+                total_amount = float(amount + vat_amount)
                 res_obj['vat_percent'] = vat_percent
                 res_obj['fcy_amount'] = fcy_amount
                 res_obj['amount'] = amount
@@ -1215,10 +1215,17 @@ def get_other_coa_response(coa, start_date, end_date, user):
             fcy_amount_str = fcy_amount_str.replace('.', '', 1)
         fcy_amount = float(fcy_amount_str)
 
-        amount = float(acc.amount_sar if acc.amount_sar else 0.0)
+        # ── FIXED: use taxable_amount + tax_amount (same as Day Book fix) ──
+        taxable    = Decimal(acc.taxable_amount or "0.00")
+        tax_amt    = Decimal(acc.tax_amount     or "0.00")
+        base       = Decimal(acc.amount_sar     or "0.00")
+        total_dec  = (taxable + tax_amt) if taxable else base
+        total_amount = float(total_dec)
+
         vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
-        vat_amount = float((vat_percent * amount) / 100)
-        total_amount = float(amount)
+        vat_amount  = float(tax_amt)
+        amount      = float(taxable if taxable else base)
+        # ────────────────────────────────────────────────────────────────────
 
         if acc.dr_cr == 'Cr':
             res_obj = {
@@ -1231,7 +1238,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "vat_amount": vat_amount,
                 "amount": amount,
                 "dr_amount": 0,
-                "cr_amount": total_amount,
+                "cr_amount": total_amount,   # ← now includes VAT
                 "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
@@ -1252,7 +1259,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
                 "fcy_amount": fcy_amount,
                 "vat_amount": vat_amount,
                 "amount": amount,
-                "dr_amount": total_amount,
+                "dr_amount": total_amount,   # ← now includes VAT
                 "cr_amount": 0,
                 "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
@@ -1406,10 +1413,18 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
 
         fcy_amount = float(acc.fcy_amount if acc.fcy_amount else 0.0)
-        amount = float(acc.amount_sar if acc.amount_sar else 0.0)
-        vat_percent = float(acc.tax_group_code if acc.tax_group_code else 0.0)
-        vat_amount = float((vat_percent * amount) / 100)
-        total_amount = float(amount + vat_amount)
+
+        # ── FIXED: use taxable_amount + tax_amount ──
+        taxable      = Decimal(acc.taxable_amount or "0.00")
+        tax_amt      = Decimal(acc.tax_amount     or "0.00")
+        base         = Decimal(acc.amount_sar     or "0.00")
+        total_dec    = (taxable + tax_amt) if taxable else base
+        total_amount = float(total_dec)
+
+        vat_percent  = float(acc.tax_group_code if acc.tax_group_code else 0.0)
+        vat_amount   = float(tax_amt)
+        amount       = float(taxable if taxable else base)
+        # ────────────────────────────────────────────
 
         if acc.dr_cr == 'Cr':
             res_obj = {
@@ -1422,7 +1437,7 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 "vat_amount": vat_amount,
                 "amount": amount,
                 "dr_amount": 0,
-                "cr_amount": total_amount,
+                "cr_amount": total_amount,   # ← now includes VAT
                 "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
                 "type": acc.vouchers.voucher_type + " Voucher",
@@ -1443,7 +1458,7 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
                 "fcy_amount": fcy_amount,
                 "vat_amount": vat_amount,
                 "amount": amount,
-                "dr_amount": total_amount,
+                "dr_amount": total_amount,   # ← now includes VAT
                 "cr_amount": 0,
                 "net_amount": 0,
                 "charge": acc.charge.name if acc.charge else '',
@@ -2453,7 +2468,7 @@ def get_trial_balance_coa_response(coa, start_date, end_date, user):
         fcy_amount = float(cost_entry.fcy_amount or 0.0)
         vat_percent = float(cost_entry.tax_group_code or 0.0)
         vat_amount = (vat_percent * amount) / 100
-        total_amount = amount  # VAT added here (matches get_coa_sheet_response)
+        total_amount = amount + vat_amount  # VAT added here (matches get_coa_sheet_response)
 
         is_sales = invoice.invoice_type == 'Sales'
         res_obj = {
@@ -2520,7 +2535,7 @@ def get_trial_balance_coa_response(coa, start_date, end_date, user):
         amount = float(acc.amount_sar or 0.0)
         vat_percent = float(acc.tax_group_code or 0.0)
         vat_amount = (vat_percent * amount) / 100
-        total_amount = amount  # VAT added here to match get_coa_sheet_response
+        total_amount = amount + vat_amount  # VAT added here (matches get_coa_sheet_response)
 
         res_obj = {
             "account": coa.name,
@@ -3399,7 +3414,7 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
         start_str       = request.query_params.get('start_date')
         end_str         = request.query_params.get('end_date')
         branch          = request.query_params.get('branch')
-        type_filter     = request.query_params.get('type')   # Journal / Payment / Receipt / etc.
+        type_filter     = request.query_params.get('type')
 
         if single_date_str:
             try:
@@ -3423,18 +3438,37 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
                 status=400,
             )
 
-        # ── Base filters (shared) ─────────────────────────────────────────────
+        # ── Base filters ──────────────────────────────────────────────────────
         base_filter = Q(company__users=user)
         if branch:
             base_filter &= Q(branch__iexact=branch)
 
+        # ── Pre-fetch VAT / Sundry COA names ─────────────────────────────────
+        # Must be defined BEFORE voucher loop so both vouchers and invoices can use them
+        try:
+            sundry_debtors   = Coa.objects.filter(company__users=user, name__iexact="SUNDRY DEBTORS").first()
+            sundry_creditors = Coa.objects.filter(company__users=user, name__iexact="SUNDRY CREDITORS").first()
+            vat_input        = Coa.objects.filter(company__users=user, name__iexact="VAT INPUT").first()
+            vat_output       = Coa.objects.filter(company__users=user, name__iexact="VAT OUTPUT").first()
+
+            sundry_debtors_name   = f"{sundry_debtors.code or ''} {sundry_debtors.name}".strip()    if sundry_debtors   else "SUNDRY DEBTORS"
+            sundry_creditors_name = f"{sundry_creditors.code or ''} {sundry_creditors.name}".strip() if sundry_creditors else "SUNDRY CREDITORS"
+            vat_input_name        = f"{vat_input.code or ''} {vat_input.name}".strip()               if vat_input        else "VAT INPUT"
+            vat_output_name       = f"{vat_output.code or ''} {vat_output.name}".strip()             if vat_output       else "VAT OUTPUT"
+        except Exception:
+            sundry_debtors_name   = "SUNDRY DEBTORS"
+            sundry_creditors_name = "SUNDRY CREDITORS"
+            vat_input_name        = "VAT INPUT"
+            vat_output_name       = "VAT OUTPUT"
+
         # ─────────────────────────────────────────────────────────────────────
         #  1. VOUCHERS  (Journal / Payment / Receipt / CreditNote / DebitNote)
         #     Each AccountDetails line = one Dr or Cr row in the day book.
+        #     VAT amount is split into a separate line.
         # ─────────────────────────────────────────────────────────────────────
         voucher_filter = base_filter
         if type_filter:
-            voucher_filter &= Q(voucher_type=type_filter)   # ← only on Vouchers
+            voucher_filter &= Q(voucher_type=type_filter)
 
         vouchers = (
             Vouchers.objects
@@ -3451,20 +3485,21 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
                 tax_amt = Decimal(line.tax_amount     or "0.00")
                 base    = Decimal(line.amount_sar     or "0.00")
 
-                # Add parentheses to be 100% explicit — fixes operator precedence ambiguity
-                total_amount = (taxable + tax_amt) if taxable else base
-
-                print(f"DEBUG voucher={v.voucher_number} ac={line.ac_name} taxable={taxable} tax={tax_amt} base={base} TOTAL={total_amount}")
+                # Main line uses base amount only (without VAT)
+                # If taxable_amount is set use that, otherwise use amount_sar
+                main_amount = taxable if taxable else base
 
                 is_dr = line.dr_cr == "Dr"
+
+                # ── Main account line ─────────────────────────────────────
                 voucher_entries.append({
                     "date":           v.date.strftime("%Y-%m-%d"),
                     "voucher_type":   v.voucher_type,
                     "voucher_no":     v.voucher_number or "—",
                     "narration":      line.narration or v.naration or "",
                     "account":        self._get_account_display(line),
-                    "debit":          float(total_amount) if is_dr     else 0.0,
-                    "credit":         float(total_amount) if not is_dr else 0.0,
+                    "debit":          float(main_amount) if is_dr     else 0.0,
+                    "credit":         float(main_amount) if not is_dr else 0.0,
                     "taxable_amount": float(taxable),
                     "tax_amount":     float(tax_amt),
                     "tax_group_code": line.tax_group_code or "",
@@ -3473,34 +3508,33 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
                     "source":         "Voucher",
                 })
 
-        # ─────────────────────────────────────────────────────────────────────
-        #  2. INVOICES  (Sales / Purchase)
-        #     Each CostEntry line = one row; fallback to invoice total.
-        #     Skip entirely when filtering by a voucher-only type.
-        # ─────────────────────────────────────────────────────────────────────
+                # ── Separate VAT line (only when tax_amount exists) ───────
+                if tax_amt > Decimal("0.00"):
+                    # Dr line (expense/asset) → VAT Input
+                    # Cr line (income/liability) → VAT Output
+                    vat_account = vat_input_name if is_dr else vat_output_name
+
+                    voucher_entries.append({
+                        "date":           v.date.strftime("%Y-%m-%d"),
+                        "voucher_type":   v.voucher_type,
+                        "voucher_no":     v.voucher_number or "—",
+                        "narration":      line.narration or v.naration or "",
+                        "account":        vat_account,
+                        "debit":          float(tax_amt) if is_dr     else 0.0,
+                        "credit":         float(tax_amt) if not is_dr else 0.0,
+                        "taxable_amount": float(taxable),
+                        "tax_amount":     float(tax_amt),
+                        "tax_group_code": line.tax_group_code or "",
+                        "job_no":         v.job.job_number if v.job else "",
+                        "branch":         v.branch or "",
+                        "source":         "Voucher",
+                    })
+
         # ─────────────────────────────────────────────────────────────────────
         #  2. INVOICES  (Sales / Purchase) — Full Double Entry
         # ─────────────────────────────────────────────────────────────────────
         VOUCHER_ONLY_TYPES = {"Journal", "Payment", "Receipt", "CreditNote", "DebitNote"}
         invoice_entries = []
-
-        # Pre-fetch SUNDRY DEBTORS (406) and SUNDRY CREDITORS (405) COA names
-        # Also pre-fetch VAT INPUT (429) and VAT OUTPUT (430)
-        try:
-            sundry_debtors  = Coa.objects.filter(company__users=user, name__iexact="SUNDRY DEBTORS").first()
-            sundry_creditors = Coa.objects.filter(company__users=user, name__iexact="SUNDRY CREDITORS").first()
-            vat_input        = Coa.objects.filter(company__users=user, name__iexact="VAT INPUT").first()
-            vat_output       = Coa.objects.filter(company__users=user, name__iexact="VAT OUTPUT").first()
-
-            sundry_debtors_name   = f"{sundry_debtors.code or ''} {sundry_debtors.name}".strip()   if sundry_debtors   else "SUNDRY DEBTORS"
-            sundry_creditors_name = f"{sundry_creditors.code or ''} {sundry_creditors.name}".strip() if sundry_creditors else "SUNDRY CREDITORS"
-            vat_input_name        = f"{vat_input.code or ''} {vat_input.name}".strip()               if vat_input        else "VAT INPUT"
-            vat_output_name       = f"{vat_output.code or ''} {vat_output.name}".strip()             if vat_output       else "VAT OUTPUT"
-        except Exception:
-            sundry_debtors_name   = "SUNDRY DEBTORS"
-            sundry_creditors_name = "SUNDRY CREDITORS"
-            vat_input_name        = "VAT INPUT"
-            vat_output_name       = "VAT OUTPUT"
 
         if not type_filter or type_filter not in VOUCHER_ONLY_TYPES:
             inv_filter = base_filter
@@ -3529,14 +3563,12 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
                 narration  = inv.narration or f"{inv.invoice_type} Invoice"
 
                 if cost_entries.exists():
-                    # ── Calculate grand total for party line ─────────────────────────
+                    # ── Calculate grand total for party line ──────────────
                     grand_total = Decimal("0.00")
                     for ce in cost_entries:
                         base     = Decimal(str(ce.amount or "0"))
                         tax_rate = Decimal(str(ce.tax_group_code or "0"))
                         grand_total += base + base * (tax_rate / Decimal("100"))
-
-                    party_name = self._get_party_display(inv)
 
                     # LINE 1: Party line (Sundry Debtors / Sundry Creditors)
                     invoice_entries.append({
@@ -3602,7 +3634,7 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
                             })
 
                 else:
-                    # ── Absolute fallback: no cost entries at all, use invoice header ─
+                    # ── Absolute fallback: no cost entries, use invoice header ──
                     total = Decimal(str(inv.amount_sar or "0"))
                     if total == Decimal("0.00"):
                         continue
@@ -3624,19 +3656,7 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
         all_entries = voucher_entries + invoice_entries
         all_entries.sort(key=lambda x: (x["date"], x["voucher_no"] or "ZZZ"))
 
-        # ── Running Balance ──────────────────────────────────────────────────
-        #
-        #  Day Book rule (standard bookkeeping):
-        #
-        #      running_balance  +=  Debit  −  Credit
-        #
-        #  Positive  →  Dr  (debits exceed credits so far)
-        #  Negative  →  Cr  (credits exceed debits so far)
-        #
-        #  This is identical to a Cash Book or General Journal cumulative total.
-        #  It does NOT depend on account type; that distinction belongs to the
-        #  individual Ledger accounts, not the Day Book.
-        #
+        # ── Running Balance ───────────────────────────────────────────────────
         running_balance = Decimal("0.00")
         total_debit     = Decimal("0.00")
         total_credit    = Decimal("0.00")
@@ -3645,16 +3665,16 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
             dr = Decimal(str(e["debit"]))
             cr = Decimal(str(e["credit"]))
 
-            total_debit   += dr
-            total_credit  += cr
-            running_balance += dr - cr          # ← the one and only rule
+            total_debit     += dr
+            total_credit    += cr
+            running_balance += dr - cr
 
             balance_value = float(abs(running_balance))
             balance_side  = "Dr" if running_balance >= 0 else "Cr"
 
-            e["running_balance"]      = float(running_balance)   # signed, for sorting/calc
-            e["running_balance_abs"]  = balance_value            # absolute value for display
-            e["running_balance_side"] = balance_side             # "Dr" or "Cr" label
+            e["running_balance"]      = float(running_balance)
+            e["running_balance_abs"]  = balance_value
+            e["running_balance_side"] = balance_side
 
         return Response({
             "report_title": f"Day Book – {date_title}",
@@ -3662,10 +3682,10 @@ class DayBookReportViewSet(viewsets.GenericViewSet):
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "entries":      all_entries,
             "summary": {
-                "total_debit":        float(total_debit),
-                "total_credit":       float(total_credit),
-                "difference":         float(total_debit - total_credit),
-                "closing_balance":    float(abs(running_balance)),
+                "total_debit":          float(total_debit),
+                "total_credit":         float(total_credit),
+                "difference":           float(total_debit - total_credit),
+                "closing_balance":      float(abs(running_balance)),
                 "closing_balance_side": "Dr" if running_balance >= 0 else "Cr",
             },
         })
