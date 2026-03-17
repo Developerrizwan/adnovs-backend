@@ -1186,7 +1186,7 @@ def get_other_coa_response(coa, start_date, end_date, user):
     )
 
     coa_account_details = voucher_accounts.filter(
-        Q(ac_name=str(coa.id), ac_name_type='coa') | Q(charge__coa=coa)
+        Q(ac_name=str(coa.id), ac_name_type='coa')
     )
 
     organizations = Organization.objects.filter(
@@ -2474,7 +2474,10 @@ def get_coa_sheet_response(coa, start_date, end_date, user):
     
 
     voucher_accounts = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
-    coa_account_details = voucher_accounts.filter(Q(ac_name='{0}'.format(coa.id), ac_name_type='coa') | Q(charge__coa=coa))
+    coa_account_details = voucher_accounts.filter(
+    ac_name=str(coa.id),
+    ac_name_type='coa'
+)
     organizations = Organization.objects.filter(coa=coa, company__users__email=user.email)
     # organizations = list(map(str, organizations))
     for org in organizations:
@@ -2683,8 +2686,9 @@ def get_trial_balance_coa_response(coa, start_date, end_date, user):
 
     # FIX: Use | (pipe) not .union() to avoid type mismatch silently dropping rows
     coa_account_details = voucher_accounts.filter(
-        Q(ac_name=str(coa.id), ac_name_type='coa') | Q(charge__coa=coa)
-    )
+    ac_name=str(coa.id),
+    ac_name_type='coa'
+)
 
     organizations = Organization.objects.filter(
         coa=coa,
