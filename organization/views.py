@@ -2035,7 +2035,7 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
     # ── NEW: Receipt & CreditNote vouchers on Organization (customer) account ────
     receipt_details = account_details.filter(
         ac_name_type='organization',
-        vouchers__voucher_type__in=['Receipt', 'CreditNote']  # ← add CreditNote
+        vouchers__voucher_type__in=['Receipt', 'CreditNote', 'Journal']  # ← add CreditNote and Journal
     )
 
     for acc in receipt_details:
