@@ -23,6 +23,19 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db.models.functions import Coalesce
 from decimal import Decimal
 
+
+from datetime import datetime, time
+
+def make_end_of_day(date_str):
+    """
+    Convert date string 'YYYY-MM-DD' to end of day datetime string
+    'YYYY-MM-DD 23:59:59' to make date range inclusive of the end date.
+    """
+    try:
+        d = datetime.strptime(str(date_str).split('T')[0], "%Y-%m-%d")
+        return d.replace(hour=23, minute=59, second=59)
+    except Exception:
+        return date_str
 class UserSignUpViewSet(generics.GenericAPIView):
     serializer_class = UserSignUpSerializer
     permission_classes = [AllowAny, ]
@@ -2103,20 +2116,21 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         coa_id = request.query_params.get('coa', None)
         start_date = request.query_params.get('start_date', None)
         end_date = request.query_params.get('end_date',None)
+        end_date_inclusive = make_end_of_day(end_date) if end_date else end_date
         job_id = request.query_params.get('job', None)
         
         if coa_id is not None and Coa.objects.filter(id=coa_id).exists():
             coa = Coa.objects.filter(id=coa_id).first()
             if coa.name == 'VAT INPUT': # For VAT INPUT 429
-                response = get_vat_input_coa_response(coa, start_date, end_date, request.user)
+                response = get_vat_input_coa_response(coa, start_date, end_date_inclusive, request.user)
             elif coa.name == 'VAT OUTPUT': # For VAT OUTPUT 430
-                response = get_vat_output_coa_response(coa, start_date, end_date, request.user)
+                response = get_vat_output_coa_response(coa, start_date, end_date_inclusive, request.user)
             elif coa.name == 'SUNDRY CREDITORS': # For Sundry Creditors 405
-                response = get_sundry_creditors_coa_response(coa, start_date, end_date, request.user)
+                response = get_sundry_creditors_coa_response(coa, start_date, end_date_inclusive, request.user)
             elif coa.name == 'SUNDRY DEBTORS': # For Sundry Debtors 406
-                response = get_sundry_debtors_coa_response(coa, start_date, end_date, request.user)
+                response = get_sundry_debtors_coa_response(coa, start_date, end_date_inclusive, request.user)
             else:     
-                response = get_other_coa_response(coa, start_date, end_date, request.user)
+                response = get_other_coa_response(coa, start_date, end_date_inclusive, request.user)
             
             if job_id is not None and Job.objects.filter(id=job_id).exists():
                 job =  Job.objects.filter(id=job_id).first()
@@ -2130,7 +2144,7 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
         
         if coa_id is None and job_id is not None and Job.objects.filter(id=job_id).exists():
             job =  Job.objects.filter(id=job_id).first()
-            response = get_job_ledger_statement_response(job, start_date, end_date, request.user)
+            response = get_job_ledger_statement_response(job, start_date, end_date_inclusive, request.user)
             return Response(response)
 
         
@@ -2634,6 +2648,7 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     def list(self, request, *args, **kwargs):
         start_date = request.query_params.get('start_date', None)
         end_date = request.query_params.get('end_date', None)
+        end_date_inclusive = make_end_of_day(end_date) if end_date else end_date
         branch = request.query_params.get('branch', None)
         queryset = Coa.objects.filter(company__users__email=request.user.email).filter(Q(type='ASSET')| Q(type = 'EQUITY')| Q(type = 'LIABILITY'))
 
@@ -2650,11 +2665,11 @@ class SheetReportViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             cr_amount =0
             amounts = []
             if coa.id == 429: # For VAT INPUT
-                amounts = get_vat_input_coa_response(coa, start_date, end_date, request.user)
+                amounts = get_vat_input_coa_response(coa, start_date, end_date_inclusive, request.user)
             elif coa.id == 430: # For VAT OUTPUT
-                amounts = get_vat_output_coa_response(coa, start_date, end_date, request.user)
+                amounts = get_vat_output_coa_response(coa, start_date, end_date_inclusive, request.user)
             else:
-                amounts = get_coa_sheet_response(coa, start_date, end_date, request.user)
+                amounts = get_coa_sheet_response(coa, start_date, end_date_inclusive, request.user)
             
             for amt in amounts:
                 dr_amount += amt['dr_amount']
@@ -3541,7 +3556,9 @@ class TrialBalancesViewSet(viewsets.GenericViewSet):
 
     def list(self, request, *args, **kwargs):
         start_date = request.query_params.get('start_date', None)
-        end_date = request.query_params.get('end_date', None)
+        end_date   = request.query_params.get('end_date', None)
+        end_date_inclusive = make_end_of_day(end_date) if end_date else end_date
+
         queryset = Coa.objects.filter(
             company__users__email=request.user.email
         ).select_related('group')
@@ -3552,16 +3569,16 @@ class TrialBalancesViewSet(viewsets.GenericViewSet):
             raw_cr = 0.0
             entries = []
 
-            if coa.name == 'VAT INPUT':
-                entries = get_vat_input_coa_response(coa, start_date, end_date, request.user)
-            elif coa.name == 'VAT OUTPUT':
-                entries = get_vat_output_coa_response(coa, start_date, end_date, request.user)
+            if coa.code == '429' or coa.name == 'VAT INPUT':
+                entries = get_vat_input_coa_response(coa, start_date, end_date_inclusive, request.user)
+            elif coa.code == '430' or coa.name == 'VAT OUTPUT':
+                entries = get_vat_output_coa_response(coa, start_date, end_date_inclusive, request.user)
             elif coa.name == 'SUNDRY CREDITORS':
-                entries = get_sundry_creditors_coa_response(coa, start_date, end_date, request.user)
+                entries = get_sundry_creditors_coa_response(coa, start_date, end_date_inclusive, request.user)
             elif coa.name == 'SUNDRY DEBTORS':
-                entries = get_sundry_debtors_coa_response(coa, start_date, end_date, request.user)
+                entries = get_sundry_debtors_coa_response(coa, start_date, end_date_inclusive, request.user)
             else:
-                entries = get_trial_balance_coa_response(coa, start_date, end_date, request.user)
+                entries = get_trial_balance_coa_response(coa, start_date, end_date_inclusive, request.user)
 
             for amt in entries:
                 raw_dr += float(amt.get('dr_amount', 0))
