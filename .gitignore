@@ -281,3 +281,4 @@ adnov/media/
 *.backup
 *.sql
 db_backups/
+*.dump

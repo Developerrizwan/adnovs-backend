@@ -1809,7 +1809,8 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
                 respone.append(res_obj)
     
     coa_account_details = AccountDetails.objects.filter(vouchers__date__range=[start_date, end_date], vouchers__company__users__email=user.email)
-    account_details = coa_account_details.exclude(vouchers__voucher_type="Receipt").exclude(vouchers__voucher_type="CreditNote")
+    # FIX: Exclude Journal, Receipt, and CreditNote vouchers — only Payment, DebitNote, and Invoices through the invoice section
+    account_details = coa_account_details.exclude(vouchers__voucher_type="Receipt").exclude(vouchers__voucher_type="CreditNote").exclude(vouchers__voucher_type="Journal")
     direct_input_details = account_details.filter(ac_name='429', ac_name_type='coa') 
     account_details = account_details.exclude(ac_name='430', ac_name_type='coa').exclude(ac_name='429', ac_name_type='coa')
     account_details = account_details.union(direct_input_details)
@@ -2933,9 +2934,21 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         return cost_total.quantize(Decimal('0.00'))
 
-    def _sum_customer_credit_lines_for_vouchers(self, vouchers_qs):
+    def _sum_customer_credit_lines_for_vouchers(self, vouchers_qs, organization_id=None):
+        """Sum credit (Cr) lines in AccountDetails for given vouchers.
+        If organization_id is provided, only sum lines for that specific customer account.
+        """
+        filter_dict = {
+            'vouchers__in': vouchers_qs,
+            'dr_cr': 'Cr'
+        }
+        # Only include credit lines for the specific customer account (not other accounts)
+        if organization_id:
+            filter_dict['ac_name'] = str(organization_id)
+            filter_dict['ac_name_type'] = 'organization'
+        
         return (
-            AccountDetails.objects.filter(vouchers__in=vouchers_qs, dr_cr='Cr')
+            AccountDetails.objects.filter(**filter_dict)
             .exclude(amount_sar__isnull=True)
             .exclude(amount_sar='')  # ← exclude empty strings before Cast
             .aggregate(
@@ -2997,7 +3010,7 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     date__date__lt=start_date
                 ).filter(company_filter)
 
-                opening_receipt_total = self._sum_customer_credit_lines_for_vouchers(opening_receipts_qs)
+                opening_receipt_total = self._sum_customer_credit_lines_for_vouchers(opening_receipts_qs, cust.id)
 
                 opening_creditnotes_qs = Vouchers.objects.filter(
                     party_account=str(cust.id),
@@ -3006,7 +3019,7 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     date__date__lt=start_date
                 ).filter(company_filter)
 
-                opening_creditnote_total = self._sum_customer_credit_lines_for_vouchers(opening_creditnotes_qs)
+                opening_creditnote_total = self._sum_customer_credit_lines_for_vouchers(opening_creditnotes_qs, cust.id)
 
                 opening = opening_invoice_total - opening_receipt_total - opening_creditnote_total
 
@@ -3026,7 +3039,7 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     date__date__range=[start_date, end_date]
                 ).filter(company_filter)
 
-                total_receipt = self._sum_customer_credit_lines_for_vouchers(period_receipts_qs)
+                total_receipt = self._sum_customer_credit_lines_for_vouchers(period_receipts_qs, cust.id)
 
                 period_cns_qs = Vouchers.objects.filter(
                     party_account=str(cust.id),
@@ -3035,7 +3048,7 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     date__date__range=[start_date, end_date]
                 ).filter(company_filter)
 
-                total_cn = self._sum_customer_credit_lines_for_vouchers(period_cns_qs)
+                total_cn = self._sum_customer_credit_lines_for_vouchers(period_cns_qs, cust.id)
 
                 total_credit = total_receipt + total_cn
 
@@ -3109,7 +3122,7 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                 date__date__lt=start_date
             ).filter(company_filter)
 
-            opening_receipt_total = self._sum_customer_credit_lines_for_vouchers(opening_receipts)
+            opening_receipt_total = self._sum_customer_credit_lines_for_vouchers(opening_receipts, organization_id)
 
             opening_creditnotes = Vouchers.objects.filter(
                 party_account=str(organization_id),
@@ -3118,7 +3131,7 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                 date__date__lt=start_date
             ).filter(company_filter)
 
-            opening_creditnote_total = self._sum_customer_credit_lines_for_vouchers(opening_creditnotes)
+            opening_creditnote_total = self._sum_customer_credit_lines_for_vouchers(opening_creditnotes, organization_id)
 
             opening_balance_dec = opening_invoice_total - opening_receipt_total - opening_creditnote_total
             opening_balance = float(opening_balance_dec)
@@ -3155,7 +3168,7 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             ).filter(company_filter).select_related('job').order_by('date')
 
             for rec in receipts:
-                amount = self._sum_customer_credit_lines_for_vouchers(Vouchers.objects.filter(id=rec.id))
+                amount = self._sum_customer_credit_lines_for_vouchers(Vouchers.objects.filter(id=rec.id), organization_id)
                 if amount == Decimal('0.00'):
                     amount = Decimal(str(rec.amount_sar or '0.00'))
                 rows.append({
@@ -3178,7 +3191,7 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             ).filter(company_filter).select_related('job').order_by('date')
 
             for cn in credit_notes:
-                amount = self._sum_customer_credit_lines_for_vouchers(Vouchers.objects.filter(id=cn.id))
+                amount = self._sum_customer_credit_lines_for_vouchers(Vouchers.objects.filter(id=cn.id), organization_id)
                 if amount == Decimal('0.00'):
                     amount = Decimal(str(cn.amount_sar or '0.00'))
                 rows.append({
@@ -3246,13 +3259,21 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             cost_total = Decimal(str(inv.amount_sar or '0.00'))
         return cost_total.quantize(Decimal('0.00'))
 
-    def _sum_vendor_debit_lines(self, vouchers_qs):
-        """Sum debit (Dr) lines in AccountDetails for given vouchers"""
+    def _sum_vendor_debit_lines(self, vouchers_qs, organization_id=None):
+        """Sum debit (Dr) lines in AccountDetails for given vouchers.
+        If organization_id is provided, only sum lines for that specific supplier account.
+        """
+        filter_dict = {
+            'vouchers__in': vouchers_qs,
+            'dr_cr': 'Dr'
+        }
+        # Only include debit lines for the specific supplier account (not bank charges, etc.)
+        if organization_id:
+            filter_dict['ac_name'] = str(organization_id)
+            filter_dict['ac_name_type'] = 'organization'
+        
         return (
-            AccountDetails.objects.filter(
-                vouchers__in=vouchers_qs,
-                dr_cr='Dr'
-            )
+            AccountDetails.objects.filter(**filter_dict)
             .exclude(amount_sar='')           # skip empty strings
             .exclude(amount_sar__isnull=True)
             .aggregate(
@@ -3317,7 +3338,7 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     date__date__lt=start_date
                 ).filter(company_filter)
 
-                opening_payment_total = self._sum_vendor_debit_lines(opening_payments_qs)
+                opening_payment_total = self._sum_vendor_debit_lines(opening_payments_qs, party.id)
 
                 opening_debitnotes_qs = Vouchers.objects.filter(
                     party_account=party_id_str,
@@ -3326,7 +3347,7 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     date__date__lt=start_date
                 ).filter(company_filter)
 
-                opening_debitnote_total = self._sum_vendor_debit_lines(opening_debitnotes_qs)
+                opening_debitnote_total = self._sum_vendor_debit_lines(opening_debitnotes_qs, party.id)
 
                 opening = opening_purchase_total - opening_payment_total - opening_debitnote_total
 
@@ -3348,7 +3369,7 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     date__date__range=[start_date, end_date]
                 ).filter(company_filter)
 
-                period_debit_payment = self._sum_vendor_debit_lines(period_payments_qs)
+                period_debit_payment = self._sum_vendor_debit_lines(period_payments_qs, party.id)
 
                 period_debitnotes_qs = Vouchers.objects.filter(
                     party_account=party_id_str,
@@ -3357,7 +3378,7 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     date__date__range=[start_date, end_date]
                 ).filter(company_filter)
 
-                period_debit_dn = self._sum_vendor_debit_lines(period_debitnotes_qs)
+                period_debit_dn = self._sum_vendor_debit_lines(period_debitnotes_qs, party.id)
 
                 period_debit = period_debit_payment + period_debit_dn
 
@@ -3428,7 +3449,7 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                 date__date__lt=start_date
             ).filter(company_filter)
 
-            opening_payment_total = self._sum_vendor_debit_lines(opening_payments)
+            opening_payment_total = self._sum_vendor_debit_lines(opening_payments, organization_id)
 
             opening_debitnotes = Vouchers.objects.filter(
                 party_account=str(organization_id),
@@ -3437,7 +3458,7 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                 date__date__lt=start_date
             ).filter(company_filter)
 
-            opening_debitnote_total = self._sum_vendor_debit_lines(opening_debitnotes)
+            opening_debitnote_total = self._sum_vendor_debit_lines(opening_debitnotes, organization_id)
 
             opening_balance_dec = opening_purchase_total - opening_payment_total - opening_debitnote_total
             opening_balance = float(opening_balance_dec)
@@ -3473,7 +3494,7 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             ).filter(company_filter).select_related('job').order_by('date')
 
             for pay in payments:
-                amount = self._sum_vendor_debit_lines(Vouchers.objects.filter(id=pay.id))
+                amount = self._sum_vendor_debit_lines(Vouchers.objects.filter(id=pay.id), organization_id)
                 if amount == Decimal('0.00'):
                     amount = Decimal(str(pay.amount_sar or '0.00').strip() or '0.00')
                 rows.append({
@@ -3496,7 +3517,7 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             ).filter(company_filter).select_related('job').order_by('date')
 
             for dn in debit_notes:
-                amount = self._sum_vendor_debit_lines(Vouchers.objects.filter(id=dn.id))
+                amount = self._sum_vendor_debit_lines(Vouchers.objects.filter(id=dn.id), organization_id)
                 if amount == Decimal('0.00'):
                     amount = Decimal(str(dn.amount_sar or '0.00').strip() or '0.00')
                 rows.append({
