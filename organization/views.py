@@ -24,7 +24,7 @@ from django.db.models.functions import Coalesce
 from decimal import Decimal
 
 
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 def make_end_of_day(date_str):
     """
@@ -3285,6 +3285,84 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             .quantize(Decimal('0.00'))
         )
 
+    def _sum_journal_credits(self, organization_id, start_date=None, end_date=None, request_user=None):
+        """Sum credit (Cr) lines in AccountDetails for Journal vouchers affecting the supplier.
+        These increase the payable balance.
+        """
+        filter_dict = {
+            'vouchers__voucher_type': 'Journal',
+            'ac_name': str(organization_id),
+            'ac_name_type': 'organization',
+            'dr_cr': 'Cr'
+        }
+        
+        if start_date:
+            filter_dict['vouchers__date__date__gte'] = start_date
+        if end_date:
+            filter_dict['vouchers__date__date__lte'] = end_date
+        if request_user:
+            filter_dict['vouchers__company__users'] = request_user
+        
+        return (
+            AccountDetails.objects.filter(**filter_dict)
+            .exclude(amount_sar='')
+            .exclude(amount_sar__isnull=True)
+            .aggregate(
+                total=Coalesce(
+                    Sum(Cast('amount_sar', DecimalField(max_digits=15, decimal_places=2))),
+                    Value(Decimal('0.00'))
+                )
+            )['total']
+            .quantize(Decimal('0.00'))
+        )
+
+    def _sum_journal_debits(self, organization_id, start_date=None, end_date=None, request_user=None):
+        """Sum debit (Dr) lines in AccountDetails for Journal vouchers affecting the supplier.
+        These decrease the payable balance.
+        """
+        filter_dict = {
+            'vouchers__voucher_type': 'Journal',
+            'ac_name': str(organization_id),
+            'ac_name_type': 'organization',
+            'dr_cr': 'Dr'
+        }
+        
+        if start_date:
+            filter_dict['vouchers__date__date__gte'] = start_date
+        if end_date:
+            filter_dict['vouchers__date__date__lte'] = end_date
+        if request_user:
+            filter_dict['vouchers__company__users'] = request_user
+        
+        return (
+            AccountDetails.objects.filter(**filter_dict)
+            .exclude(amount_sar='')
+            .exclude(amount_sar__isnull=True)
+            .aggregate(
+                total=Coalesce(
+                    Sum(Cast('amount_sar', DecimalField(max_digits=15, decimal_places=2))),
+                    Value(Decimal('0.00'))
+                )
+            )['total']
+            .quantize(Decimal('0.00'))
+        )
+
+    def _get_journal_details_for_supplier(self, organization_id, start_date, end_date, request_user):
+        """Get detailed Journal voucher lines for the supplier/organization.
+        Returns AccountDetails lines with their voucher information.
+        """
+        filter_dict = {
+            'vouchers__voucher_type': 'Journal',
+            'ac_name': str(organization_id),
+            'ac_name_type': 'organization',
+            'vouchers__date__date__range': [start_date, end_date]
+        }
+        
+        if request_user:
+            filter_dict['vouchers__company__users'] = request_user
+        
+        return AccountDetails.objects.filter(**filter_dict).select_related('vouchers', 'job_no').order_by('vouchers__date')
+
     def list(self, request, *args, **kwargs):
         organization_id = request.query_params.get('organization')
         start_date_str = request.query_params.get('start_date')
@@ -3349,7 +3427,10 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
                 opening_debitnote_total = self._sum_vendor_debit_lines(opening_debitnotes_qs, party.id)
 
-                opening = opening_purchase_total - opening_payment_total - opening_debitnote_total
+                opening_journal_credit_total = self._sum_journal_credits(party.id, end_date=start_date - timedelta(days=1), request_user=request.user)
+                opening_journal_debit_total = self._sum_journal_debits(party.id, end_date=start_date - timedelta(days=1), request_user=request.user)
+
+                opening = opening_purchase_total + opening_journal_credit_total - opening_payment_total - opening_debitnote_total - opening_journal_debit_total
 
                 # Current period ─────────────────
                 period_purchases_qs = Invoices.objects.filter(
@@ -3380,7 +3461,11 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
                 period_debit_dn = self._sum_vendor_debit_lines(period_debitnotes_qs, party.id)
 
-                period_debit = period_debit_payment + period_debit_dn
+                period_journal_credit = self._sum_journal_credits(party.id, start_date, end_date, request.user)
+                period_journal_debit = self._sum_journal_debits(party.id, start_date, end_date, request.user)
+
+                period_debit = period_debit_payment + period_debit_dn + period_journal_debit
+                period_credit = period_credit + period_journal_credit
 
                 closing = opening + period_credit - period_debit
 
@@ -3460,7 +3545,10 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
             opening_debitnote_total = self._sum_vendor_debit_lines(opening_debitnotes, organization_id)
 
-            opening_balance_dec = opening_purchase_total - opening_payment_total - opening_debitnote_total
+            opening_journal_credit_total = self._sum_journal_credits(organization_id, end_date=start_date - timedelta(days=1), request_user=request.user)
+            opening_journal_debit_total = self._sum_journal_debits(organization_id, end_date=start_date - timedelta(days=1), request_user=request.user)
+
+            opening_balance_dec = opening_purchase_total + opening_journal_credit_total - opening_payment_total - opening_debitnote_total - opening_journal_debit_total
             opening_balance = float(opening_balance_dec)
 
             # Period rows (your original code, kept similar)
@@ -3530,6 +3618,45 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     'debit': float(amount),
                     'credit': 0.00,
                     'narration': dn.naration or f"Debit Note {dn.voucher_number or 'N/A'}",
+                })
+
+            # Add Journal vouchers affecting the supplier
+            journal_details = self._get_journal_details_for_supplier(organization_id, start_date, end_date, request.user)
+            
+            for jd in journal_details:
+                # Skip empty amounts
+                try:
+                    amount = Decimal(str(jd.amount_sar or '0.00').strip() or '0.00')
+                except (ValueError, TypeError):
+                    amount = Decimal('0.00')
+                
+                if amount == Decimal('0.00'):
+                    continue
+                
+                # For Journal: Dr increases balance (shows as debit), Cr decreases balance (shows as credit)
+                if jd.dr_cr == 'Dr':
+                    debit_amount = float(amount)
+                    credit_amount = 0.00
+                else:  # Cr
+                    debit_amount = 0.00
+                    credit_amount = float(amount)
+                
+                job_number = ''
+                if jd.job_no:
+                    job_number = jd.job_no.job_number if hasattr(jd.job_no, 'job_number') else str(jd.job_no)
+                elif jd.vouchers and jd.vouchers.job:
+                    job_number = jd.vouchers.job.job_number
+                
+                rows.append({
+                    'date': jd.vouchers.date.date().isoformat(),
+                    'type': 'Journal',
+                    'inv_no': '',
+                    'voucher_no': jd.vouchers.voucher_number or 'N/A',
+                    'job_no': job_number,
+                    'party_name': vendor_name,
+                    'debit': debit_amount,
+                    'credit': credit_amount,
+                    'narration': jd.vouchers.naration or f"Journal {jd.vouchers.voucher_number or 'N/A'}",
                 })
 
             rows.sort(key=lambda x: x['date'])
