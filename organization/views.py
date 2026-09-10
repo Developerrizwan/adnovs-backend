@@ -798,6 +798,17 @@ class ProfitLossViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
             return Response([])
 
 
+def _ledger_date_sort_key(obj):
+    """Null-safe sort key so ledger rows are ordered chronologically."""
+    d = obj.get('date')
+    if not d:
+        return (1, datetime.max)
+    if isinstance(d, datetime):
+        d = d.replace(tzinfo=None) if d.tzinfo else d
+        return (0, d)
+    return (0, datetime.combine(d, time.min))
+
+
 def get_vat_input_coa_response(coa, start_date, end_date, user):
 
     invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Purchase', company__users__email=user.email).order_by('date')
@@ -953,6 +964,8 @@ def get_vat_input_coa_response(coa, start_date, end_date, user):
         if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:
             respone.append(res_obj)
 
+    respone = sorted(respone, key=_ledger_date_sort_key)
+
     balance = 0
     results = []
     for res in respone:
@@ -1097,6 +1110,8 @@ def get_vat_output_coa_response(coa, start_date, end_date, user):
 
         if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:
             respone.append(res_obj)
+
+    respone = sorted(respone, key=_ledger_date_sort_key)
 
     balance = 0
     results = []
@@ -1927,6 +1942,8 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
             respone.append(res_obj)
     # ── END NEW ──────────────────────────────────────────────────────────────
 
+    respone = sorted(respone, key=_ledger_date_sort_key)
+
     balance = 0
     results = []
     for res in respone:
@@ -2097,6 +2114,8 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
             respone.append(res_obj)
 # ── END NEW ──────────────────────────────────────────────────────────────
     # ── END NEW ──────────────────────────────────────────────────────────────
+
+    respone = sorted(respone, key=_ledger_date_sort_key)
 
     balance = 0
     results = []
