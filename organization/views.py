@@ -2127,6 +2127,71 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
     return results
 
 
+def enrich_ledger_rows_with_links(rows, user):
+    """Attach voucher_id / voucher_type, invoice_id / invoice_type /
+    invoice_template and job_id to ledger rows so the UI can open the
+    underlying document. Rows only carry document numbers, so the numbers are
+    resolved in three bulk queries scoped to the user's companies."""
+    if not rows:
+        return rows
+
+    voucher_numbers = {r.get('voucher') for r in rows if r.get('voucher')}
+    invoice_numbers = {r.get('invoice_number') for r in rows if r.get('invoice_number')}
+    job_numbers = {r.get('job_no') for r in rows if r.get('job_no')}
+
+    voucher_map = {}
+    if voucher_numbers:
+        for v in Vouchers.objects.filter(
+            company__users=user, voucher_number__in=voucher_numbers
+        ).values('id', 'voucher_number', 'voucher_type').distinct():
+            voucher_map.setdefault(v['voucher_number'], []).append(v)
+
+    invoice_map = {}
+    if invoice_numbers:
+        for inv in Invoices.objects.filter(
+            company__users=user, invoice_number__in=invoice_numbers
+        ).values('id', 'invoice_number', 'invoice_type', 'company__invoice_template').distinct():
+            invoice_map.setdefault(inv['invoice_number'], inv)
+
+    job_map = {}
+    if job_numbers:
+        for j in Job.objects.filter(
+            company__users=user, job_number__in=job_numbers
+        ).values('id', 'job_number').distinct():
+            job_map.setdefault(j['job_number'], j['id'])
+
+    for r in rows:
+        r.setdefault('voucher_id', None)
+        r.setdefault('voucher_type', None)
+        r.setdefault('invoice_id', None)
+        r.setdefault('invoice_type', None)
+        r.setdefault('invoice_template', None)
+        r.setdefault('job_id', None)
+
+        candidates = voucher_map.get(r.get('voucher') or '', [])
+        if candidates:
+            chosen = candidates[0]
+            row_type = str(r.get('type') or '').lower()
+            for c in candidates:
+                if str(c['voucher_type'] or '').lower() in row_type:
+                    chosen = c
+                    break
+            r['voucher_id'] = chosen['id']
+            r['voucher_type'] = chosen['voucher_type']
+
+        inv = invoice_map.get(r.get('invoice_number') or '')
+        if inv:
+            r['invoice_id'] = inv['id']
+            r['invoice_type'] = inv['invoice_type']
+            r['invoice_template'] = inv['company__invoice_template'] or 'INV1'
+
+        job_id = job_map.get(r.get('job_no') or '')
+        if job_id:
+            r['job_id'] = job_id
+
+    return rows
+
+
 class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
     pagination_class = CustomPagination
     queryset = Coa.objects.all().order_by('-id')
@@ -2160,12 +2225,12 @@ class GeneralledgerViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
                         res_.append(res)
                 response = res_ 
                                
-            return Response(response)
+            return Response(enrich_ledger_rows_with_links(response, request.user))
         
         if coa_id is None and job_id is not None and Job.objects.filter(id=job_id).exists():
             job =  Job.objects.filter(id=job_id).first()
             response = get_job_ledger_statement_response(job, start_date, end_date_inclusive, request.user)
-            return Response(response)
+            return Response(enrich_ledger_rows_with_links(response, request.user))
 
         
         return Response([])
@@ -3170,7 +3235,13 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                 rows.append({
                     'date': inv.date.date().isoformat(),
                     'inv_no': inv.invoice_number or inv.supplier_inv_number or '',
+                    'invoice_id': inv.id,
+                    'invoice_type': inv.invoice_type,
+                    'invoice_template': inv.company.invoice_template if inv.company else 'INV1',
+                    'voucher_id': None,
+                    'voucher_type': None,
                     'job_no': inv.job.job_number if inv.job else '',
+                    'job_id': inv.job.id if inv.job else None,
                     'party_name': party_name,
                     'debit': float(total),
                     'credit': 0.00,
@@ -3194,7 +3265,11 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     'date': rec.date.date().isoformat(),
                     'inv_no': '',
                     'voucher_no': rec.voucher_number or 'N/A',
+                    'voucher_id': rec.id,
+                    'voucher_type': rec.voucher_type,
+                    'invoice_id': None,
                     'job_no': rec.job.job_number if rec.job else '',
+                    'job_id': rec.job.id if rec.job else None,
                     'party_name': party_name,
                     'debit': 0.00,
                     'credit': float(amount),
@@ -3217,7 +3292,11 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     'date': cn.date.date().isoformat(),
                     'inv_no': '',
                     'voucher_no': cn.voucher_number or '',
+                    'voucher_id': cn.id,
+                    'voucher_type': cn.voucher_type,
+                    'invoice_id': None,
                     'job_no': cn.job.job_number if cn.job else '',
+                    'job_id': cn.job.id if cn.job else None,
                     'party_name': party_name,
                     'debit': 0.00,
                     'credit': float(amount),
@@ -3585,8 +3664,14 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     'date': inv.date.date().isoformat(),
                     'type': 'Purchase Invoice',
                     'inv_no': inv.invoice_number or 'N/A',
+                    'invoice_id': inv.id,
+                    'invoice_type': inv.invoice_type,
+                    'invoice_template': inv.company.invoice_template if inv.company else 'INV1',
                     'voucher_no': '',
+                    'voucher_id': None,
+                    'voucher_type': None,
                     'job_no': inv.job.job_number if inv.job else '',
+                    'job_id': inv.job.id if inv.job else None,
                     'party_name': vendor_name,
                     'debit': 0.00,
                     'credit': float(total),
@@ -3609,7 +3694,11 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     'type': 'Payment',
                     'inv_no': '',
                     'voucher_no': pay.voucher_number or 'N/A',
+                    'voucher_id': pay.id,
+                    'voucher_type': pay.voucher_type,
+                    'invoice_id': None,
                     'job_no': pay.job.job_number if pay.job else '',
+                    'job_id': pay.job.id if pay.job else None,
                     'party_name': vendor_name,
                     'debit': float(amount),
                     'credit': 0.00,
@@ -3632,7 +3721,11 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     'type': 'Debit Note',
                     'inv_no': '',
                     'voucher_no': dn.voucher_number or 'N/A',
+                    'voucher_id': dn.id,
+                    'voucher_type': dn.voucher_type,
+                    'invoice_id': None,
                     'job_no': dn.job.job_number if dn.job else '',
+                    'job_id': dn.job.id if dn.job else None,
                     'party_name': vendor_name,
                     'debit': float(amount),
                     'credit': 0.00,
@@ -3661,17 +3754,24 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     credit_amount = float(amount)
                 
                 job_number = ''
+                job_id = None
                 if jd.job_no:
                     job_number = jd.job_no.job_number if hasattr(jd.job_no, 'job_number') else str(jd.job_no)
+                    job_id = getattr(jd.job_no, 'id', None)
                 elif jd.vouchers and jd.vouchers.job:
                     job_number = jd.vouchers.job.job_number
+                    job_id = jd.vouchers.job.id
                 
                 rows.append({
                     'date': jd.vouchers.date.date().isoformat(),
                     'type': 'Journal',
                     'inv_no': '',
+                    'invoice_id': None,
                     'voucher_no': jd.vouchers.voucher_number or 'N/A',
+                    'voucher_id': jd.vouchers.id,
+                    'voucher_type': jd.vouchers.voucher_type,
                     'job_no': job_number,
+                    'job_id': job_id,
                     'party_name': vendor_name,
                     'debit': debit_amount,
                     'credit': credit_amount,
