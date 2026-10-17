@@ -1776,6 +1776,37 @@ def get_job_ledger_statement_response(job, start_date, end_date, user):
     return results
 
 
+SUPPLIER_SIDE_ORG_TYPES = {'Supplier', 'Broker', 'Agents', 'Counterpart'}
+SUNDRY_CREDITORS_CODE = '2002'
+
+
+def get_supplier_side_org_ids(company):
+    """Return the ids (as str, matching AccountDetails.ac_name) of the company's
+    supplier-side organizations: type does NOT contain 'Client' AND
+    (type contains Supplier/Broker/Agents/Counterpart OR coa is the company's
+    Sundry Creditors account, resolved by code '2002').
+    Organizations whose type contains 'Client' are never supplier-side."""
+    creditors_coa_ids = set(
+        Coa.objects.filter(company=company, code=SUNDRY_CREDITORS_CODE).values_list('id', flat=True)
+    )
+    ids = set()
+    for org_id, org_type, coa_id in Organization.objects.filter(company=company).values_list('id', 'type', 'coa_id'):
+        types = set(org_type or [])
+        if 'Client' in types:
+            continue
+        if types & SUPPLIER_SIDE_ORG_TYPES or coa_id in creditors_coa_ids:
+            ids.add(str(org_id))
+    return ids
+
+
+def get_supplier_side_org_ids_for_user(user):
+    """Union of get_supplier_side_org_ids over every company the user belongs to."""
+    ids = set()
+    for company in Company.objects.filter(users=user):
+        ids |= get_supplier_side_org_ids(company)
+    return ids
+
+
 def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
 
     invoices = Invoices.objects.filter(date__range=[start_date, end_date], invoice_type='Purchase', company__users__email=user.email).order_by('date')
@@ -1942,6 +1973,61 @@ def get_sundry_creditors_coa_response(coa, start_date, end_date, user):
             respone.append(res_obj)
     # ── END NEW ──────────────────────────────────────────────────────────────
 
+    # ── Receipt/CreditNote/Journal lines on supplier-side organizations ──────
+    # These are the rows excluded from Sundry Debtors (get_supplier_side_org_ids).
+    # Dr reduces the payable, Cr increases it.
+    supplier_side_org_ids = get_supplier_side_org_ids_for_user(user)
+    supplier_side_details = coa_account_details.filter(
+        ac_name_type='organization',
+        ac_name__in=supplier_side_org_ids,
+        vouchers__voucher_type__in=['Receipt', 'CreditNote', 'Journal']
+    )
+
+    for acc in supplier_side_details:
+        party_account = None
+        if acc.vouchers.party_account:
+            if acc.vouchers.party_account_type == 'coa':
+                party_account = Coa.objects.filter(id=acc.vouchers.party_account).first()
+            else:
+                party_account = Organization.objects.filter(id=acc.vouchers.party_account).first()
+
+        org = Organization.objects.filter(id=acc.ac_name).first()
+
+        res_obj = {
+            "account": org.name if org else acc.ac_name,
+            "date": acc.vouchers.date if acc.vouchers.date else '',
+            "currency": acc.currency,
+            "invoice_number": "",
+            "vat_percent": 0,
+            "fcy_amount": 0,
+            "vat_amount": 0,
+            "amount": 0,
+            "dr_amount": 0,
+            "cr_amount": 0,
+            "net_amount": 0,
+            "type": acc.vouchers.voucher_type + " Voucher",
+            "voucher": acc.vouchers.voucher_number if acc.vouchers else "",
+            "party_account": party_account.name if party_account else '',
+            "job_no": acc.vouchers.job.job_number if acc.vouchers and acc.vouchers.job else "",
+            "narrations": acc.narration,
+            "branch": acc.vouchers.branch if acc.vouchers else "",
+            "language_name": coa.language_name if coa.language_name else ""
+        }
+
+        amount = float(acc.amount_sar if acc.amount_sar else 0.0)
+        res_obj['amount'] = amount
+
+        if acc.dr_cr == 'Dr':
+            res_obj['dr_amount'] = amount
+        else:
+            res_obj['cr_amount'] = amount
+
+        res_obj['net_amount'] = amount
+
+        if not res_obj["dr_amount"] == 0 or not res_obj["cr_amount"] == 0:
+            respone.append(res_obj)
+    # ── END supplier-side lines ──────────────────────────────────────────────
+
     respone = sorted(respone, key=_ledger_date_sort_key)
 
     balance = 0
@@ -2064,10 +2150,13 @@ def get_sundry_debtors_coa_response(coa, start_date, end_date, user):
 
     # ── NEW: Receipt vouchers on Organization (customer) account ─────────────
     # ── NEW: Receipt & CreditNote vouchers on Organization (customer) account ────
+    # Supplier-side organizations (see get_supplier_side_org_ids) are excluded here;
+    # their Receipt/CreditNote/Journal lines are shown in Sundry Creditors instead.
+    supplier_side_org_ids = get_supplier_side_org_ids_for_user(user)
     receipt_details = account_details.filter(
         ac_name_type='organization',
         vouchers__voucher_type__in=['Receipt', 'CreditNote', 'Journal']  # ← add CreditNote and Journal
-    )
+    ).exclude(ac_name__in=supplier_side_org_ids)
 
     for acc in receipt_details:
         party_account = None
