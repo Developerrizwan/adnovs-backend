@@ -282,3 +282,5 @@ adnov/media/
 *.sql
 db_backups/
 *.dump
+# Local reconciliation reports (never commit)
+reports/
