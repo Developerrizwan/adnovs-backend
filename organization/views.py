@@ -3107,13 +3107,14 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         return cost_total.quantize(Decimal('0.00'))
 
-    def _sum_customer_credit_lines_for_vouchers(self, vouchers_qs, organization_id=None):
+    def _sum_customer_credit_lines_for_vouchers(self, vouchers_qs, organization_id=None, dr_cr='Cr'):
         """Sum credit (Cr) lines in AccountDetails for given vouchers.
         If organization_id is provided, only sum lines for that specific customer account.
+        Pass dr_cr='Dr' to sum debit lines instead (used for Journal vouchers).
         """
         filter_dict = {
             'vouchers__in': vouchers_qs,
-            'dr_cr': 'Cr'
+            'dr_cr': dr_cr
         }
         # Only include credit lines for the specific customer account (not other accounts)
         if organization_id:
@@ -3132,6 +3133,24 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             )['total']
             or Decimal('0.00')
         ).quantize(Decimal('0.00'))
+
+    def _client_journals(self, organization_id, company_filter, **date_filter):
+        """Journal vouchers whose party account is the given client organization."""
+        return Vouchers.objects.filter(
+            party_account=str(organization_id),
+            party_account_type='organization',
+            voucher_type='Journal',
+            **date_filter
+        ).filter(company_filter)
+
+    def _journal_dr_cr_totals(self, organization_id, company_filter, **date_filter):
+        """(debit, credit) totals of the client's lines in its Journal vouchers.
+        Dr increases the receivable, Cr reduces it."""
+        journals = self._client_journals(organization_id, company_filter, **date_filter)
+        return (
+            self._sum_customer_credit_lines_for_vouchers(journals, organization_id, dr_cr='Dr'),
+            self._sum_customer_credit_lines_for_vouchers(journals, organization_id, dr_cr='Cr'),
+        )
 
     # ----------------------------
     # Main List
@@ -3194,7 +3213,11 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
                 opening_creditnote_total = self._sum_customer_credit_lines_for_vouchers(opening_creditnotes_qs, cust.id)
 
-                opening = opening_invoice_total - opening_receipt_total - opening_creditnote_total
+                opening_journal_dr, opening_journal_cr = self._journal_dr_cr_totals(
+                    cust.id, company_filter, date__date__lt=start_date)
+
+                opening = (opening_invoice_total + opening_journal_dr
+                           - opening_receipt_total - opening_creditnote_total - opening_journal_cr)
 
                 # Period transactions
                 period_invoices_qs = Invoices.objects.filter(
@@ -3223,7 +3246,11 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
                 total_cn = self._sum_customer_credit_lines_for_vouchers(period_cns_qs, cust.id)
 
-                total_credit = total_receipt + total_cn
+                period_journal_dr, period_journal_cr = self._journal_dr_cr_totals(
+                    cust.id, company_filter, date__date__range=[start_date, end_date])
+
+                total_debit += period_journal_dr
+                total_credit = total_receipt + total_cn + period_journal_cr
 
                 closing = opening + total_debit - total_credit
 
@@ -3306,7 +3333,14 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
 
             opening_creditnote_total = self._sum_customer_credit_lines_for_vouchers(opening_creditnotes, organization_id)
 
-            opening_balance_dec = opening_invoice_total - opening_receipt_total - opening_creditnote_total
+            is_client = 'Client' in (org.type or [])
+            opening_journal_dr, opening_journal_cr = (
+                self._journal_dr_cr_totals(organization_id, company_filter, date__date__lt=start_date)
+                if is_client else (Decimal('0.00'), Decimal('0.00'))
+            )
+
+            opening_balance_dec = (opening_invoice_total + opening_journal_dr
+                                   - opening_receipt_total - opening_creditnote_total - opening_journal_cr)
             opening_balance = float(opening_balance_dec)
 
             # Period transactions
@@ -3391,6 +3425,41 @@ class AccountsReceivableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
                     'credit': float(amount),
                     'narration': cn.naration or f"Credit Note {cn.voucher_number or 'N/A'}",
                 })
+
+            # Journal vouchers with this client as party account: one row per client line
+            if is_client:
+                journal_lines = AccountDetails.objects.filter(
+                    vouchers__in=self._client_journals(
+                        organization_id, company_filter, date__date__range=[start_date, end_date]),
+                    ac_name=str(organization_id),
+                    ac_name_type='organization',
+                ).select_related('vouchers', 'vouchers__job', 'job_no').order_by('vouchers__date')
+
+                for jd in journal_lines:
+                    try:
+                        amount = Decimal(str(jd.amount_sar or '0.00').strip() or '0.00')
+                    except (ArithmeticError, ValueError, TypeError):
+                        amount = Decimal('0.00')
+                    if amount == Decimal('0.00'):
+                        continue
+
+                    jv = jd.vouchers
+                    job = jd.job_no or jv.job
+                    rows.append({
+                        'date': jv.date.date().isoformat(),
+                        'type': 'Journal',
+                        'inv_no': '',
+                        'voucher_no': jv.voucher_number or 'N/A',
+                        'voucher_id': jv.id,
+                        'voucher_type': jv.voucher_type,
+                        'invoice_id': None,
+                        'job_no': job.job_number if job else '',
+                        'job_id': job.id if job else None,
+                        'party_name': party_name,
+                        'debit': float(amount) if jd.dr_cr == 'Dr' else 0.00,
+                        'credit': float(amount) if jd.dr_cr == 'Cr' else 0.00,
+                        'narration': jv.naration or f"Journal {jv.voucher_number or 'N/A'}",
+                    })
 
             rows.sort(key=lambda x: x['date'])
 

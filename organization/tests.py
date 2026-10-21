@@ -103,3 +103,34 @@ class SupplierSideOrganizationLedgerTests(TestCase):
         self._voucher('Receipt', 'RV4', self.plain_client, 'Cr', 100)
         self.assertEqual(len(self._rows_for(self._debtors(), 'RV4')), 1)
         self.assertEqual(self._rows_for(self._creditors(), 'RV4'), [])
+
+
+class AccountsReceivableJournalTests(SupplierSideOrganizationLedgerTests):
+    """Journal vouchers whose party account is a client hit the receivable report:
+    Dr lines increase the balance, Cr lines reduce it."""
+
+    def _receivable(self, organization):
+        from rest_framework.test import APIRequestFactory, force_authenticate
+        from organization.views import AccountsReceivableViewSet
+        request = APIRequestFactory().get('/api/account/receivable/', {
+            'organization': organization, 'start_date': '2024-01-01', 'end_date': '2024-12-31'})
+        force_authenticate(request, user=self.user)
+        return AccountsReceivableViewSet.as_view({'get': 'list'})(request).data
+
+    def test_client_journal_in_detail_and_summary(self):
+        self._voucher('Journal', 'JV10', self.plain_client, 'Dr', 300)
+        self._voucher('Journal', 'JV11', self.plain_client, 'Cr', 50)
+
+        detail = self._receivable(str(self.plain_client.id))
+        journals = {r['voucher_no']: r for r in detail['rows'] if r.get('type') == 'Journal'}
+        self.assertEqual((journals['JV10']['debit'], journals['JV10']['credit']), (300.0, 0.0))
+        self.assertEqual((journals['JV11']['debit'], journals['JV11']['credit']), (0.0, 50.0))
+        self.assertEqual(detail['closing_balance'], 250.0)
+
+        summary = [r for r in self._receivable('all')['rows'] if r['customer_name'] == 'PLAIN CLIENT'][0]
+        self.assertEqual((summary['inv_amount'], summary['received_amount'], summary['balance']), (300.0, 50.0, 250.0))
+
+    def test_non_client_journal_excluded(self):
+        self._voucher('Journal', 'JV12', self.supplier_only, 'Dr', 300)
+        detail = self._receivable(str(self.supplier_only.id))
+        self.assertEqual([r for r in detail['rows'] if r.get('type') == 'Journal'], [])
