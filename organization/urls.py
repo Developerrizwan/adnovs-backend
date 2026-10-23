@@ -42,6 +42,7 @@ get_users_router.register('get-users',GetusersViewSet,basename='getusers')
 
 get_user_count_router = routers.SimpleRouter() 
 get_user_count_router.register('user-related-counts', UserRelatedCountsViewSet, basename='user-related-counts')
+get_user_count_router.register('dashboard-summary', DashboardSummaryViewSet, basename='dashboard-summary')
 
 coa_router = routers.SimpleRouter() 
 coa_router.register('master/coa', CoaViewSet, basename='coa') 
