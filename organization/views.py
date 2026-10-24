@@ -553,6 +553,190 @@ class UserRelatedCountsViewSet(viewsets.GenericViewSet):
         return Response(counts_serializer.data, status=status.HTTP_200_OK)
 
 
+def _to_amount(value):
+    """Amounts are stored as free-text; ignore anything that isn't a clean number."""
+    try:
+        return float(str(value).replace(',', '').strip() or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+class DashboardSummaryViewSet(viewsets.GenericViewSet):
+    """Everything the dashboard needs in one call: KPIs, pipeline, trends and action lists"""
+
+    permission_classes = (IsAuthenticated,)
+
+    JOB_STAGES = [
+        'RFQ', 'Cargo Collected', 'Under Export Clearance', 'Departed', 'In Transit',
+        'Arrived', 'Under Import Clearance', 'Do Collected', 'Gate Pass Issued',
+        'Under Delivery', 'In Warehouse Storage', 'Delivered', 'Invoiced', 'Finished', 'Cancelled',
+    ]
+    CLOSED_STAGES = ('Finished', 'Cancelled')
+
+    def list(self, request, *args, **kwargs):
+        from django.db.models import Count, Max
+        from django.db.models.functions import TruncMonth
+        from django.utils import timezone
+
+        user = request.user
+        now = timezone.now()
+
+        all_jobs = Job.objects.filter(company__users=user, isdeleted=False)
+        jobs = all_jobs.filter(job_type='Job')
+        enquiries = all_jobs.filter(job_type='Enquiry')
+        invoices = Invoices.objects.filter(company__users=user)
+        vouchers = Vouchers.objects.filter(job__company__users=user)
+
+        status_counts = dict(jobs.values_list('job_status').annotate(c=Count('id')))
+        in_progress = sum(c for s, c in status_counts.items() if s not in self.CLOSED_STAGES + ('RFQ',))
+        enquiry_status = dict(enquiries.values_list('job_status').annotate(c=Count('id')))
+        enquiry_open = enquiry_status.get('RFQ', 0)
+
+        # Invoice totals come from their cost entries (amount + VAT %), same as InvoicesGetSerializer.
+        # Money is text in the DB, so sum it in Python.
+        invoice_totals = {}
+        for line in CostEntry.objects.filter(invoice__in=invoices).values('invoice_id', 'amount', 'tax_group_code'):
+            amount = _to_amount(line['amount'])
+            vat_percent = _to_amount(line['tax_group_code'])
+            invoice_totals[line['invoice_id']] = invoice_totals.get(line['invoice_id'], 0.0) + amount + vat_percent * amount / 100
+
+        inv = {
+            'sales_count': 0, 'purchase_count': 0, 'sales_amount': 0.0, 'purchase_amount': 0.0,
+            'receivable': 0.0, 'receivable_count': 0, 'payable': 0.0, 'payable_count': 0,
+            'overdue': 0.0, 'overdue_count': 0, 'paid_count': 0, 'partial_count': 0, 'unpaid_count': 0,
+        }
+        overdue_rows = []
+        monthly_money = {}
+        for row in invoices.values(
+            'id', 'invoice_number', 'invoice_type', 'payment_status', 'amount_sar', 'paid_amount',
+            'date', 'due_date', 'job_id', 'job__job_number', 'client_name__name', 'party_account__name',
+        ):
+            amount = invoice_totals.get(row['id'], 0.0)
+            is_sales = row['invoice_type'] == 'Sales'
+            key = 'sales' if is_sales else 'purchase'
+            inv[f'{key}_count'] += 1
+            inv[f'{key}_amount'] += amount
+
+            pay_status = row['payment_status'] or 'Unpaid'
+            if pay_status == 'Paid':
+                inv['paid_count'] += 1
+            else:
+                inv['partial_count' if pay_status == 'Partial Paid' else 'unpaid_count'] += 1
+                balance = max(amount - _to_amount(row['paid_amount']), 0.0)
+                if is_sales:
+                    inv['receivable'] += balance
+                    inv['receivable_count'] += 1
+                    if row['due_date'] and row['due_date'] < now and balance > 0:
+                        inv['overdue'] += balance
+                        inv['overdue_count'] += 1
+                        overdue_rows.append({
+                            'id': row['id'],
+                            'invoice_number': row['invoice_number'],
+                            'client': row['client_name__name'] or row['party_account__name'],
+                            'job_id': row['job_id'],
+                            'job_number': row['job__job_number'],
+                            'balance': round(balance, 2),
+                            'due_date': row['due_date'],
+                            'days_overdue': (now - row['due_date']).days,
+                        })
+                else:
+                    inv['payable'] += balance
+                    inv['payable_count'] += 1
+
+            if row['date']:
+                month = row['date'].strftime('%Y-%m')
+                bucket = monthly_money.setdefault(month, {'sales': 0.0, 'purchase': 0.0})
+                bucket[key] += amount
+
+        overdue_rows.sort(key=lambda r: r['balance'], reverse=True)
+        for k in ('sales_amount', 'purchase_amount', 'receivable', 'payable', 'overdue'):
+            inv[k] = round(inv[k], 2)
+
+        # 12-month window ending at the latest activity (keeps old snapshots meaningful)
+        latest = all_jobs.aggregate(m=Max('created_at'))['m'] or now
+        anchor = min(latest, now)
+        months = []
+        y, m = anchor.year, anchor.month
+        for _ in range(12):
+            months.append(f'{y:04d}-{m:02d}')
+            y, m = (y - 1, 12) if m == 1 else (y, m - 1)
+        months.reverse()
+        window_start = datetime(int(months[0][:4]), int(months[0][5:]), 1).date()
+        job_months = {}
+        for row in all_jobs.filter(created_at__date__gte=window_start).annotate(
+            month=TruncMonth('created_at')
+        ).values('month', 'job_type').annotate(c=Count('id')):
+            bucket = job_months.setdefault(row['month'].strftime('%Y-%m'), {'Job': 0, 'Enquiry': 0})
+            bucket[row['job_type']] = row['c']
+        monthly = [{
+            'month': mo,
+            'jobs': job_months.get(mo, {}).get('Job', 0),
+            'enquiries': job_months.get(mo, {}).get('Enquiry', 0),
+            'sales': round(monthly_money.get(mo, {}).get('sales', 0.0), 2),
+            'purchase': round(monthly_money.get(mo, {}).get('purchase', 0.0), 2),
+        } for mo in months]
+
+        active_shipments = [{
+            'id': j.id,
+            'job_number': j.job_number,
+            'client': j.client_name.name if j.client_name else j.shipper_name,
+            'type': j.type,
+            'status': j.job_status,
+            'pol': j.pol,
+            'pod': j.pod,
+            'eta': j.eta,
+            'created_at': j.created_at,
+        } for j in jobs.exclude(job_status__in=self.CLOSED_STAGES + ('RFQ',))
+            .select_related('client_name').order_by('-created_at')[:8]]
+
+        recent_enquiries = [{
+            'id': j.id,
+            'enquiry_number': j.enquiry_number or j.job_number,
+            'client': j.client_name.name if j.client_name else j.shipper_name,
+            'type': j.type,
+            'pol': j.pol,
+            'pod': j.pod,
+            'created_at': j.created_at,
+        } for j in enquiries.filter(job_status='RFQ').select_related('client_name').order_by('-created_at')[:6]]
+
+        top_clients = [
+            {'name': r['client_name__name'], 'jobs': r['c']}
+            for r in jobs.exclude(client_name=None).values('client_name__name')
+            .annotate(c=Count('id')).order_by('-c')[:6]
+        ]
+
+        return Response({
+            'as_of': now,
+            'jobs': {
+                'total': jobs.count(),
+                'in_progress': in_progress,
+                'finished': status_counts.get('Finished', 0),
+                'cancelled': status_counts.get('Cancelled', 0),
+                'rfq': status_counts.get('RFQ', 0),
+            },
+            'enquiries': {
+                'total': enquiries.count(),
+                'open': enquiry_open,
+                'converted': sum(enquiry_status.values()) - enquiry_open - enquiry_status.get('Cancelled', 0),
+            },
+            'invoices': inv,
+            'vouchers': {
+                'total': vouchers.count(),
+                'by_type': dict(vouchers.values_list('voucher_type').annotate(c=Count('id'))),
+            },
+            'pipeline': [{'status': s, 'count': status_counts.get(s, 0)} for s in self.JOB_STAGES],
+            'freight': [
+                {'type': r['type'] or 'Unspecified', 'count': r['c']}
+                for r in jobs.values('type').annotate(c=Count('id')).order_by('-c')
+            ],
+            'monthly': monthly,
+            'top_clients': top_clients,
+            'active_shipments': active_shipments,
+            'recent_enquiries': recent_enquiries,
+            'overdue_invoices': overdue_rows[:8],
+        }, status=status.HTTP_200_OK)
+
+
 class CoaViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     """Manage Coa in the Database"""
     permission_classes = (IsAuthenticated, )
