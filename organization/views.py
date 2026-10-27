@@ -3725,10 +3725,19 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             .quantize(Decimal('0.00'))
         )
 
+    def _journal_counts_for_party(self, organization_id):
+        """Journal lines count toward payables only for supplier-side parties
+        (see get_supplier_side_org_ids), matching the Sundry Creditors ledger.
+        Journals on Client-typed parties belong to the receivable side."""
+        return str(organization_id) in self._supplier_side_ids
+
     def _sum_journal_credits(self, organization_id, start_date=None, end_date=None, request_user=None):
         """Sum credit (Cr) lines in AccountDetails for Journal vouchers affecting the supplier.
         These increase the payable balance.
         """
+        if not self._journal_counts_for_party(organization_id):
+            return Decimal('0.00')
+
         filter_dict = {
             'vouchers__voucher_type': 'Journal',
             'ac_name': str(organization_id),
@@ -3760,6 +3769,9 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
         """Sum debit (Dr) lines in AccountDetails for Journal vouchers affecting the supplier.
         These decrease the payable balance.
         """
+        if not self._journal_counts_for_party(organization_id):
+            return Decimal('0.00')
+
         filter_dict = {
             'vouchers__voucher_type': 'Journal',
             'ac_name': str(organization_id),
@@ -3791,6 +3803,9 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
         """Get detailed Journal voucher lines for the supplier/organization.
         Returns AccountDetails lines with their voucher information.
         """
+        if not self._journal_counts_for_party(organization_id):
+            return AccountDetails.objects.none()
+
         filter_dict = {
             'vouchers__voucher_type': 'Journal',
             'ac_name': str(organization_id),
@@ -3820,6 +3835,8 @@ class AccountsPayableViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
         company_filter = Q(company__users=request.user)
 
         PAYABLE_TYPES = ['Supplier', 'Broker', 'Counterpart']
+
+        self._supplier_side_ids = get_supplier_side_org_ids_for_user(request.user)
 
         if organization_id == 'all':
             # ───────────────────────────────────────────────
